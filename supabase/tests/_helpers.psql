@@ -1,0 +1,58 @@
+-- Shared pgTAP helpers. Included by each test file with \ir so tests run the
+-- same way under `supabase test db` and scripts/db-test.sh.
+create extension if not exists pgtap with schema extensions;
+set search_path = public, extensions;
+
+create schema if not exists tests;
+grant usage on schema tests to authenticated, anon;
+
+create or replace function tests.create_user(p_email text, p_name text default 'Test User') returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare v uuid;
+begin
+  insert into auth.users (email, raw_user_meta_data, email_confirmed_at)
+  values (lower(p_email), jsonb_build_object('full_name', p_name), now())
+  returning id into v;
+  return v;
+end $$;
+
+-- Act as a signed-in user for the rest of the transaction (like PostgREST does).
+create or replace function tests.authenticate_as(p_user uuid, p_aal text default 'aal1') returns void
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', p_user, 'role', 'authenticated', 'aal', p_aal,
+    'email', (select email from auth.users where id = p_user))::text, true);
+  perform set_config('role', 'authenticated', true);
+end $$;
+
+create or replace function tests.as_anon() returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  perform set_config('role', 'anon', true);
+end $$;
+
+-- Execute SQL and return the application error code (the HINT set by
+-- app.raise) or the SQLSTATE; NULL when the statement succeeds.
+create or replace function tests.error_code(p_sql text) returns text language plpgsql as $$
+declare h text; st text;
+begin
+  execute p_sql;
+  return null;
+exception when others then
+  get stacked diagnostics h = pg_exception_hint, st = returned_sqlstate;
+  return coalesce(nullif(h, ''), st);
+end $$;
+
+-- Add a member directly (bypasses invitations) for fixture setup.
+create or replace function tests.add_member(p_org uuid, p_user uuid, p_role public.member_role) returns uuid
+language sql security definer set search_path = '' as $$
+  insert into public.org_memberships (organisation_id, user_id, role) values (p_org, p_user, p_role) returning id
+$$;
+
+create or replace function tests.class_id(p_code text) returns uuid
+language sql stable security definer set search_path = '' as $$
+  select id from public.asset_classes where code = p_code
+$$;
+
+grant execute on all functions in schema tests to authenticated, anon;

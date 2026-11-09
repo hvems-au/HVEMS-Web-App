@@ -1,0 +1,12 @@
+-- Local development seed (`supabase db reset`). DEVELOPMENT ONLY — never run
+-- against staging or production. Fictional names only (SoW §12.4).
+--
+-- Reference data (asset classes, platform settings, capabilities) is created by
+-- the migrations. Users must be created through Supabase Auth (sign up in the
+-- app, or `supabase auth` admin API) so passwords are hashed correctly; then:
+--
+--   select public.create_organisation('company', 'Caboolture Plant Hire (demo)');
+--
+-- while authenticated as that user, and add equipment through the app or the
+-- CSV import (template available on the Import page).
+select 1;
