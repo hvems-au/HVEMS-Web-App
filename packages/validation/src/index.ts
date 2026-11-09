@@ -1,0 +1,158 @@
+/**
+ * Input validation shared by web forms, server actions and the future mobile
+ * app. The database re-validates everything; these schemas exist for fast,
+ * friendly feedback and to keep clients consistent.
+ */
+import { z } from "zod";
+import { ASSET_CLASSES, AU_STATES, isValidAbn, type AssetField } from "@hvems/domain";
+import { COMPANY_ROLES, MARKETPLACE_CUSTOMER_ROLES, PROVIDER_ROLES } from "@hvems/permissions";
+
+const trimmed = (max: number) => z.string().trim().max(max);
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => (v ? v : undefined));
+
+export const emailSchema = z.string().trim().toLowerCase().email("Enter a valid email address").max(254);
+
+/** Recommended password policy (SoW §2.5 "password checks"): 10+ characters, not only letters. */
+export const passwordSchema = z
+  .string()
+  .min(10, "Use at least 10 characters")
+  .max(128, "Use 128 characters or fewer")
+  .refine((v) => /[^A-Za-z]/.test(v), "Include at least one number or symbol");
+
+export const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Enter your password"),
+});
+export type SignInInput = z.infer<typeof signInSchema>;
+
+export const signUpSchema = z
+  .object({
+    fullName: trimmed(200).min(2, "Enter your full name"),
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string(),
+    acceptTerms: z.literal(true, { message: "You must accept the terms to continue" }),
+  })
+  .refine((v) => v.password === v.confirmPassword, { path: ["confirmPassword"], message: "Passwords do not match" });
+export type SignUpInput = z.infer<typeof signUpSchema>;
+
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+export const resetPasswordSchema = z
+  .object({ password: passwordSchema, confirmPassword: z.string() })
+  .refine((v) => v.password === v.confirmPassword, { path: ["confirmPassword"], message: "Passwords do not match" });
+
+export const abnSchema = z
+  .string()
+  .trim()
+  .transform((v) => v.replace(/\s/g, ""))
+  .refine((v) => v === "" || isValidAbn(v), "Enter a valid 11-digit ABN");
+
+export const createOrganisationSchema = z
+  .object({
+    kind: z.enum(["company", "marketplace_customer", "provider"]),
+    name: trimmed(200).min(2, "Enter a name"),
+    abn: abnSchema.optional().default(""),
+  })
+  .refine((v) => v.kind !== "provider" || v.abn.length === 11, { path: ["abn"], message: "Provider accounts need an ABN" });
+export type CreateOrganisationInput = z.infer<typeof createOrganisationSchema>;
+
+export const inviteMemberSchema = z.object({
+  email: emailSchema,
+  role: z.enum([...COMPANY_ROLES, ...MARKETPLACE_CUSTOMER_ROLES, ...PROVIDER_ROLES]),
+});
+
+const stateSchema = z.enum(AU_STATES);
+const classCodes = ASSET_CLASSES.map((c) => c.code) as [string, ...string[]];
+
+export const assetFormSchema = z
+  .object({
+    asset_number: trimmed(40).min(1, "Enter an asset number"),
+    asset_class: z.enum(classCodes, { message: "Choose an asset class" }),
+    make: optionalText(100),
+    model: optionalText(100),
+    year: z
+      .union([z.literal(""), z.coerce.number().int().min(1900).max(2100)])
+      .optional()
+      .transform((v) => (v === "" || v === undefined ? undefined : v)),
+    registration_number: optionalText(20).transform((v) => v?.toUpperCase()),
+    registration_state: z.union([z.literal(""), stateSchema]).optional().transform((v) => (v ? v : undefined)),
+    vin: optionalText(40).transform((v) => v?.toUpperCase()),
+    serial_number: optionalText(60),
+    owner_type: z.enum(["own", "client_owned", "hired_in"]).default("own"),
+    client_id: z.union([z.literal(""), z.string().uuid()]).optional().transform((v) => (v ? v : undefined)),
+    site_id: z.union([z.literal(""), z.string().uuid()]).optional().transform((v) => (v ? v : undefined)),
+    meter_type: z.enum(["none", "kilometres", "hours", "both"]),
+    notes: optionalText(5000),
+    duplicate_reason: optionalText(1000),
+  })
+  .superRefine((v, ctx) => {
+    const cls = ASSET_CLASSES.find((c) => c.code === v.asset_class);
+    if (!cls) return;
+    for (const field of cls.requiredFields) {
+      if (!v[field as AssetField]) {
+        ctx.addIssue({ code: "custom", path: [field], message: `Required for ${cls.name.toLowerCase()}` });
+      }
+    }
+    if (v.owner_type === "client_owned" && !v.client_id) {
+      ctx.addIssue({ code: "custom", path: ["client_id"], message: "Client-owned assets need a client" });
+    }
+  });
+export type AssetFormInput = z.input<typeof assetFormSchema>;
+export type AssetFormValues = z.output<typeof assetFormSchema>;
+
+export const clientFormSchema = z.object({
+  name: trimmed(200).min(1, "Enter a client name"),
+  abn: abnSchema.optional().transform((v) => (v ? v : undefined)),
+  contact_name: optionalText(200),
+  contact_email: z.union([z.literal(""), emailSchema]).optional().transform((v) => (v ? v : undefined)),
+  contact_phone: optionalText(40),
+  address: optionalText(500),
+  notes: optionalText(5000),
+});
+export type ClientFormValues = z.output<typeof clientFormSchema>;
+
+export const siteFormSchema = z.object({
+  name: trimmed(200).min(1, "Enter a site name"),
+  client_id: z.union([z.literal(""), z.string().uuid()]).optional().transform((v) => (v ? v : undefined)),
+  address_line1: optionalText(200),
+  address_line2: optionalText(200),
+  suburb: optionalText(100),
+  state: z.union([z.literal(""), stateSchema]).optional().transform((v) => (v ? v : undefined)),
+  postcode: z
+    .union([z.literal(""), z.string().regex(/^\d{4}$/, "Postcodes have four digits")])
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  timezone: z.string().default("Australia/Brisbane"),
+  contact_name: optionalText(200),
+  contact_phone: optionalText(40),
+  contact_email: z.union([z.literal(""), emailSchema]).optional().transform((v) => (v ? v : undefined)),
+  shift_times: optionalText(1000),
+  access_instructions: optionalText(5000),
+  safety_instructions: optionalText(5000),
+});
+export type SiteFormValues = z.output<typeof siteFormSchema>;
+
+export const meterReadingSchema = z.object({
+  unit: z.enum(["km", "hours"]),
+  value: z.coerce.number().min(0, "Readings cannot be negative").max(99_999_999),
+  read_at: z.coerce.date().optional(),
+  lower_reason: optionalText(500),
+  confirm_jump: z.coerce.boolean().optional().default(false),
+  client_request_id: z.string().uuid().optional(),
+});
+
+export const archiveAssetSchema = z.object({
+  reason: trimmed(1000).min(3, "Give a reason"),
+  effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date"),
+  disposal: z.enum(["retired", "sold", "other"]).default("retired"),
+  open_issues_acknowledged: z.coerce.boolean().optional().default(false),
+});
+
+export { z };
