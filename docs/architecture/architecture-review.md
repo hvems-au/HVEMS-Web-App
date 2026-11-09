@@ -17,7 +17,7 @@
 | Admin privileges | The Supabase MCP connection can apply migrations. **No migration has been applied yet** (awaiting approval, §5) | MCP tool list |
 | Supabase backups | Daily backups: 7 days (Pro), 14 (Team), up to 30 (Enterprise). PITR add-on: 7/14/28 days (~US$100/200/400 per month). Backups are stored in the project's region | Supabase docs |
 | Edge Functions | Run nearest the caller by default; can be pinned to `ap-southeast-2` per invocation (regional invocation) | Supabase docs |
-| GitHub | No HVEMS repository reachable yet from this session | GitHub integration |
+| GitHub | Repository `ahmadkhattakOD/HVEMS-Web-App` (private) created; full history pushed | GitHub integration |
 
 ## 2. Architecture in one page
 
@@ -96,15 +96,14 @@ Later-increment modules appear in navigation as muted items with an honest "deli
 | **AP-3** | **Backups: 35 days in Australia, ≤1 h data loss (SoW §12.1)** | The Free plan has no backups. Supabase's maximum is 28-day PITR (30 days daily on Enterprise); Storage files are not in database backups | Pro plan + 28-day PITR (RPO ~2 min) **plus** a nightly encrypted logical dump and Storage sync to an HVEMS-owned S3 bucket in ap-southeast-2 with a 35-day lifecycle. Or HVEMS accepts 28 days |
 | **AP-4** | **Two connection fees "together or not at all" (SoW §4.5, §5.4)** | Stripe can't make one atomic charge across two cards | Authorise both with manual capture and capture only when both succeed; release or refund otherwise. Disclosed deviation: a temporary card *authorisation hold* may briefly appear, and in a rare capture failure a refund follows a charge. See ADR-006 |
 | **AP-5** | **Figma conflicts F-01–F-12** | Several Figma screens contradict confirmed scope (custom roles, maps, company approval gate, provider job posting, in-app helpdesk, stock in Stage 2) | Build follows the SoW; designs updated in Figma. F-04 and F-06 need an HVEMS decision |
-| **AP-6** | **Interpretations I-01–I-10** | The companion spec is missing; a few permission details are implicit in the SoW | Confirm or correct (see `interpretations.md`) |
+| **AP-6** | **Interpretations I-01–I-13** | The companion spec is missing; a few permission details are implicit in the SoW | Confirm or correct (see `interpretations.md`) |
 | **AP-7** | **Accounts in HVEMS's name (SoW §9.4, §12.8)** | Stripe, email sending domain, error monitoring, Vercel, GitHub org; production must be HVEMS-owned | Create before increment 2D (Stripe, email) and before staging |
 | **AP-8** | **Stage 1 acceptance** | SoW §9.1: Stage 2 starts after HVEMS accepts Stage 1. 2A work has started at Omnific's direction | Treat this review + Figma updates as the Stage 1 acceptance package |
 | **AP-9** | **Supabase plan** | Free projects pause when idle and have no backups | Upgrade to Pro before staging; add PITR before the pilot |
 
 ### Genuine technical blockers right now
 1. Supabase is unreachable from this development session's network (HTTP 403 from the egress proxy). Schema work goes through the Supabase connector; browser end-to-end tests need the project reachable (allow `*.supabase.co` in claude.ai capabilities, or run the Playwright suite in CI).
-2. The GitHub repository isn't accessible to this session yet; work is committed locally.
-3. Email delivery (invitations, alerts) needs HVEMS's sending domain and provider account. Until then, invitations show a one-time link to share.
+2. Email delivery (invitations, alerts) needs HVEMS's sending domain and provider account. Until then, invitations show a one-time link to share.
 
 ## 6. Risks
 

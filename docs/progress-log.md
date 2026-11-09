@@ -2,6 +2,7 @@
 
 ## 2026-11-09 — Session 1
 **Done**
+- Repository `ahmadkhattakOD/HVEMS-Web-App` created and pushed (5 commits).
 - Read the Client Scope of Work v2.2 in full; Figma analysed (117 frames); Supabase project inspected (Sydney, PG 17, empty, Free plan).
 - Monorepo scaffolded; shared packages (domain, permissions, validation, types, api-client, ui, config).
 - Migrations: foundation (settings, audit, security events), identity (orgs, memberships, roles/grants/capabilities, invitations, staff, support access, payment-method stub, MFA rule, RPCs), fleet (classes, clients, sites, assets, count history, consent, operator permissions, condition engine, meter readings, archive, import).
@@ -10,7 +11,6 @@
 
 **Blocked / waiting**
 - AP-1 approval to apply migrations to the hosted project.
-- GitHub repository access for this session.
 - Network access to `*.supabase.co` from the dev environment for browser E2E (or run E2E in CI).
 
 **Next**
