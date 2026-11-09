@@ -78,7 +78,7 @@ Later-increment modules appear in navigation as muted items with an honest "deli
 | Suite | Result |
 |---|---|
 | pgTAP database tests (local Postgres 16 with a Supabase-compatible auth shim) | **130 / 130 pass** — tenant isolation, spoofed org id, portal separation, anon denial, role/grant rules, MFA, invitations, member limit, support access, audit immutability, register rules, condition engine, meter rules, consent guard, archiving, import |
-| Vitest unit tests | **107 / 107 pass**: SoW pricing tables, §5.2 billing example, all four §5.6 worked examples, GST table, waivers, founding-provider waiver, condition and clearance rules, ABN, PIN, MFA, QLD calendar, CSV; plus drift tests proving TS mirrors equal the SQL seeds |
+| Vitest unit tests | **110 / 110 pass**: SoW pricing tables, §5.2 billing example, all four §5.6 worked examples, GST table, waivers, founding-provider waiver, condition and clearance rules, ABN, PIN, MFA, QLD calendar, CSV, environment validation; plus drift tests proving TS mirrors equal the SQL seeds |
 | TypeScript strict | Pass (8 workspaces) |
 | ESLint (Next 16 core-web-vitals + TS) | 0 errors; 1 known warning (TanStack Table vs React Compiler) |
 | `next build` | Pass (33 routes + proxy) |
