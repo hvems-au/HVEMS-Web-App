@@ -128,6 +128,7 @@ export function adminNav(): NavSection[] {
       items: [
         { label: "Dashboard", href: "/admin", icon: "dashboard" },
         { label: "Organisations", href: "/admin/organisations", icon: "organisations" },
+        { label: "Audit History", href: "/admin/audit", icon: "audit" },
         { label: "Settings", href: "/admin/settings", icon: "settings" },
       ],
     },

@@ -321,6 +321,24 @@ export async function listAuditEvents(
   return unwrap(await query.order("occurred_at", { ascending: false }).limit(Math.min(q.limit ?? 100, 500)));
 }
 
+/**
+ * Platform-wide audit history for the HVEMS console. RLS returns rows from every
+ * organisation (and platform-level rows, organisation_id null) only to active
+ * HVEMS staff with an MFA session; anyone else gets their own orgs' rows at most.
+ */
+export async function listPlatformAuditEvents(
+  db: HvemsClient,
+  q: { organisationId?: string | "platform"; entityType?: string; limit?: number } = {},
+): Promise<AuditEvent[]> {
+  let query = db
+    .from("audit_events")
+    .select("id, occurred_at, organisation_id, actor_user_id, actor_method, action, entity_type, entity_id, changes");
+  if (q.organisationId === "platform") query = query.is("organisation_id", null);
+  else if (q.organisationId) query = query.eq("organisation_id", q.organisationId);
+  if (q.entityType) query = query.eq("entity_type", q.entityType);
+  return unwrap(await query.order("occurred_at", { ascending: false }).limit(Math.min(q.limit ?? 200, 500)));
+}
+
 export async function listPlatformSettings(db: HvemsClient): Promise<PlatformSetting[]> {
   return unwrap(await db.from("platform_settings").select("key, value, description, status, sow_reference").order("key"));
 }
