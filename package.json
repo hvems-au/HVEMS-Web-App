@@ -1,0 +1,26 @@
+{
+  "name": "hvems",
+  "private": true,
+  "type": "module",
+  "description": "HVEMS — Heavy Vehicle & Equipment Management System (web platform, shared packages, Supabase backend)",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @hvems/web dev",
+    "build": "pnpm --filter @hvems/web build",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "pnpm --filter @hvems/web lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:test": "bash scripts/db-test.sh",
+    "db:types": "supabase gen types typescript --linked --schema public > packages/types/src/database.generated.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm db:test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "6.0.3",
+    "vitest": "^5.1.0"
+  }
+}
