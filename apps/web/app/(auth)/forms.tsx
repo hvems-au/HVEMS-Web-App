@@ -34,12 +34,16 @@ function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-function fe(state: ClientActionState, key: string) {
+function fe<T>(state: ClientActionState<T>, key: string) {
   return state.status === "error" ? state.fieldErrors?.[key] : undefined;
 }
 
 export function SignInForm({ next, allowSignUp = true }: { next?: string; allowSignUp?: boolean }) {
-  const [state, action, pending] = React.useActionState(signInAction, idleState);
+  const [state, action, pending] = React.useActionState(signInAction, idleState as ClientActionState<{ redirectTo: string }>);
+  const redirectTo = state.status === "success" ? state.data?.redirectTo : undefined;
+  React.useEffect(() => {
+    if (redirectTo) window.location.assign(redirectTo);
+  }, [redirectTo]);
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
       {next ? <input type="hidden" name="next" value={next} /> : null}
@@ -48,15 +52,15 @@ export function SignInForm({ next, allowSignUp = true }: { next?: string; allowS
         <IconInput icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@company.com.au" required />
       </Field>
       <Field label="Password" htmlFor="password" error={fe(state, "password")}>
-        <PasswordInput name="password" autoComplete="current-password" required />
+        <PasswordInput name="password" autoComplete="current-password" placeholder="Enter your password" required />
       </Field>
       <div className="-mt-1 flex justify-end">
         <Link href="/forgot-password" className="text-[14px] text-link hover:underline">
           Forgot password?
         </Link>
       </div>
-      <Button type="submit" size="lg" className="h-[49px] text-[18px]" disabled={pending}>
-        {pending ? "Signing in…" : "Login"} <ArrowRight className="!size-5" />
+      <Button type="submit" size="lg" className="h-[49px] text-[18px]" disabled={pending || !!redirectTo}>
+        {pending || redirectTo ? "Signing in…" : "Login"} <ArrowRight className="!size-5" />
       </Button>
       {allowSignUp ? (
         <>
@@ -85,16 +89,16 @@ export function SignUpForm({ next }: { next?: string }) {
       {next ? <input type="hidden" name="next" value={next} /> : null}
       {state.status === "error" ? <FormAlert>{state.message}</FormAlert> : null}
       <Field label="Full name" htmlFor="fullName" error={fe(state, "fullName")}>
-        <IconInput icon={User} name="fullName" autoComplete="name" required />
+        <IconInput icon={User} name="fullName" autoComplete="name" placeholder="e.g. Alex Smith" required />
       </Field>
       <Field label="Email Address" htmlFor="email" error={fe(state, "email")}>
-        <IconInput icon={Mail} name="email" type="email" autoComplete="email" required />
+        <IconInput icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@company.com.au" required />
       </Field>
       <Field label="Password" htmlFor="password" error={fe(state, "password")} hint="At least 10 characters, including a number or symbol.">
-        <PasswordInput name="password" autoComplete="new-password" required />
+        <PasswordInput name="password" autoComplete="new-password" placeholder="At least 10 characters" required />
       </Field>
       <Field label="Confirm password" htmlFor="confirmPassword" error={fe(state, "confirmPassword")}>
-        <PasswordInput name="confirmPassword" autoComplete="new-password" required />
+        <PasswordInput name="confirmPassword" autoComplete="new-password" placeholder="Re-enter your password" required />
       </Field>
       <div>
         <label className="flex items-start gap-2.5 text-[14px] text-ink">
@@ -126,7 +130,7 @@ export function ForgotPasswordForm() {
       {state.status === "error" ? <FormAlert>{state.message}</FormAlert> : null}
       {state.status === "success" ? <FormAlert tone="success">{state.message}</FormAlert> : null}
       <Field label="Email Address" htmlFor="email" error={fe(state, "email")}>
-        <IconInput icon={Mail} name="email" type="email" autoComplete="email" required />
+        <IconInput icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@company.com.au" required />
       </Field>
       <Button type="submit" size="lg" className="h-[49px]" disabled={pending}>
         {pending ? "Sending…" : "Send reset link"}
@@ -144,10 +148,10 @@ export function ResetPasswordForm() {
     <form action={action} className="flex flex-col gap-5" noValidate>
       {state.status === "error" ? <FormAlert>{state.message}</FormAlert> : null}
       <Field label="New password" htmlFor="password" error={fe(state, "password")} hint="At least 10 characters, including a number or symbol.">
-        <PasswordInput name="password" autoComplete="new-password" required />
+        <PasswordInput name="password" autoComplete="new-password" placeholder="At least 10 characters" required />
       </Field>
       <Field label="Confirm new password" htmlFor="confirmPassword" error={fe(state, "confirmPassword")}>
-        <PasswordInput name="confirmPassword" autoComplete="new-password" required />
+        <PasswordInput name="confirmPassword" autoComplete="new-password" placeholder="Re-enter your new password" required />
       </Field>
       <Button type="submit" size="lg" className="h-[49px]" disabled={pending}>
         {pending ? "Saving…" : "Set new password"}

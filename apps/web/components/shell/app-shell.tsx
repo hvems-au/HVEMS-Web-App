@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
-import { Bell, Check, ChevronsUpDown, LogOut, Menu, ShieldCheck, X } from "lucide-react";
+import { ArrowUpRight, Bell, Check, ChevronsUpDown, LogOut, Menu, ShieldCheck, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ICONS } from "@/components/shell/icons";
 import type { NavSection } from "@/lib/navigation";
@@ -98,8 +98,10 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
           </DropdownMenu.Label>
           {contexts.map((c) => (
             <DropdownMenu.Item key={c.portal + c.id} asChild>
+              {/* Handoff links issue a single-use sign-in token, so they must never be prefetched. */}
               <Link
                 href={c.href}
+                prefetch={c.href.startsWith("/auth/handoff") ? false : undefined}
                 className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-[13px] outline-none data-[highlighted]:bg-surface-muted"
               >
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-bold text-ink-muted">
@@ -111,14 +113,18 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
                     {c.kindLabel} · {c.roleLabel}
                   </span>
                 </span>
-                {c.id === current.id && c.portal === current.portal ? <Check className="size-4 text-brand" aria-label="Current" /> : null}
+                {c.id === current.id && c.portal === current.portal ? (
+                  <Check className="size-4 text-brand" aria-label="Current" />
+                ) : c.href.startsWith("/auth/handoff") ? (
+                  <ArrowUpRight className="size-4 text-ink-subtle" aria-label="Opens another portal" />
+                ) : null}
               </Link>
             </DropdownMenu.Item>
           ))}
           <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
           <DropdownMenu.Item asChild>
             <Link href="/onboarding" className="block rounded-md px-2 py-2 text-[13px] text-link outline-none data-[highlighted]:bg-surface-muted">
-              Create another organisation or provider account
+              Create another account in this portal
             </Link>
           </DropdownMenu.Item>
         </DropdownMenu.Content>

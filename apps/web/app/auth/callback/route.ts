@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getCurrentPortal } from "@/lib/current-portal";
+import { safeRelative } from "@/lib/handoff";
+import { PORTAL_INFO, portalOrigin } from "@/lib/portals";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-function safeNext(v: string | null): string {
-  return v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\") ? v : "/select-context";
-}
 
 /**
  * Completes email verification, invitations and password recovery.
@@ -11,7 +10,8 @@ function safeNext(v: string | null): string {
  */
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
-  const next = safeNext(url.searchParams.get("next"));
+  const portal = await getCurrentPortal();
+  const next = safeRelative(url.searchParams.get("next"), PORTAL_INFO[portal].home);
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as "signup" | "email" | "recovery" | "invite" | "email_change" | null;
@@ -24,6 +24,6 @@ export async function GET(request: NextRequest) {
     ok = !(await db.auth.verifyOtp({ token_hash: tokenHash, type })).error;
   }
 
-  const dest = new URL(ok ? (type === "recovery" ? "/reset-password" : next) : "/login?error=link", url.origin);
+  const dest = new URL(ok ? (type === "recovery" ? "/reset-password" : next) : "/login?error=link", portalOrigin(portal));
   return NextResponse.redirect(dest);
 }

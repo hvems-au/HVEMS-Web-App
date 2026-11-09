@@ -1,18 +1,19 @@
 import { AppShell } from "@/components/shell/app-shell";
 import { customerNav } from "@/lib/navigation";
+import { getCurrentPortal } from "@/lib/current-portal";
 import { loadOrgContext } from "@/lib/session";
 import { filterNav, toShellContext } from "@/lib/shell-data";
 
 export default async function CustomerLayout({ children, params }: { children: React.ReactNode; params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
-  const ctx = await loadOrgContext(orgId, ["company", "marketplace_customer"]);
+  const [ctx, portal] = await Promise.all([loadOrgContext(orgId), getCurrentPortal()]);
   const restricted = ctx.context.status === "restricted";
   return (
     <AppShell
       nav={filterNav(customerNav(orgId, ctx.context.kind), ctx)}
       user={{ fullName: ctx.user.fullName, email: ctx.user.email }}
-      current={toShellContext(ctx.context)}
-      contexts={ctx.contexts.map(toShellContext)}
+      current={toShellContext(ctx.context, portal)}
+      contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
       banner={
         restricted ? (
           <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-[#9b0b0c]">

@@ -50,7 +50,7 @@ Each item needs a new migration and, where permissions change, an update to `pac
 
 | # | Spec | Current build | Change |
 |---|---|---|---|
-| 1 | §2.3, §2.5, §2.7 (D-06 confirmed): sessions bound to one audience; cross-portal switch by a single-use 60-second handoff token; one active organisation per browser tab | One Supabase session covers customer and provider portals; the org comes from the URL | **Decision needed.** Option A: separate cookies per portal host plus a handoff RPC. Option B: record a deviation for HVEMS approval. Recommend A when production domains exist |
+| 1 | §2.3, §2.5, §2.7 (D-06 confirmed): sessions bound to one audience; cross-portal switch by a single-use 60-second handoff token | ✅ **Done 9 Nov 2026** (ADR-009): five portals by host, host-only session cookies, signed 60-second single-use handoff | Remaining: the one-active-organisation-per-tab rule is met by the org id in the URL; switches are logged in `security_events` |
 | 2 | B.1 | `assets.manage` and `clients.manage` are Owner/Administrator only | Split into `assets.edit` (Own/Adm/FM) and `assets.import_archive` (Own/Adm); give FM `clients.manage` |
 | 3 | EXP-03 | Viewer lacks `assets.costs.view` | Grant it (view only) |
 | 4 | AST-01 | Vehicles: make, model, rego, state, VIN; plant: make, model, serial | Vehicles: rego **or** VIN; equipment: serial **or** asset number (always present). Needs either-or rules, not a flat field list |
@@ -70,3 +70,10 @@ Each item needs a new migration and, where permissions change, an update to `pac
 - **2C:** malware scanning, 17.3 file limits, the 15 reports (RPT-02), compliance summary, PDFs.
 - **2D:** the full fee/waiver ledger (§11), the acceptance-attempt state machine (§7.5), Appendix F settings CFG-01–48 (check `platform_settings` against it), ADM-10 helpdesk ticket context.
 - **Acceptance:** Appendix E T-01–T-47 becomes the E2E test list. T-01 (isolation) and T-02/T-03 apply to 2A now.
+
+## 5. Omnific IT decisions (9 Nov 2026, Ahmad)
+
+| # | Decision | Spec items affected | Notes |
+|---|---|---|---|
+| O-01 | **No ABN Lookup integration.** Provider ABNs are checked with the checksum (DB + TS, already built). The Verification Officer confirms the ABN is active and matches the business name by hand, and records that in the verification decision | INT-04, MKT-02 ("automatic ABN Lookup"), ADM-03, T-24 | MKT-02 is a BR, so HVEMS must acknowledge it through change control. `ABR_GUID` removed from `.env.example` |
+| O-02 | **Naming.** The HVEMS platform owner's console role is the **Super Admin** (code: `platform_administrator`). Company-level managers are **Company Admins**. They are customers who manage only their own company | Glossary; UI labels | Display names only, no schema change. Company roles stay Owner and Administrator in the database, because the spec gives them different powers (billing, closure) |

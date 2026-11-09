@@ -2,8 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { getMyCapabilities, getMyContexts, getMyStaffContext } from "@hvems/api-client";
-import { PORTAL_FOR_KIND, type Capability, type OrganisationKind } from "@hvems/permissions";
+import type { Capability, OrganisationKind } from "@hvems/permissions";
 import type { MyContext } from "@hvems/types";
+import { getCurrentPortal, portalPathFor, portalServesContext } from "@/lib/current-portal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface SessionUser {
@@ -39,9 +40,7 @@ export const getContexts = cache(async (): Promise<MyContext[]> => {
   return getMyContexts(db);
 });
 
-export function portalPath(ctx: Pick<MyContext, "kind" | "organisation_id">): string {
-  return `/${PORTAL_FOR_KIND[ctx.kind]}/${ctx.organisation_id}/dashboard`;
-}
+export const portalPath = portalPathFor;
 
 export interface OrgContext {
   user: SessionUser;
@@ -55,11 +54,14 @@ export interface OrgContext {
  * only a selector: membership and capabilities come from the database, so
  * editing the organisation id in the URL grants nothing (critical test 3).
  */
-export const loadOrgContext = cache(async (organisationId: string, allowedKinds: readonly OrganisationKind[]): Promise<OrgContext> => {
+export const loadOrgContext = cache(async (organisationId: string, onlyKinds?: readonly OrganisationKind[]): Promise<OrgContext> => {
   const user = await requireUser();
-  const contexts = await getContexts();
+  const [contexts, portal] = await Promise.all([getContexts(), getCurrentPortal()]);
   const context = contexts.find((c) => c.organisation_id === organisationId);
-  if (!context || !allowedKinds.includes(context.kind)) notFound();
+  // An organisation opens only in the portal that serves its kind (ADR-009).
+  if (!context || !portalServesContext(portal, context)) notFound();
+  // Some pages exist for only one kind (for example the fleet register for companies).
+  if (onlyKinds && !onlyKinds.includes(context.kind)) notFound();
   if (context.mfa_required && user.aal !== "aal2") {
     redirect(`/account/security?required=1&next=${encodeURIComponent(portalPath(context))}`);
   }

@@ -31,19 +31,24 @@ const KINDS = [
   },
 ] as const;
 
-export function OnboardingForm({ defaultKind }: { defaultKind?: string }) {
+/** `kinds` are the account types this portal creates (ADR-009); one kind hides the chooser. */
+export function OnboardingForm({ kinds }: { kinds: readonly string[] }) {
   const [state, action, pending] = React.useActionState(createOrganisationAction, idleState);
-  const [kind, setKind] = React.useState<string>(defaultKind ?? "company");
-  const current = KINDS.find((k) => k.value === kind) ?? KINDS[0];
+  const offered = KINDS.filter((k) => kinds.includes(k.value));
+  const [kind, setKind] = React.useState<string>(offered[0]?.value ?? "company");
+  const current = offered.find((k) => k.value === kind) ?? offered[0] ?? KINDS[0];
   const fe = (k: string) => (state.status === "error" ? state.fieldErrors?.[k] : undefined);
 
   return (
     <form action={action} className="flex flex-col gap-6">
       {state.status === "error" ? <FormAlert>{state.message}</FormAlert> : null}
+      {offered.length === 1 ? (
+        <input type="hidden" name="kind" value={current.value} />
+      ) : (
       <fieldset>
         <legend className="mb-3 text-[14px] font-medium text-ink-muted">What would you like to set up?</legend>
         <div className="grid gap-3 md:grid-cols-3">
-          {KINDS.map((k) => (
+          {offered.map((k) => (
             <label
               key={k.value}
               className={cn(
@@ -61,6 +66,7 @@ export function OnboardingForm({ defaultKind }: { defaultKind?: string }) {
           ))}
         </div>
       </fieldset>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <Field label={current.nameLabel} htmlFor="name" error={fe("name")} required>
           <Input name="name" autoComplete="organization" />
@@ -70,7 +76,7 @@ export function OnboardingForm({ defaultKind }: { defaultKind?: string }) {
           htmlFor="abn"
           error={fe("abn")}
           required={kind === "provider"}
-          hint={kind === "provider" ? "Checked against the Australian Business Register during verification." : "Optional."}
+          hint={kind === "provider" ? "Checked by HVEMS during verification." : "Optional."}
         >
           <Input name="abn" inputMode="numeric" placeholder="11 digits" />
         </Field>

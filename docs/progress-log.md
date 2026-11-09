@@ -1,5 +1,17 @@
 # Development progress log
 
+## 2026-11-09 — Session 2 (continued): five portals
+**Done**
+- ADR-009: Super Admin console, company portal (with marketplace inside), marketplace (marketplace-only customers), provider portal and driver sign-in, each on its own host with its own session.
+- Signed, single-use 60-second portal handoff (`/auth/handoff`), logged in `security_events`; per-portal login, sign-up, onboarding and email links.
+- Sign-in now does a full-page navigation after success: the in-action redirect rendered the target before the new session cookie was visible, which showed the login page again.
+- Placeholders on the login, sign-up, forgot-password and reset-password fields. Super Admin naming; ABN Lookup dropped (O-01).
+- Checked in the browser (Edge): separate sessions per host; handoff works once, and a reused or tampered token is refused; a company org gives 404 on the marketplace host; signing out of one portal keeps the others signed in. Vitest 121/121.
+
+**Waiting on**
+- Supabase Auth redirect allow-list entries need a trailing `**` (`http://company.localhost:3000/auth/callback**` etc.); production hosts once the domain is live.
+- Production domain names for the five hosts.
+
 ## 2026-11-09 — Session 2: console, brand, development specification
 **Done**
 - Local run documented: `corepack pnpm install`; start with `corepack pnpm --filter @hvems/web dev` (the root scripts call `pnpm` recursively, which fails when pnpm is only available through corepack).

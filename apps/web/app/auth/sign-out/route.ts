@@ -1,8 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { getCurrentPortal } from "@/lib/current-portal";
+import { portalOrigin } from "@/lib/portals";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function POST(request: NextRequest) {
-  const db = await createSupabaseServerClient();
+/** Signs out of this portal only; sessions in other portals are separate (ADR-009). */
+export async function POST() {
+  const [db, portal] = await Promise.all([createSupabaseServerClient(), getCurrentPortal()]);
   await db.auth.signOut({ scope: "local" });
-  return NextResponse.redirect(new URL("/login", request.nextUrl.origin), { status: 303 });
+  return NextResponse.redirect(new URL("/login", portalOrigin(portal)), { status: 303 });
 }

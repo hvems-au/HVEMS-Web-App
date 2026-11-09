@@ -4,7 +4,7 @@ import { createInvitation, revokeInvitation } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
 import { createOrganisationSchema, inviteMemberSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
-import { publicEnv } from "@/lib/env";
+import { currentOrigin } from "@/lib/current-portal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function teamPath(portal: string, orgId: string) {
@@ -21,7 +21,8 @@ export async function inviteMemberAction(portal: string, orgId: string, _prev: A
     return {
       status: "success",
       message: `Invitation created for ${parsed.data.email}.`,
-      data: { link: `${publicEnv.NEXT_PUBLIC_APP_URL}/invite/${inv.token}` },
+      // Invitations are accepted in the portal that serves this organisation.
+      data: { link: `${await currentOrigin()}/invite/${inv.token}` },
     };
   } catch (e) {
     return errorState(e);

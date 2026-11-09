@@ -2,7 +2,8 @@
 import { redirect } from "next/navigation";
 import { forgotPasswordSchema, resetPasswordSchema, signInSchema, signUpSchema } from "@hvems/validation";
 import { fieldErrorsFrom, type ActionState } from "@/lib/actions";
-import { publicEnv } from "@/lib/env";
+import { currentOrigin, getCurrentPortal } from "@/lib/current-portal";
+import { PORTAL_INFO } from "@/lib/portals";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Only allow same-site relative redirects after sign-in (prevents open redirects). */
@@ -11,7 +12,7 @@ function safeNext(next: FormDataEntryValue | null, fallback: string): string {
   return v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\") ? v : fallback;
 }
 
-export async function signInAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+export async function signInAction(_prev: ActionState<{ redirectTo: string }>, form: FormData): Promise<ActionState<{ redirectTo: string }>> {
   const parsed = signInSchema.safeParse({ email: form.get("email"), password: form.get("password") });
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };
 
@@ -27,7 +28,9 @@ export async function signInAction(_prev: ActionState, form: FormData): Promise<
           : "Email or password is incorrect.";
     return { status: "error", code: error.code ?? "sign_in_failed", message };
   }
-  redirect(safeNext(form.get("next"), "/select-context"));
+  // The client does a full navigation: an in-action redirect renders the target
+  // before the new session cookie is visible to it, which shows the login page again.
+  return { status: "success", data: { redirectTo: safeNext(form.get("next"), PORTAL_INFO[await getCurrentPortal()].home) } };
 }
 
 export async function signUpAction(_prev: ActionState, form: FormData): Promise<ActionState> {
@@ -47,7 +50,7 @@ export async function signUpAction(_prev: ActionState, form: FormData): Promise<
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/callback?next=${encodeURIComponent(next)}`,
+      emailRedirectTo: `${await currentOrigin()}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
   if (error) {
@@ -67,7 +70,7 @@ export async function forgotPasswordAction(_prev: ActionState, form: FormData): 
   if (!parsed.success) return { status: "error", code: "invalid", message: "Enter a valid email address.", fieldErrors: fieldErrorsFrom(parsed.error) };
   const db = await createSupabaseServerClient();
   await db.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
+    redirectTo: `${await currentOrigin()}/auth/callback?next=/reset-password`,
   });
   // Always the same response, whether or not the address has an account.
   return { status: "success", message: "If an account exists for that email, we've sent a link to reset the password." };
@@ -85,5 +88,6 @@ export async function resetPasswordAction(_prev: ActionState, form: FormData): P
       message: error.code === "same_password" ? "Choose a password you haven't used here before." : "Your reset link has expired. Request a new one.",
     };
   }
-  redirect("/select-context?reset=1");
+  const home = PORTAL_INFO[await getCurrentPortal()].home;
+  redirect(home === "/select-context" ? "/select-context?reset=1" : home);
 }

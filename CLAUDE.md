@@ -38,7 +38,8 @@ docs/               architecture, ADRs, requirements, design, mobile readiness, 
 ```
 
 ## Commands
-- `pnpm install` · `pnpm dev` (web on :3000; admin console on `admin.localhost:3000`)
+- `pnpm install` · `pnpm dev`. Without a global pnpm, use `corepack pnpm install` and `corepack pnpm --filter @hvems/web dev`.
+- Portals (ADR-009), one per host: `company.localhost:3000`, `market.localhost:3000`, `provider.localhost:3000`, `driver.localhost:3000`, `admin.localhost:3000` (Super Admin). Plain `localhost:3000` redirects to the company portal.
 - `pnpm test` (Vitest) · `pnpm db:test` (fresh local PG16 + all migrations + pgTAP) · `pnpm typecheck` · `pnpm lint` · `pnpm build`
 - `pnpm check` runs everything.
 
