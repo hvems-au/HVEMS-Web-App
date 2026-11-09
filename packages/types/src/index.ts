@@ -109,6 +109,8 @@ export interface AssetClass {
   default_meter_type: MeterType;
   required_fields: string[];
   sort_order: number;
+  /** null = HVEMS standard class; otherwise the company that owns it (O-03). */
+  organisation_id: UUID | null;
 }
 
 export interface Client {

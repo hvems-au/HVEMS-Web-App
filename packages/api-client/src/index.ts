@@ -24,7 +24,7 @@ import type {
   StaffContext,
 } from "@hvems/types";
 import type { AssetFormValues, ClientFormValues, SiteFormValues } from "@hvems/validation";
-import type { AssetCondition } from "@hvems/domain";
+import type { AssetCondition, MeterType } from "@hvems/domain";
 import type { MemberRole, OrganisationKind } from "@hvems/permissions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,8 +137,30 @@ export async function revokeInvitation(db: HvemsClient, invitationId: string): P
 }
 
 // ------------------------------------------------------------- fleet
-export async function listAssetClasses(db: HvemsClient): Promise<AssetClass[]> {
-  return unwrap(await db.from("asset_classes").select("*").eq("active", true).order("sort_order"));
+/**
+ * Active asset classes: the HVEMS standard classes, plus the company's own
+ * when `organisationId` is given (O-03). Without it, standard classes only.
+ */
+export async function listAssetClasses(db: HvemsClient, organisationId?: string): Promise<AssetClass[]> {
+  let q = db.from("asset_classes").select("*").eq("active", true);
+  q = organisationId ? q.or(`organisation_id.is.null,organisation_id.eq.${organisationId}`) : q.is("organisation_id", null);
+  return unwrap(await q.order("sort_order").order("name"));
+}
+
+/** Create a company class, or a standard class when organisationId is null (Super Admin). */
+export async function createAssetClass(
+  db: HvemsClient,
+  organisationId: string | null,
+  v: { name: string; category: "vehicle" | "equipment"; default_meter_type: MeterType },
+): Promise<AssetClass> {
+  return unwrap(
+    await db.rpc("create_asset_class", {
+      p_organisation_id: organisationId,
+      p_name: v.name,
+      p_category: v.category,
+      p_default_meter_type: v.default_meter_type,
+    }),
+  ) as AssetClass;
 }
 
 export interface AssetListQuery {
@@ -268,6 +290,8 @@ export async function recordMeterReading(
     clientRequestId?: string;
     lowerReason?: string;
     confirmJump?: boolean;
+    /** Start tracking this unit as well when the asset doesn't yet. */
+    addMeter?: boolean;
   },
 ): Promise<MeterReading> {
   return unwrap(
@@ -280,6 +304,7 @@ export async function recordMeterReading(
       p_client_request_id: input.clientRequestId ?? null,
       p_lower_reason: input.lowerReason ?? null,
       p_confirm_jump: input.confirmJump ?? false,
+      p_add_meter: input.addMeter ?? false,
     }),
   );
 }

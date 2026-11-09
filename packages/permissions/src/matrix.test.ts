@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -13,27 +13,44 @@ import {
   type MemberRole,
 } from "./matrix";
 
-const MIGRATION = join(__dirname, "../../../supabase/migrations/20261109072440_identity.sql");
+const MIGRATIONS_DIR = join(__dirname, "../../../supabase/migrations");
+const MIGRATION = join(MIGRATIONS_DIR, "20261109072440_identity.sql");
+
+/** Every migration's seed blocks, in order: capabilities can be added by later migrations. */
+function allMigrationsSql(): string {
+  return readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .map((f) => readFileSync(join(MIGRATIONS_DIR, f), "utf8"))
+    .join("\n");
+}
 
 function seedPairs(sql: string, table: "role_capabilities" | "grant_capabilities"): Set<string> {
-  const block = sql.split("-- BEGIN CAPABILITY SEED")[1]?.split("-- END CAPABILITY SEED")[0] ?? "";
-  const section = block.split(`insert into app.${table}`)[1]?.split(";")[0] ?? "";
-  return new Set([...section.matchAll(/\('([a-z_]+)', '([a-z_.]+)'\)/g)].map((m) => `${m[1]}:${m[2]}`));
+  const pairs = new Set<string>();
+  for (const block of sql.split("-- BEGIN CAPABILITY SEED").slice(1)) {
+    const body = block.split("-- END CAPABILITY SEED")[0] ?? "";
+    for (const section of body.split(`insert into app.${table}`).slice(1)) {
+      const values = section.split(";")[0] ?? "";
+      for (const m of values.matchAll(/\('([a-z_]+)', '([a-z_.]+)'\)/g)) pairs.add(`${m[1]}:${m[2]}`);
+    }
+  }
+  return pairs;
 }
 
 describe("capability matrix mirrors the database seed", () => {
   const sql = readFileSync(MIGRATION, "utf8");
+  const seeds = allMigrationsSql();
 
   it("role capabilities match exactly", () => {
     const ts = new Set(
       Object.entries(ROLE_CAPABILITIES).flatMap(([role, caps]) => [...new Set(caps)].map((c) => `${role}:${c}`)),
     );
-    expect(seedPairs(sql, "role_capabilities")).toEqual(ts);
+    expect(seedPairs(seeds, "role_capabilities")).toEqual(ts);
   });
 
   it("grant capabilities match exactly", () => {
     const ts = new Set(Object.entries(GRANT_CAPABILITIES).flatMap(([g, caps]) => caps.map((c) => `${g}:${c}`)));
-    expect(seedPairs(sql, "grant_capabilities")).toEqual(ts);
+    expect(seedPairs(seeds, "grant_capabilities")).toEqual(ts);
   });
 
   it("grant eligibility matches app.grant_valid_for_role", () => {

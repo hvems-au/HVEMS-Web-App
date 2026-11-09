@@ -4,19 +4,21 @@ import { randomUUID } from "node:crypto";
 import {
   archiveAsset,
   createAsset,
+  createAssetClass,
   importAssets,
   listAssetClasses,
   recordMeterReading,
   updateAsset,
 } from "@hvems/api-client";
-import type { ImportResult } from "@hvems/types";
-import { archiveAssetSchema, assetFormSchema, meterReadingSchema, type AssetFormInput } from "@hvems/validation";
+import type { AssetClass, ImportResult } from "@hvems/types";
+import { archiveAssetSchema, assetClassSchema, assetFormSchema, meterReadingSchema, type AssetFormInput } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-async function classIdFor(code: string) {
+async function classIdFor(orgId: string, code: string) {
   const db = await createSupabaseServerClient();
-  const classes = await listAssetClasses(db);
+  // Standard classes plus this company's own (O-03); the database re-checks the scope.
+  const classes = await listAssetClasses(db, orgId);
   const cls = classes.find((c) => c.code === code);
   if (!cls) throw new Error("Unknown asset class");
   return { db, classId: cls.id };
@@ -30,11 +32,25 @@ export async function saveAssetAction(
   const parsed = assetFormSchema.safeParse(input);
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };
   try {
-    const { db, classId } = await classIdFor(parsed.data.asset_class);
+    const { db, classId } = await classIdFor(orgId, parsed.data.asset_class);
     const asset = assetId ? await updateAsset(db, assetId, classId, parsed.data) : await createAsset(db, orgId, classId, parsed.data, randomUUID());
     revalidatePath(`/customer/${orgId}/equipment`);
     revalidatePath(`/customer/${orgId}/dashboard`);
     return { status: "success", message: assetId ? "Equipment updated" : "Equipment added", data: { id: asset.id } };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** Create a company asset class from the equipment form; it's saved for the company's future equipment. */
+export async function createAssetClassAction(orgId: string, input: unknown): Promise<ActionState<AssetClass>> {
+  const parsed = assetClassSchema.safeParse(input);
+  if (!parsed.success) return { status: "error", code: "invalid", message: "Check the class details.", fieldErrors: fieldErrorsFrom(parsed.error) };
+  try {
+    const db = await createSupabaseServerClient();
+    const cls = await createAssetClass(db, orgId, parsed.data);
+    revalidatePath(`/customer/${orgId}/equipment/new`);
+    return { status: "success", message: `Class “${cls.name}” added and saved for your company`, data: cls };
   } catch (e) {
     return errorState(e);
   }
@@ -66,6 +82,7 @@ export async function recordMeterReadingAction(orgId: string, assetId: string, _
     lower_reason: form.get("lower_reason") ?? undefined,
     confirm_jump: form.get("confirm_jump") === "on",
     client_request_id: form.get("client_request_id") || undefined,
+    add_meter: form.get("add_meter") === "on",
   });
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the reading.", fieldErrors: fieldErrorsFrom(parsed.error) };
   try {
@@ -77,6 +94,7 @@ export async function recordMeterReadingAction(orgId: string, assetId: string, _
       clientRequestId: parsed.data.client_request_id,
       lowerReason: parsed.data.lower_reason,
       confirmJump: parsed.data.confirm_jump,
+      addMeter: parsed.data.add_meter,
     });
     revalidatePath(`/customer/${orgId}/equipment/${assetId}`);
     return {

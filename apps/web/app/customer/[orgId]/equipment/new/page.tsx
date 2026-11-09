@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getAssetConditionCounts, listClients, listSites } from "@hvems/api-client";
+import { getAssetConditionCounts, listAssetClasses, listClients, listSites } from "@hvems/api-client";
+import { can } from "@hvems/permissions";
 import { DEFAULT_PRICING, formatAud } from "@hvems/domain";
 import { PageHeader } from "@/components/shell/page";
 import { FormAlert } from "@/components/ui/form";
@@ -14,7 +15,12 @@ export default async function NewEquipmentPage({ params }: { params: Promise<{ o
   const ctx = await loadOrgContext(orgId, ["company"]);
   await requireCapability(ctx, "assets.manage");
   const db = await createSupabaseServerClient();
-  const [clients, sites, counts] = await Promise.all([listClients(db, orgId), listSites(db, orgId), getAssetConditionCounts(db, orgId)]);
+  const [clients, sites, counts, classes] = await Promise.all([
+    listClients(db, orgId),
+    listSites(db, orgId),
+    getAssetConditionCounts(db, orgId),
+    listAssetClasses(db, orgId),
+  ]);
   return (
     <>
       <PageHeader title="New equipment" description="Register a vehicle, trailer, mobile plant or other equipment" breadcrumb={{ label: "Equipment", href: `/customer/${orgId}/equipment` }} />
@@ -27,7 +33,7 @@ export default async function NewEquipmentPage({ params }: { params: Promise<{ o
           </FormAlert>
         </div>
       ) : null}
-      <AssetForm orgId={orgId} clients={clients} sites={sites} />
+      <AssetForm orgId={orgId} clients={clients} sites={sites} classes={classes} canManageClasses={can(ctx.capabilities, "asset_classes.manage")} />
     </>
   );
 }

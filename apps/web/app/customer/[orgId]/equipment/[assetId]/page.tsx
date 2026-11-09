@@ -33,7 +33,9 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
     can(ctx.capabilities, "audit.view") ? listAuditEvents(db, { organisationId: orgId, entityType: "assets", entityId: assetId, limit: 20 }) : Promise.resolve([]),
   ]);
   const manage = can(ctx.capabilities, "assets.manage") && !asset.archived_at;
-  const canRecord = can(ctx.capabilities, "meter_readings.record") && !asset.archived_at && asset.meter_type !== "none";
+  // Assets without a meter show the form only to managers, who can start tracking one.
+  const canRecord =
+    can(ctx.capabilities, "meter_readings.record") && !asset.archived_at && (asset.meter_type !== "none" || can(ctx.capabilities, "meter_readings.accept"));
   const base = `/customer/${orgId}/equipment`;
 
   return (
@@ -111,7 +113,9 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 <p className="text-[11.5px] text-ink-subtle">{asset.engine_hours_read_at ? formatDateTimeAU(new Date(asset.engine_hours_read_at)) : "No reading"}</p>
               </div>
             </div>
-            {canRecord ? <MeterForm orgId={orgId} assetId={assetId} meterType={asset.meter_type} /> : null}
+            {canRecord ? (
+              <MeterForm orgId={orgId} assetId={assetId} meterType={asset.meter_type} canAddMeter={can(ctx.capabilities, "meter_readings.accept")} />
+            ) : null}
           </CardBody>
         </Card>
       </div>

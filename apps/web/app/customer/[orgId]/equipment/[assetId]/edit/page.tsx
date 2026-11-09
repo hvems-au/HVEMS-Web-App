@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getAsset, listClients, listSites } from "@hvems/api-client";
+import { getAsset, listAssetClasses, listClients, listSites } from "@hvems/api-client";
+import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { loadOrgContext, requireCapability } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -13,7 +14,12 @@ export default async function EditEquipmentPage({ params }: { params: Promise<{ 
   const ctx = await loadOrgContext(orgId, ["company"]);
   await requireCapability(ctx, "assets.manage");
   const db = await createSupabaseServerClient();
-  const [asset, clients, sites] = await Promise.all([getAsset(db, assetId).catch(() => null), listClients(db, orgId), listSites(db, orgId)]);
+  const [asset, clients, sites, classes] = await Promise.all([
+    getAsset(db, assetId).catch(() => null),
+    listClients(db, orgId),
+    listSites(db, orgId),
+    listAssetClasses(db, orgId),
+  ]);
   if (!asset || asset.organisation_id !== orgId || asset.archived_at) notFound();
   return (
     <>
@@ -23,6 +29,8 @@ export default async function EditEquipmentPage({ params }: { params: Promise<{ 
         assetId={assetId}
         clients={clients}
         sites={sites}
+        classes={classes}
+        canManageClasses={can(ctx.capabilities, "asset_classes.manage")}
         defaults={{
           asset_number: asset.asset_number,
           asset_class: asset.asset_class?.code ?? "",

@@ -7,7 +7,11 @@ import { idleState, type ClientActionState } from "@/lib/client-state";
 import { recordMeterReadingAction } from "../actions";
 
 /** Records a reading. A fresh client_request_id per attempt makes retries idempotent. */
-export function MeterForm({ orgId, assetId, meterType }: { orgId: string; assetId: string; meterType: MeterType }) {
+/**
+ * Both units are always offered. Recording the unit the asset doesn't track yet
+ * needs an explicit tick by a manager role (canAddMeter); the asset then tracks both.
+ */
+export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { orgId: string; assetId: string; meterType: MeterType; canAddMeter?: boolean }) {
   const [requestId, setRequestId] = React.useState(() => crypto.randomUUID());
   const formRef = React.useRef<HTMLFormElement>(null);
   const [state, action, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
@@ -21,7 +25,10 @@ export function MeterForm({ orgId, assetId, meterType }: { orgId: string; assetI
   const needsReason = state.status === "error" && state.code === "lower_reading_reason_required";
   const needsConfirm = state.status === "error" && state.code === "implausible_jump_confirmation_required";
 
-  const units = meterType === "both" ? (["km", "hours"] as const) : meterType === "hours" ? (["hours"] as const) : (["km"] as const);
+  const tracked = (u: "km" | "hours") => meterType === "both" || (u === "km" ? meterType === "kilometres" : meterType === "hours");
+  const units = (["km", "hours"] as const).slice().sort((a, b) => Number(tracked(b)) - Number(tracked(a)));
+  const [unit, setUnit] = React.useState<"km" | "hours">(units[0] ?? "km");
+  const untracked = !tracked(unit);
 
   return (
     <form ref={formRef} action={action} className="flex flex-col gap-3 border-t border-stroke pt-4">
@@ -30,10 +37,11 @@ export function MeterForm({ orgId, assetId, meterType }: { orgId: string; assetI
       {state.status === "success" ? <FormAlert tone="success">{state.message}</FormAlert> : null}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Meter" htmlFor="unit">
-          <Select name="unit" defaultValue={units[0]}>
+          <Select name="unit" value={unit} onChange={(e) => setUnit(e.target.value as "km" | "hours")}>
             {units.map((u) => (
               <option key={u} value={u}>
                 {u === "km" ? "Odometer (km)" : "Engine hours"}
+                {tracked(u) ? "" : " (not tracked yet)"}
               </option>
             ))}
           </Select>
@@ -42,6 +50,19 @@ export function MeterForm({ orgId, assetId, meterType }: { orgId: string; assetI
           <Input name="value" inputMode="decimal" required />
         </Field>
       </div>
+      {untracked ? (
+        canAddMeter ? (
+          <label className="flex items-start gap-2 rounded-[6px] border border-stroke bg-surface-muted p-3 text-[13.5px] text-ink">
+            <input type="checkbox" name="add_meter" required className="mt-0.5 size-4 accent-[var(--brand)]" />
+            <span>
+              Also track {unit === "km" ? "kilometres" : "engine hours"} for this asset.
+              <span className="block text-[12.5px] text-ink-subtle">Its meter setting changes to {meterType === "none" ? (unit === "km" ? "kilometres" : "hours") : "both"}. The change is recorded in the audit history.</span>
+            </span>
+          </label>
+        ) : (
+          <FormAlert tone="info">This asset doesn&apos;t track {unit === "km" ? "kilometres" : "engine hours"} yet. Ask a Fleet Manager or Company Admin to start tracking it.</FormAlert>
+        )
+      ) : null}
       {needsReason ? (
         <Field label="Reason for a lower reading" htmlFor="lower_reason" error={state.message}>
           <Input name="lower_reason" placeholder="e.g. Odometer replaced" required />
@@ -55,7 +76,7 @@ export function MeterForm({ orgId, assetId, meterType }: { orgId: string; assetI
           </label>
         </div>
       ) : null}
-      <Button type="submit" variant="outline" disabled={pending}>
+      <Button type="submit" variant="outline" disabled={pending || (untracked && !canAddMeter)}>
         {pending ? "Saving…" : "Record reading"}
       </Button>
     </form>

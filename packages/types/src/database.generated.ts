@@ -23,9 +23,12 @@ export type Database = {
           active: boolean
           category: Database["public"]["Enums"]["asset_category"]
           code: string
+          created_at: string
+          created_by: string | null
           default_meter_type: Database["public"]["Enums"]["meter_type"]
           id: string
           name: string
+          organisation_id: string | null
           required_fields: string[]
           sort_order: number
         }
@@ -33,9 +36,12 @@ export type Database = {
           active?: boolean
           category: Database["public"]["Enums"]["asset_category"]
           code: string
+          created_at?: string
+          created_by?: string | null
           default_meter_type: Database["public"]["Enums"]["meter_type"]
           id?: string
           name: string
+          organisation_id?: string | null
           required_fields?: string[]
           sort_order?: number
         }
@@ -43,13 +49,24 @@ export type Database = {
           active?: boolean
           category?: Database["public"]["Enums"]["asset_category"]
           code?: string
+          created_at?: string
+          created_by?: string | null
           default_meter_type?: Database["public"]["Enums"]["meter_type"]
           id?: string
           name?: string
+          organisation_id?: string | null
           required_fields?: string[]
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "asset_classes_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       asset_condition_causes: {
         Row: {
@@ -1173,6 +1190,33 @@ export type Database = {
         }
         Returns: string
       }
+      create_asset_class: {
+        Args: {
+          p_category: Database["public"]["Enums"]["asset_category"]
+          p_default_meter_type: Database["public"]["Enums"]["meter_type"]
+          p_name: string
+          p_organisation_id: string
+        }
+        Returns: {
+          active: boolean
+          category: Database["public"]["Enums"]["asset_category"]
+          code: string
+          created_at: string
+          created_by: string | null
+          default_meter_type: Database["public"]["Enums"]["meter_type"]
+          id: string
+          name: string
+          organisation_id: string | null
+          required_fields: string[]
+          sort_order: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "asset_classes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_invitation: {
         Args: {
           p_email: string
@@ -1235,6 +1279,7 @@ export type Database = {
       }
       record_meter_reading: {
         Args: {
+          p_add_meter?: boolean
           p_asset_id: string
           p_client_request_id?: string
           p_confirm_jump?: boolean

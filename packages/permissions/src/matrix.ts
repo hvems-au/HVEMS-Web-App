@@ -58,6 +58,7 @@ export const CAPABILITIES = [
   "assets.view_permitted",
   "assets.manage",
   "assets.costs.view",
+  "asset_classes.manage",
   "clients.view",
   "clients.manage",
   "sites.view",
@@ -110,6 +111,8 @@ const OPERATIONS_MANAGER: Capability[] = [
   "org.view",
   "assets.view",
   "assets.costs.view",
+  // Company asset classes (decision O-03); Owner and Administrator inherit it.
+  "asset_classes.manage",
   "clients.view",
   "sites.view",
   "meter_readings.record",

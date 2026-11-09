@@ -1,5 +1,11 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): custom asset classes; either meter unit
+**Done**
+- Company asset classes (O-03): "+ Add a new class…" in the equipment form for Owner, Company Admin and Fleet Manager; the class is saved for the company and offered again. Super Admin → Asset Classes lists the standard classes and adds new ones for everyone. The database keeps each company's classes private and stops an asset using another company's class.
+- Either meter unit (O-04): the meter form offers odometer and hours; a manager can tick "also track…" and the asset switches to both (audited).
+- Migration `20261110090000_asset_classes_and_meters`, applied by Ahmad through the SQL editor and verified; types regenerated; the capability drift test now reads every migration. Browser-tested: class created and reused, equipment saved, odometer recorded on an hours machine.
+
 ## 2026-11-09 — Session 2 (continued): edit clients/sites; Super Admin organisation management
 **Done**
 - Edit clients and sites (company portal, `clients.manage` / `sites.manage`); cleared fields are stored as empty; client notes not on the form are left alone. Browser-tested.

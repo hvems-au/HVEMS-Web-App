@@ -4,13 +4,15 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ASSET_CLASSES, AU_STATES, METER_TYPE_LABELS, OWNER_TYPE_LABELS, type MeterType } from "@hvems/domain";
-import type { Client, Site } from "@hvems/types";
-import { assetFormSchema, type AssetFormInput, type AssetFormValues } from "@hvems/validation";
+import { AU_STATES, METER_TYPE_LABELS, OWNER_TYPE_LABELS, type MeterType } from "@hvems/domain";
+import type { AssetClass, Client, Site } from "@hvems/types";
+import { assetFormSchemaFor, type AssetFormInput, type AssetFormValues } from "@hvems/validation";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
 import { Card, CardBody, CardHeader } from "@/components/ui/primitives";
-import { saveAssetAction } from "./actions";
+import { createAssetClassAction, saveAssetAction } from "./actions";
+
+const NEW_CLASS = "__new__";
 
 export function AssetForm({
   orgId,
@@ -18,29 +20,41 @@ export function AssetForm({
   defaults,
   clients,
   sites,
+  classes: initialClasses,
+  canManageClasses = false,
 }: {
   orgId: string;
   assetId?: string;
   defaults?: Partial<AssetFormInput>;
   clients: Client[];
   sites: Site[];
+  /** Standard classes plus the company's own (O-03). */
+  classes: AssetClass[];
+  /** May create company classes inline (asset_classes.manage). */
+  canManageClasses?: boolean;
 }) {
   const router = useRouter();
   const [serverError, setServerError] = React.useState<{ code: string; message: string } | null>(null);
+  const [classes, setClasses] = React.useState(initialClasses);
+  const classesRef = React.useRef(classes);
+  React.useEffect(() => {
+    classesRef.current = classes;
+  }, [classes]);
   const form = useForm<AssetFormInput, unknown, AssetFormValues>({
-    resolver: zodResolver(assetFormSchema),
+    // Validates against the current class list, including classes added in this form.
+    resolver: (values, context, options) => zodResolver(assetFormSchemaFor(classesRef.current))(values, context, options),
     defaultValues: { owner_type: "own", meter_type: "kilometres", asset_class: "", ...defaults },
     mode: "onTouched",
   });
   const { register, handleSubmit, control, setValue, setError, formState } = form;
   const classCode = useWatch({ control, name: "asset_class" });
   const ownerType = useWatch({ control, name: "owner_type" });
-  const cls = ASSET_CLASSES.find((c) => c.code === classCode);
-  const required = new Set<string>(cls?.requiredFields ?? []);
+  const cls = classes.find((c) => c.code === classCode);
+  const required = new Set<string>(cls?.required_fields ?? []);
   const err = (k: keyof AssetFormInput) => formState.errors[k]?.message as string | undefined;
 
   React.useEffect(() => {
-    if (cls && !assetId) setValue("meter_type", cls.defaultMeterType as MeterType);
+    if (cls && !assetId) setValue("meter_type", cls.default_meter_type as MeterType);
   }, [cls, assetId, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -77,20 +91,25 @@ export function AssetForm({
           <Field label="Asset class" htmlFor="asset_class" error={err("asset_class")} required>
             <Select {...register("asset_class")}>
               <option value="">Choose a class</option>
-              <optgroup label="Vehicles">
-                {ASSET_CLASSES.filter((c) => c.category === "vehicle").map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Equipment">
-                {ASSET_CLASSES.filter((c) => c.category === "equipment").map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))}
-              </optgroup>
+              {(
+                [
+                  ["Vehicles", classes.filter((c) => !c.organisation_id && c.category === "vehicle")],
+                  ["Equipment", classes.filter((c) => !c.organisation_id && c.category === "equipment")],
+                  ["Your company's classes", classes.filter((c) => c.organisation_id)],
+                ] as const
+              ).map(([label, list]) =>
+                list.length ? (
+                  <optgroup key={label} label={label}>
+                    {list.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name}
+                        {c.organisation_id ? ` (${c.category})` : ""}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null,
+              )}
+              {canManageClasses ? <option value={NEW_CLASS}>+ Add a new class…</option> : null}
             </Select>
           </Field>
           <Field label="Year" htmlFor="year" error={err("year")}>
@@ -121,6 +140,18 @@ export function AssetForm({
           <Field label="VIN" htmlFor="vin" error={err("vin")} required={required.has("vin")}>
             <Input className="uppercase" {...register("vin")} />
           </Field>
+          {classCode === NEW_CLASS ? (
+            <NewClassPanel
+              orgId={orgId}
+              onCancel={() => setValue("asset_class", "")}
+              onCreated={(c) => {
+                setClasses((prev) => [...prev, c]);
+                classesRef.current = [...classesRef.current, c];
+                // Select it once the new option has rendered.
+                setTimeout(() => setValue("asset_class", c.code, { shouldValidate: true }), 0);
+              }}
+            />
+          ) : null}
         </CardBody>
       </Card>
 
@@ -183,5 +214,64 @@ export function AssetForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Inline form to create a company class; saved for the company's future equipment. */
+function NewClassPanel({ orgId, onCancel, onCreated }: { orgId: string; onCancel: () => void; onCreated: (c: AssetClass) => void }) {
+  const [name, setName] = React.useState("");
+  const [category, setCategory] = React.useState<"vehicle" | "equipment">("equipment");
+  const [meter, setMeter] = React.useState<MeterType>("hours");
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, startTransition] = React.useTransition();
+  const save = () =>
+    startTransition(async () => {
+      setError(null);
+      const res = await createAssetClassAction(orgId, { name, category, default_meter_type: meter });
+      if (res.status === "success" && res.data) {
+        toast.success(res.message ?? "Class added");
+        onCreated(res.data);
+      } else if (res.status === "error") {
+        setError(res.fieldErrors?.name ?? res.message);
+      }
+    });
+  return (
+    <div className="rounded-[10px] border border-brand/40 bg-[#fff8f2] p-4 md:col-span-2 xl:col-span-3">
+      <p className="text-[14px] font-semibold text-ink">New asset class</p>
+      <p className="mb-3 text-[13px] text-ink-subtle">Saved for your company, so it&apos;s available next time you add equipment.</p>
+      {error ? (
+        <div className="mb-3">
+          <FormAlert>{error}</FormAlert>
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Field label="Class name" htmlFor="new_class_name" required>
+          <Input id="new_class_name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Water cart" maxLength={80} />
+        </Field>
+        <Field label="Category" htmlFor="new_class_category" hint="Decides mandatory fields and billing treatment.">
+          <Select id="new_class_category" value={category} onChange={(e) => setCategory(e.target.value as "vehicle" | "equipment")}>
+            <option value="vehicle">Vehicle (registration and VIN)</option>
+            <option value="equipment">Equipment (serial number)</option>
+          </Select>
+        </Field>
+        <Field label="Default meter" htmlFor="new_class_meter">
+          <Select id="new_class_meter" value={meter} onChange={(e) => setMeter(e.target.value as MeterType)}>
+            {Object.entries(METER_TYPE_LABELS).map(([v, label]) => (
+              <option key={v} value={v}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <div className="mt-3 flex justify-end gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={pending}>
+          Cancel
+        </Button>
+        <Button type="button" size="sm" onClick={save} disabled={pending || name.trim().length < 2}>
+          {pending ? "Saving…" : "Save class"}
+        </Button>
+      </div>
+    </div>
   );
 }

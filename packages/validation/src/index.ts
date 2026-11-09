@@ -4,7 +4,7 @@
  * friendly feedback and to keep clients consistent.
  */
 import { z } from "zod";
-import { ASSET_CLASSES, AU_STATES, isValidAbn, type AssetField } from "@hvems/domain";
+import { AU_STATES, isValidAbn, type AssetField } from "@hvems/domain";
 import { COMPANY_ROLES, MARKETPLACE_CUSTOMER_ROLES, PROVIDER_ROLES } from "@hvems/permissions";
 
 const trimmed = (max: number) => z.string().trim().max(max);
@@ -69,12 +69,12 @@ export const inviteMemberSchema = z.object({
 });
 
 const stateSchema = z.enum(AU_STATES);
-const classCodes = ASSET_CLASSES.map((c) => c.code) as [string, ...string[]];
 
 export const assetFormSchema = z
   .object({
     asset_number: trimmed(40).min(1, "Enter an asset number"),
-    asset_class: z.enum(classCodes, { message: "Choose an asset class" }),
+    // Standard or company class code; the database checks it belongs to this company (O-03).
+    asset_class: z.string().trim().min(1, "Choose an asset class").max(40),
     make: optionalText(100),
     model: optionalText(100),
     year: z
@@ -93,18 +93,35 @@ export const assetFormSchema = z
     duplicate_reason: optionalText(1000),
   })
   .superRefine((v, ctx) => {
-    const cls = ASSET_CLASSES.find((c) => c.code === v.asset_class);
-    if (!cls) return;
-    for (const field of cls.requiredFields) {
-      if (!v[field as AssetField]) {
-        ctx.addIssue({ code: "custom", path: [field], message: `Required for ${cls.name.toLowerCase()}` });
-      }
-    }
+    // Class-specific mandatory fields are checked by the database for every
+    // route; forms add them up front with assetFormSchemaFor(classes).
     if (v.owner_type === "client_owned" && !v.client_id) {
       ctx.addIssue({ code: "custom", path: ["client_id"], message: "Client-owned assets need a client" });
     }
   });
 export type AssetFormInput = z.input<typeof assetFormSchema>;
+
+/** Asset form schema that also enforces the chosen class's mandatory fields (for instant feedback). */
+export function assetFormSchemaFor(classes: readonly { code: string; name: string; required_fields: readonly string[] }[]) {
+  return assetFormSchema.superRefine((v, ctx) => {
+    const cls = classes.find((c) => c.code === v.asset_class);
+    if (!cls) {
+      ctx.addIssue({ code: "custom", path: ["asset_class"], message: "Choose an asset class" });
+      return;
+    }
+    for (const field of cls.required_fields) {
+      if (!v[field as AssetField]) ctx.addIssue({ code: "custom", path: [field], message: `Required for ${cls.name.toLowerCase()}` });
+    }
+  });
+}
+
+/** A new asset class (company or standard). */
+export const assetClassSchema = z.object({
+  name: trimmed(80).min(2, "Enter a class name"),
+  category: z.enum(["vehicle", "equipment"], { message: "Choose vehicle or equipment" }),
+  default_meter_type: z.enum(["none", "kilometres", "hours", "both"]),
+});
+export type AssetClassInput = z.output<typeof assetClassSchema>;
 export type AssetFormValues = z.output<typeof assetFormSchema>;
 
 export const clientFormSchema = z.object({
@@ -146,6 +163,8 @@ export const meterReadingSchema = z.object({
   lower_reason: optionalText(500),
   confirm_jump: z.coerce.boolean().optional().default(false),
   client_request_id: z.string().uuid().optional(),
+  /** Start tracking this unit too when the asset doesn't yet (manager roles only). */
+  add_meter: z.coerce.boolean().optional().default(false),
 });
 
 export const archiveAssetSchema = z.object({
