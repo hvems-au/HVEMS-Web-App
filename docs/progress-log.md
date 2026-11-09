@@ -10,9 +10,12 @@
 - Generated `packages/types/src/database.generated.ts`; added a compile-time drift check (`schema-compat.ts`) between generated enums and the shared types.
 - pgTAP 130/130 and Vitest 107/107 re-run with the renamed migrations; typecheck clean.
 
+**AP-5 resolved (Ahmad):** build follows the SoW for F-01–F-12. F-04 no company approval gate; F-06 providers use a customer account under the same login (pointer added to the provider dashboard); F-08 no in-app tickets — the support link now comes from `NEXT_PUBLIC_SUPPORT_URL` and is hidden until HVEMS names its helpdesk (the hard-coded, unverified address was removed).
+
 **Waiting on**
 - Auth dashboard settings (Site URL, redirect URLs, leaked-password protection, TOTP).
-- AP-4 (connection-fee deviation wording) and AP-5 F-04 / F-06 decisions — explained to Ahmad.
+- AP-4 (connection-fee hold-then-charge design and terms wording) — explained, not yet approved.
+- Name of HVEMS's helpdesk product / contact form URL (F-08).
 
 **Next**
 - Playwright E2E against the hosted project (CI) → increment 2B Safety.

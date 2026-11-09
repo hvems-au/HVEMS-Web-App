@@ -40,6 +40,18 @@ export default async function ProviderDashboard({ params }: { params: Promise<{ 
           </p>
         </CardBody>
       </Card>
+      <Card className="mt-5">
+        <CardHeader title="Need work done on your own equipment?" />
+        <CardBody>
+          <p className="text-[14px] text-ink-muted">
+            Provider accounts quote for jobs; they don&apos;t post them. To post a job, open a marketplace customer account with the same
+            login and switch between the two from the account menu. Each keeps its own records.
+          </p>
+          <Link href="/onboarding?kind=marketplace_customer" className="mt-3 inline-block text-[14px] font-semibold text-link hover:underline">
+            Open a customer account
+          </Link>
+        </CardBody>
+      </Card>
     </>
   );
 }

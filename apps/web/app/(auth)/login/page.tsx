@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard } from "@/components/auth-card";
 import { FormAlert } from "@/components/ui/form";
+import { publicEnv } from "@/lib/env";
 import { firstParam } from "@/lib/utils";
 import { SignInForm } from "../forms";
 
@@ -19,12 +20,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
       ) : null}
       <SignInForm next={next} />
-      <p className="mt-6 text-center text-[12px] font-semibold text-ink-subtle">
-        Need help?{" "}
-        <Link href="mailto:support@hvems.com.au" className="text-link">
-          Contact Support
-        </Link>
-      </p>
+      {publicEnv.NEXT_PUBLIC_SUPPORT_URL ? (
+        <p className="mt-6 text-center text-[12px] font-semibold text-ink-subtle">
+          Need help?{" "}
+          <Link href={publicEnv.NEXT_PUBLIC_SUPPORT_URL} className="text-link">
+            Contact Support
+          </Link>
+        </p>
+      ) : null}
     </AuthCard>
   );
 }

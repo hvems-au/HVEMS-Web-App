@@ -198,18 +198,18 @@ Typography is **Inter** (Regular/Medium/Semi Bold/Bold). Layout: 180 px black si
 
 ## 3. Conflicts between Figma and the Scope of Work
 
-Each item below is shown in Figma but conflicts with a Confirmed scope decision or exclusion. The build follows the Scope of Work; these need a design update or a change request.
+Each item below is shown in Figma but conflicts with a Confirmed scope decision or exclusion. The build follows the Scope of Work; these need a design update or a change request. **AP-5 resolved 9 Nov 2026** (approved by Ahmad): build follows the SoW for all twelve, including F-04, F-06 and F-08.
 
 | # | Figma | Scope of Work | Treatment in build | Needs |
 |---|---|---|---|---|
 | F-01 | Super Admin "Roles Tab", "Create New Role" | §11.3 excludes **custom roles**; staff roles are fixed (Platform Administrator, Support Agent + Verification Officer / Billing Approver authorities) | Fixed roles and authorities only | Design update |
 | F-02 | Map widgets ("Jobs by Location", "Top Locations") | §11.3 excludes **map displays** | Location lists without maps | Design update |
 | F-03 | Equipment statuses *Active / In Maintenance / Completed / Out of Service / Retired* | §3.4: one condition — **Active, Needs attention, Broken/Out of service** — set automatically; service status (Up to date/Due soon/Overdue/Unknown) shown separately; archived assets are not a condition | Condition + separate service status + Archived tab | Design update |
-| F-04 | Company sign-up → "Account Pending Approval / Rejected / Activated"; Super Admin "Pending Approvals" for companies | Not in scope: company and marketplace-only accounts are self-serve. HVEMS approval applies to **provider verification** only (§4.3) | Self-serve onboarding; approvals reserved for providers (2D) | HVEMS decision (an approval gate would be a variation) |
+| F-04 | Company sign-up → "Account Pending Approval / Rejected / Activated"; Super Admin "Pending Approvals" for companies | Not in scope: company and marketplace-only accounts are self-serve. HVEMS approval applies to **provider verification** only (§4.3) | Self-serve onboarding; approvals reserved for providers (2D) | ✅ **Decided 9 Nov 2026:** follow the SoW — no company approval gate |
 | F-05 | "Company – Subscription & Payment" during sign-up | §5.2: first five assets free; payment method and consent required only before the **sixth** asset (and before the first paid marketplace acceptance) | No payment at sign-up; consent gate at the sixth asset | Design update |
-| F-06 | Provider Company "Post a Job", "My Posted Jobs" | §4.1: job posters are company organisations or marketplace-only customers | Not built in the Provider Portal; providers needing work done use a customer account | HVEMS decision |
+| F-06 | Provider Company "Post a Job", "My Posted Jobs" | §4.1: job posters are company organisations or marketplace-only customers | Not built in the Provider Portal; providers needing work done open a marketplace customer account under the same login (pointer on the provider dashboard) | ✅ **Decided 9 Nov 2026:** as recommended |
 | F-07 | "Parts & Inventory" (stock levels) | Stock inventory and purchase orders are **Stage 4** (CS-21); Stage 2 covers parts requests → usage (CS-20) | Stage 2 parts workflow only | Design split |
-| F-08 | Help & Support ticket threads (create/open/resolve) | §11.2: helpdesk is HVEMS's chosen third-party product fed by a contact form; in-app ticketing not in scope | Contact link to support; "Cases" (marketplace disputes) built in 2D | HVEMS decision |
+| F-08 | Help & Support ticket threads (create/open/resolve) | §11.2: helpdesk is HVEMS's chosen third-party product fed by a contact form; in-app ticketing not in scope | No in-app ticketing. Support link points to HVEMS's helpdesk via `NEXT_PUBLIC_SUPPORT_URL` (hidden until set); "Cases" (marketplace disputes) built in 2D | ✅ **Decided 9 Nov 2026:** follow the SoW. Helpdesk product still to be named |
 | F-09 | Super Admin "Internal Tasks", "Announcements" | Not in scope | Not built | Change request if wanted |
 | F-10 | Technician "Reports & Analytics", "Parts & Inventory" with prices | §3.6: technicians **never see costs, rates or the marketplace** | Technician views without costs | Design update |
 | F-11 | Sample data "BHP Mining", Perth/WA locations, footer "2026 JTDM" | §12.4: demonstration data uses fictional names only; HVEMS operates from Moreton Bay, QLD | Fictional names, QLD defaults, "© HVEMS" footer | Design tidy-up |

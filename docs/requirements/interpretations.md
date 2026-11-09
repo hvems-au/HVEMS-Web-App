@@ -15,5 +15,5 @@ The companion *Development Scope and Functional Specification v2.2* was not avai
 | I-09 | Support access length | §2.3 "time-limited" | Up to 240 minutes per session (setting) | Recommended (setting) |
 | I-10 | Password policy | §2.5 "password checks" | At least 10 characters including a number or symbol; Supabase leaked-password protection to be enabled | Recommended |
 | I-11 | Job Manager acceptance | §2.4 "post and manage jobs" | Job Managers can accept proposals (the Account Owner's saved card is used) | To be confirmed |
-| I-12 | Company account approval | Not in SoW (Figma F-04) | Company and marketplace-only accounts are self-serve; only providers need HVEMS verification | To be confirmed by HVEMS |
+| I-12 | Company account approval | Not in SoW (Figma F-04) | Company and marketplace-only accounts are self-serve; only providers need HVEMS verification | ✅ Confirmed 9 Nov 2026 (AP-5, F-04) |
 | I-13 | Out-of-sequence readings | §7.2 "kept and flagged" | Kept as "awaiting manager" and flagged; never overwrite the current reading | Recommended |
