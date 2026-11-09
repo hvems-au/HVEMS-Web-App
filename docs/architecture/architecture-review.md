@@ -1,6 +1,6 @@
 # HVEMS — Stage 1 architecture review and Stage 2A status
 
-**Prepared by:** Omnific IT (with Claude) · **Date:** 9 November 2026 · **Status:** for review and approval
+**Prepared by:** Omnific IT (with Claude) · **Date:** 9 November 2026 · **Status:** for review and approval — AP-1 done, AP-2 approved, AP-3 owned by Ahmad (updated 9 Nov 2026)
 **Inputs:** HVEMS Client Scope of Work v2.2 (27 Oct 2026, read in full); Figma "HVEMS Web App (Copy)" (117 frames inspected); Supabase project `anvqykllajezwaasguqp`; HVEMS logo PDF.
 **Not available:** *HVEMS Development Scope and Functional Specification v2.2* (the companion spec). Where the SoW is silent, this build uses the SoW's own wording and records every interpretation in [`../requirements/interpretations.md`](../requirements/interpretations.md); it does not invent requirements.
 
@@ -12,9 +12,9 @@
 |---|---|---|
 | Scope of Work | v2.2 read in full: 13 sections, appendices A–B, CS-01–CS-45, D-01–D-08 confirmed, A-01–A-08 open approvals | Document |
 | Figma | Accessible. One page, 117 frames: company (47), technician (17), driver (6), job poster (12), provider (18), super admin (15), other (2). Tokens extracted. 12 conflicts with the SoW and ~40 missing screens identified | Figma MCP: metadata, variables, design context, screenshots |
-| Supabase project | "HVEMS APP", **ap-southeast-2 (Sydney)**, Postgres **17**, healthy, created 9 Nov 2026. **Empty** public schema, no migrations: nothing existing to preserve | Supabase MCP (`get_project`, `list_tables`, `list_migrations`) |
+| Supabase project | "HVEMS APP", **ap-southeast-2 (Sydney)**, Postgres **17**, healthy, created 9 Nov 2026. Was **empty** before 2A (nothing existing to preserve); now holds the 2A schema | Supabase MCP (`get_project`, `list_tables`, `list_migrations`) |
 | Supabase plan | Organisation "HVEMS" is on the **Free plan**: no daily backups, no point-in-time recovery, projects pause when idle | Supabase MCP (`get_organization`) |
-| Admin privileges | The Supabase MCP connection can apply migrations. **No migration has been applied yet** (awaiting approval, §5) | MCP tool list |
+| Admin privileges | The Supabase MCP connection can apply migrations. After approval AP-1, four migrations were applied on 9 Nov 2026 (§4) | Supabase MCP (`list_migrations`) |
 | Supabase backups | Daily backups: 7 days (Pro), 14 (Team), up to 30 (Enterprise). PITR add-on: 7/14/28 days (~US$100/200/400 per month). Backups are stored in the project's region | Supabase docs |
 | Edge Functions | Run nearest the caller by default; can be pinned to `ap-southeast-2` per invocation (regional invocation) | Supabase docs |
 | GitHub | Repository `ahmadkhattakOD/HVEMS-Web-App` (private) created; full history pushed | GitHub integration |
