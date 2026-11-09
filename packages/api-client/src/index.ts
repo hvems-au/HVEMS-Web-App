@@ -299,12 +299,52 @@ export async function createClientRecord(db: HvemsClient, organisationId: string
   return unwrap(await db.from("clients").insert({ organisation_id: organisationId, ...v }).select("*").single());
 }
 
+/**
+ * Update a client. `v` holds only the fields the form sent; fields cleared in
+ * the form arrive as undefined and are stored as NULL. RLS requires clients.manage.
+ */
+export async function updateClientRecord(db: HvemsClient, clientId: string, v: Partial<ClientFormValues>): Promise<Client> {
+  return unwrap(await db.from("clients").update(nullify(v)).eq("id", clientId).select("*").single());
+}
+
 export async function listSites(db: HvemsClient, organisationId: string): Promise<Site[]> {
   return unwrap(await db.from("sites").select("*").eq("organisation_id", organisationId).is("archived_at", null).order("name"));
 }
 
 export async function createSite(db: HvemsClient, organisationId: string, v: SiteFormValues): Promise<Site> {
   return unwrap(await db.from("sites").insert({ organisation_id: organisationId, ...v }).select("*").single());
+}
+
+/** Update a site (RLS requires sites.manage). Cleared fields are stored as NULL. */
+export async function updateSite(db: HvemsClient, siteId: string, v: Partial<SiteFormValues>): Promise<Site> {
+  return unwrap(await db.from("sites").update(nullify(v)).eq("id", siteId).select("*").single());
+}
+
+function nullify<T extends Record<string, unknown>>(v: T): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x === undefined ? null : x]));
+}
+
+// ------------------------------------------------------------- Super Admin: organisations
+/** Super Admin only (platform_administrator with MFA); enforced by the database. */
+export async function adminUpdateOrganisation(
+  db: HvemsClient,
+  organisationId: string,
+  v: { name: string; legal_name?: string; abn?: string; timezone: string },
+): Promise<void> {
+  unwrap(
+    await db.rpc("admin_update_organisation", {
+      p_organisation_id: organisationId,
+      p_name: v.name,
+      p_legal_name: v.legal_name ?? null,
+      p_abn: v.abn ?? null,
+      p_timezone: v.timezone,
+    }),
+  );
+}
+
+/** Suspend (de-activate) or reinstate an organisation, with a reason. Super Admin only. */
+export async function adminSetOrganisationSuspended(db: HvemsClient, organisationId: string, suspend: boolean, reason: string): Promise<string> {
+  return unwrap(await db.rpc("admin_set_organisation_suspended", { p_organisation_id: organisationId, p_suspend: suspend, p_reason: reason })) as string;
 }
 
 // ------------------------------------------------------------- audit & settings

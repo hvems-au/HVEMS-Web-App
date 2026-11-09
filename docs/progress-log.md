@@ -1,5 +1,16 @@
 # Development progress log
 
+## 2026-11-09 — Session 2 (continued): edit clients/sites; Super Admin organisation management
+**Done**
+- Edit clients and sites (company portal, `clients.manage` / `sites.manage`); cleared fields are stored as empty; client notes not on the form are left alone. Browser-tested.
+- Super Admin: `/admin/organisations/[id]` to edit name, legal name, ABN and timezone, and to de-activate (suspend) or reinstate with a reason (ADM-02, ACC-18). Support Agents can view only (B.5). Banners in the company and provider portals while suspended.
+- Migration `platform_organisation_admin` + pgTAP `030`: RPCs `admin_update_organisation`, `admin_set_organisation_suspended` (Platform Administrator + MFA), suspension blocks new equipment, invitations and members; safety functions continue. Dry-run on the hosted project inside a rolled-back transaction: all checks as expected.
+
+- Migration applied by Ahmad through the SQL editor (recorded as `20261109160000 platform_organisation_admin`); verified columns, functions, privileges and triggers; types regenerated; advisors show no new findings.
+
+**Waiting on**
+- A Super Admin browser test of the edit and de-activate screens (needs an MFA sign-in).
+
 ## 2026-11-09 — Session 2 (continued): five portals
 **Done**
 - ADR-009: Super Admin console, company portal (with marketplace inside), marketplace (marketplace-only customers), provider portal and driver sign-in, each on its own host with its own session.

@@ -155,4 +155,19 @@ export const archiveAssetSchema = z.object({
   open_issues_acknowledged: z.coerce.boolean().optional().default(false),
 });
 
+/** Super Admin edit of an organisation (ADM-02). ABN rules are checked again by the database. */
+export const adminOrganisationSchema = z.object({
+  name: trimmed(200).min(2, "Enter a name of at least 2 characters"),
+  legal_name: optionalText(200),
+  abn: abnSchema.optional().transform((v) => (v ? v : undefined)),
+  timezone: z.string().min(1, "Choose a timezone"),
+});
+export type AdminOrganisationValues = z.output<typeof adminOrganisationSchema>;
+
+/** Suspend or reinstate an organisation: always with a reason (ADM-02, ACC-18). */
+export const organisationSuspensionSchema = z.object({
+  suspend: z.enum(["true", "false"]).transform((v) => v === "true"),
+  reason: trimmed(1000).min(10, "Give a reason of at least 10 characters"),
+});
+
 export { z };

@@ -796,6 +796,8 @@ export type Database = {
           name: string
           settings: Json
           status: Database["public"]["Enums"]["organisation_status"]
+          suspended_at: string | null
+          suspension_reason: string | null
           timezone: string
           updated_at: string
         }
@@ -811,6 +813,8 @@ export type Database = {
           name: string
           settings?: Json
           status?: Database["public"]["Enums"]["organisation_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -826,6 +830,8 @@ export type Database = {
           name?: string
           settings?: Json
           status?: Database["public"]["Enums"]["organisation_status"]
+          suspended_at?: string | null
+          suspension_reason?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1126,6 +1132,24 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      admin_set_organisation_suspended: {
+        Args: {
+          p_organisation_id: string
+          p_reason: string
+          p_suspend: boolean
+        }
+        Returns: Database["public"]["Enums"]["organisation_status"]
+      }
+      admin_update_organisation: {
+        Args: {
+          p_abn: string
+          p_legal_name: string
+          p_name: string
+          p_organisation_id: string
+          p_timezone: string
+        }
+        Returns: undefined
+      }
       amend_meter_reading: {
         Args: { p_reading_id: string; p_reason: string; p_value: number }
         Returns: string

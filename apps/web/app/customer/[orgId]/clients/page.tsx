@@ -8,7 +8,7 @@ import { Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/prim
 import { loadOrgContext, requireCapability } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
-import { NewClientDialog, NewSiteDialog } from "./dialogs";
+import { EditClientDialog, EditSiteDialog, NewClientDialog, NewSiteDialog } from "./dialogs";
 
 export const metadata: Metadata = { title: "Clients & Sites" };
 
@@ -27,6 +27,8 @@ export default async function ClientsPage({
   const [clients, sites] = await Promise.all([listClients(db, orgId), listSites(db, orgId)]);
   const clientName = new Map(clients.map((c) => [c.id, c.name]));
   const base = `/customer/${orgId}/clients`;
+  const canEditClients = can(ctx.capabilities, "clients.manage");
+  const canEditSites = can(ctx.capabilities, "sites.manage");
 
   return (
     <>
@@ -66,6 +68,7 @@ export default async function ClientsPage({
                   <TH>ABN</TH>
                   <TH>Contact</TH>
                   <TH>Sites</TH>
+                  {canEditClients ? <TH className="w-24" /> : null}
                 </tr>
               </THead>
               <tbody>
@@ -78,6 +81,11 @@ export default async function ClientsPage({
                       <span className="block text-[12px] text-ink-subtle">{[c.contact_email, c.contact_phone].filter(Boolean).join(" · ")}</span>
                     </TD>
                     <TD>{sites.filter((s) => s.client_id === c.id).length}</TD>
+                    {canEditClients ? (
+                      <TD className="text-right">
+                        <EditClientDialog orgId={orgId} client={c} />
+                      </TD>
+                    ) : null}
                   </TR>
                 ))}
               </tbody>
@@ -96,6 +104,7 @@ export default async function ClientsPage({
                 <TH>Location</TH>
                 <TH>Shift times</TH>
                 <TH>Contact</TH>
+                {canEditSites ? <TH className="w-24" /> : null}
               </tr>
             </THead>
             <tbody>
@@ -109,6 +118,11 @@ export default async function ClientsPage({
                   </TD>
                   <TD className="max-w-[220px] truncate">{s.shift_times ?? "—"}</TD>
                   <TD>{s.contact_name ?? "—"}</TD>
+                  {canEditSites ? (
+                    <TD className="text-right">
+                      <EditSiteDialog orgId={orgId} clients={clients} site={s} />
+                    </TD>
+                  ) : null}
                 </TR>
               ))}
             </tbody>

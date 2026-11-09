@@ -15,7 +15,12 @@ export default async function CustomerLayout({ children, params }: { children: R
       current={toShellContext(ctx.context, portal)}
       contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
       banner={
-        restricted ? (
+        ctx.context.status === "suspended" ? (
+          <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-[#9b0b0c]">
+            This account has been de-activated by HVEMS: equipment and members can&apos;t be added and jobs can&apos;t be posted. Safety functions keep
+            working. Contact HVEMS support for details.
+          </div>
+        ) : restricted ? (
           <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-[#9b0b0c]">
             This account is restricted for non-payment: assets and members can&apos;t be added and jobs can&apos;t be posted. Safety functions keep
             working.

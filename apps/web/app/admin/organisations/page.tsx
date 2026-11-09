@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { formatDateAU } from "@hvems/domain";
 import { KIND_LABELS, type OrganisationKind } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
@@ -16,7 +17,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
   const { data: orgs } = await q;
   return (
     <>
-      <PageHeader title="Organisations" description="Customer records stay private: opening one requires time-limited, logged support access (increment 2D screen)." />
+      <PageHeader title="Organisations" description="Edit an organisation's details or de-activate it. Customer records stay private: opening them requires time-limited, logged support access (increment 2D screen)." />
       <Card>
         {!orgs?.length ? (
           <EmptyState title="No organisations yet" />
@@ -29,18 +30,28 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                 <TH>ABN</TH>
                 <TH>Status</TH>
                 <TH>Joined</TH>
+                <TH className="w-24" />
               </tr>
             </THead>
             <tbody>
               {orgs.map((o) => (
                 <TR key={o.id}>
-                  <TD className="font-semibold">{o.name}</TD>
+                  <TD className="font-semibold">
+                    <Link href={`/admin/organisations/${o.id}`} className="hover:text-brand hover:underline">
+                      {o.name}
+                    </Link>
+                  </TD>
                   <TD>{KIND_LABELS[o.kind as OrganisationKind]}</TD>
                   <TD>{o.abn ?? "—"}</TD>
                   <TD>
-                    <Badge tone={o.status === "active" ? "green" : o.status === "restricted" ? "amber" : "red"}>{o.status}</Badge>
+                    <Badge tone={o.status === "active" ? "green" : o.status === "restricted" ? "amber" : "red"}>{o.status === "suspended" ? "de-activated" : o.status}</Badge>
                   </TD>
                   <TD>{formatDateAU(new Date(o.created_at))}</TD>
+                  <TD className="text-right">
+                    <Link href={`/admin/organisations/${o.id}`} className="text-[13px] font-semibold text-link hover:underline">
+                      Manage
+                    </Link>
+                  </TD>
                 </TR>
               ))}
             </tbody>

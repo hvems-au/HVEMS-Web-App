@@ -48,6 +48,9 @@ export interface Organisation {
     repairer_cannot_clear_own_critical?: boolean;
   };
   first_exceeded_free_allowance_at: ISODateTime | null;
+  /** Set while HVEMS has suspended the organisation (ACC-18). */
+  suspended_at: ISODateTime | null;
+  suspension_reason: string | null;
   created_at: ISODateTime;
 }
 
