@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminHost } from "./lib/admin-host";
 
 /**
  * Runs before every page request:
@@ -13,11 +14,6 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PREFIXES = ["/login", "/sign-up", "/forgot-password", "/reset-password", "/check-email", "/auth", "/invite"];
 const PROTECTED_PREFIXES = ["/customer", "/provider", "/admin", "/onboarding", "/select-context", "/account"];
 
-function isAdminHost(host: string | null): boolean {
-  const adminHost = process.env.ADMIN_HOST ?? "admin.localhost:3000";
-  return !!host && host.toLowerCase() === adminHost.toLowerCase();
-}
-
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host");
@@ -25,6 +21,13 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith("/admin") && !onAdminHost) {
     return new NextResponse("Not found", { status: 404 });
+  }
+  // Staff accounts are provisioned by HVEMS, never self-registered on the admin host.
+  if (onAdminHost && pathname.startsWith("/sign-up")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
   }
   if (onAdminHost && !pathname.startsWith("/admin") && !PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) && pathname !== "/account/security") {
     const url = request.nextUrl.clone();

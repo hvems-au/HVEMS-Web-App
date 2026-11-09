@@ -38,7 +38,7 @@ function fe(state: ClientActionState, key: string) {
   return state.status === "error" ? state.fieldErrors?.[key] : undefined;
 }
 
-export function SignInForm({ next }: { next?: string }) {
+export function SignInForm({ next, allowSignUp = true }: { next?: string; allowSignUp?: boolean }) {
   const [state, action, pending] = React.useActionState(signInAction, idleState);
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
@@ -58,18 +58,22 @@ export function SignInForm({ next }: { next?: string }) {
       <Button type="submit" size="lg" className="h-[49px] text-[18px]" disabled={pending}>
         {pending ? "Signing in…" : "Login"} <ArrowRight className="!size-5" />
       </Button>
-      <div className="flex items-center gap-3 text-[14px] font-medium text-ink-subtle">
-        <span className="h-px flex-1 bg-stroke" /> OR <span className="h-px flex-1 bg-stroke" />
-      </div>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[14px] font-medium text-ink">New to HVEMS?</p>
-          <p className="text-[12.5px] text-ink-subtle">Create your account to manage equipment or find work.</p>
-        </div>
-        <Button asChild variant="outline" size="sm" className="h-9 px-4">
-          <Link href={next ? `/sign-up?next=${encodeURIComponent(next)}` : "/sign-up"}>Sign Up</Link>
-        </Button>
-      </div>
+      {allowSignUp ? (
+        <>
+          <div className="flex items-center gap-3 text-[14px] font-medium text-ink-subtle">
+            <span className="h-px flex-1 bg-stroke" /> OR <span className="h-px flex-1 bg-stroke" />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[14px] font-medium text-ink">New to HVEMS?</p>
+              <p className="text-[12.5px] text-ink-subtle">Create your account to manage equipment or find work.</p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="h-9 px-4">
+              <Link href={next ? `/sign-up?next=${encodeURIComponent(next)}` : "/sign-up"}>Sign Up</Link>
+            </Button>
+          </div>
+        </>
+      ) : null}
     </form>
   );
 }
