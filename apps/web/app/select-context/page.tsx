@@ -30,7 +30,7 @@ export default async function SelectContextPage({ searchParams }: { searchParams
           <Logo variant="horizontal" priority />
         </div>
         <div className="card px-6 py-7">
-          <h1 className="text-[22px] font-bold text-ink-muted">Where would you like to work?</h1>
+          <h1 className="text-h1 text-ink">Where would you like to work?</h1>
           <p className="mt-1 text-[14px] text-ink-subtle">Each organisation and portal shows only its own records.</p>
           {reset ? (
             <div className="mt-4">

@@ -7,7 +7,7 @@ export default function NotFound() {
       <div className="w-44">
         <Logo variant="horizontal" />
       </div>
-      <h1 className="text-[22px] font-bold text-ink-muted">Page not found</h1>
+      <h1 className="text-h3 font-semibold text-ink">Page not found</h1>
       <p className="max-w-md text-[14px] text-ink-subtle">The page doesn&apos;t exist, or you don&apos;t have access to it in this organisation.</p>
       <Link href="/select-context" className="text-[14px] font-semibold text-link hover:underline">
         Go to my accounts

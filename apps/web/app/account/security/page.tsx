@@ -19,7 +19,7 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
           <Logo variant="horizontal" priority />
         </div>
         <div className="card px-6 py-7">
-          <h1 className="text-[22px] font-bold text-ink-muted">Account security</h1>
+          <h1 className="text-h1 text-ink">Account security</h1>
           <p className="mt-1 text-[14px] text-ink-subtle">Signed in as {user.email}</p>
           {firstParam(sp.required) ? (
             <p className="mt-4 rounded-[6px] border border-[#f0b46b] bg-warn-soft px-3 py-2.5 text-[14px] text-[#8a4300]">

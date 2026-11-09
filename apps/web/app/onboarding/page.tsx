@@ -25,7 +25,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
           ) : null}
         </div>
         <div className="card px-6 py-8 sm:px-10">
-          <h1 className="text-[26px] font-bold text-ink-muted">Welcome{user.fullName ? `, ${user.fullName.split(" ")[0]}` : ""}</h1>
+          <h1 className="text-h1 text-ink">Welcome{user.fullName ? `, ${user.fullName.split(" ")[0]}` : ""}</h1>
           <p className="mt-1 mb-7 text-[15px] text-ink-subtle">
             One login can hold several company memberships and a separate provider account. Each keeps its own records.
           </p>

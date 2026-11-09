@@ -6,7 +6,7 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
       <div className="mx-auto w-[220px]">
         <Logo variant="horizontal" priority />
       </div>
-      <h1 className="mt-6 text-center text-[30px] leading-[38px] font-bold text-ink-muted sm:text-[34px]">{title}</h1>
+      <h1 className="mt-6 text-center text-h1 text-ink">{title}</h1>
       {subtitle ? <p className="mx-auto mt-2 max-w-sm text-center text-[15px] leading-[24px] text-ink-subtle">{subtitle}</p> : null}
       <div className="mt-8">{children}</div>
     </div>

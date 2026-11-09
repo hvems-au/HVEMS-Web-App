@@ -21,7 +21,7 @@ export function PageHeader({
             ← {breadcrumb.label}
           </Link>
         ) : null}
-        <h1 className="text-[26px] leading-tight font-bold text-ink-muted">{title}</h1>
+        <h1 className="text-h1 text-ink">{title}</h1>
         {description ? <p className="mt-1 text-[14px] text-ink-subtle">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Logo onDark priority />
         </div>
         <div className="mt-auto mb-auto max-w-md pt-10">
-          <h2 className="text-[34px] leading-tight font-bold">Manage Your Fleet Smarter, Safer and More Efficiently</h2>
+          <h2 className="text-h1">Manage Your Fleet Smarter, Safer and More Efficiently</h2>
           <p className="mt-5 text-[18px] leading-[30px] font-medium text-white/90">
             A complete platform to manage your equipment, maintenance, inspections, jobs and team — all in one place.
           </p>
