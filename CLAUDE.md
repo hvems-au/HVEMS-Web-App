@@ -4,9 +4,10 @@ HVEMS (Heavy Vehicle & Equipment Management System) is a commercial SaaS built b
 
 ## Sources of truth (in order)
 1. **HVEMS Client Scope of Work v2.2** (27 Oct 2026). It prevails over everything else. Requirement ids are CS-01–CS-45; decisions D-01–D-08 are Confirmed; open approvals are A-01–A-08. Summary and status: `docs/requirements/traceability.md`.
-2. Companion *Development Scope and Functional Specification v2.2*: **not yet received**. Don't invent requirements; add any interpretation to `docs/requirements/interpretations.md`.
-3. Figma "HVEMS Web App (Copy)", file key `7avSLLNRbCjh8iZxKKJYbM`: visual direction only. Conflicts with the SoW are listed in `docs/design/figma-analysis.md` (F-01–F-12).
-4. Architecture and decisions: `docs/architecture/architecture-review.md`, `docs/decisions/ADR-*.md`.
+2. Companion *Development Scope and Functional Specification v2.2* (received 9 Nov 2026): requirement IDs ACC/AST/INS/DEF/…, acceptance tests T-01–T-47, settings CFG-01–48. Its **BR** items bind; its **IR** items (incl. the AWS/Node/BullMQ stack) give way to the ADRs. Differences and open corrections: `docs/requirements/dev-spec-reconciliation.md`.
+3. HVEMS Brand Identity Guidelines v1.0: brand colours (Orange `#CE5502`, Charcoal `#444444`), Montserrat and the type hierarchy. Summary: `docs/design/brand.md`. Wins over Figma for those.
+4. Figma "HVEMS Web App (Copy)", file key `7avSLLNRbCjh8iZxKKJYbM`: visual direction only. Conflicts with the SoW are listed in `docs/design/figma-analysis.md` (F-01–F-12).
+5. Architecture and decisions: `docs/architecture/architecture-review.md`, `docs/decisions/ADR-*.md`.
 
 ## Non-negotiable rules
 - **The database enforces everything.** RLS on every table; safety, money and multi-row rules are Postgres functions/triggers (ADR-004). Server Actions are thin: validate (Zod) → `@hvems/api-client` → map errors. Never put a business rule only in the UI.

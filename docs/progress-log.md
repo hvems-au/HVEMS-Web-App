@@ -1,5 +1,18 @@
 # Development progress log
 
+## 2026-11-09 — Session 2: console, brand, development specification
+**Done**
+- Local run documented: `corepack pnpm install`; start with `corepack pnpm --filter @hvems/web dev` (the root scripts call `pnpm` recursively, which fails when pnpm is only available through corepack).
+- Test accounts on the hosted project: Platform Administrator `ahmad.khattak@omnificit.com.au`; company "Omnific Developers" owned by `ahmad.khattak@omnificdevelopers.com`. Change the temporary passwords before any real use.
+- Admin host: "Administrator Login" title and subtitle; no sign-up option; `/sign-up` redirects to `/login` (`lib/admin-host.ts` shared with `proxy.ts`).
+- Console Audit History (`/admin/audit`): every organisation plus platform-level events, filters by organisation and record. RLS checked by simulation: staff with MFA see everything, staff without MFA see nothing, company owner sees only their own company.
+- Brand Identity Guidelines v1.0 applied: Montserrat, Charcoal `#444444`, Orange `#CE5502`, type scale utilities (`docs/design/brand.md`).
+- Development Specification v2.2 received and reconciled (`docs/requirements/dev-spec-reconciliation.md`); AP-6 resolved.
+
+**Waiting on**
+- Approval to implement the spec corrections (reconciliation §3 items 2–8, 10–12) on the hosted project.
+- Decision on per-portal sessions and handoff (§3 item 1, D-06) and on the MFA recovery-code approach (item 9).
+
 ## 2026-11-09 — Session 1 (continued): hosted database
 **Approvals received (Ahmad):** AP-1 apply migrations ✅ · AP-2 hosting (Supabase ap-southeast-2 + Vercel `syd1`) ✅ · AP-3 backups — owned by Ahmad, outside this workstream.
 

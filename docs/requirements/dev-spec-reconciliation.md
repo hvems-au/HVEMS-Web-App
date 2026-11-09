@@ -1,0 +1,72 @@
+# Development Specification v2.2: reconciliation with the build
+
+**Source:** *HVEMS Development Scope and Functional Specification v2.2* (Omnific IT, 27 Oct 2026, "for review"), received 9 Nov 2026. The PDF isn't kept in the repository.
+
+**How it applies here**
+- The Client Scope of Work v2.2 still prevails (spec §1.2).
+- **BR** items (business rules) bind the build. Changing one needs HVEMS approval.
+- **IR** items (implementation recommendations) are Omnific IT's to change "through the architecture record" (spec, *How to use*). The spec's technology choices are IR and predate ADR-001/002. Where they differ from the approved stack, the ADRs win. §1 lists those differences.
+- **TBC** items wait on SoW approvals A-01–A-08.
+
+Requirement IDs below (ACC-, AST-, BIL-, ADM-, AUD-, NFR-, CFG-, T-) are the spec's own.
+
+## 1. Technology: spec (IR) vs approved stack
+
+| Spec §2.1 / §17 (IR) | Built / approved | Basis | Gap to close |
+|---|---|---|---|
+| Three Next.js apps on `customer.` / `provider.` / `admin.` subdomains | One Next.js app; console on its own host; customer and provider portals on path prefixes | ADR-001, ADR-007 | See §3 item 1 (sessions per audience) |
+| Node.js REST `/v1` with OpenAPI | Supabase PostgREST + RPC functions behind `@hvems/api-client`; rules in Postgres | ADR-004 | Publish an API description of the RPC surface for handover (§19.3) |
+| AWS RDS Multi-AZ + PostGIS | Supabase Postgres 17 (AWS ap-southeast-2) | ADR-002, AP-2 approved | Enable PostGIS when regions/distance are built (2D) |
+| Redis + BullMQ workers | `pg_cron` + notification outbox + Edge Functions | ADR-004 | Build in 2B (escalations NOT-03 at 30 min / 2 h) |
+| S3 with malware scanning | Supabase Storage (private buckets, signed URLs) | ADR-002 | **Malware scanning not yet chosen** (DOC-02, needed 2C) |
+| ECS Fargate, CloudFront, WAF, Terraform | Vercel `syd1` + Supabase | AP-2 approved | WAF/rate-limit equivalent to document (NFR-06) |
+| Own auth library, Argon2id, 10 recovery codes | Supabase Auth (bcrypt), TOTP | ADR-001 | **No MFA recovery codes in Supabase** (ACC-03), see §3 |
+| Amazon SES | Email provider on HVEMS's domain, not yet chosen | AP-7 | Choose before 2B notifications (NFR-13, NFR-18) |
+| AWS Secrets Manager, CloudWatch | Vercel/Supabase secret stores; Sentry + Supabase logs | ADR-002 | — |
+| NFR-01 "AWS Sydney" | Supabase and Vercel in Sydney, on AWS | AP-2 approved | — |
+| NFR-05 35-day backups, RPO 1 h | Free plan: none | AP-3 (Ahmad), AP-9 | Pro + PITR before pilot |
+
+## 2. Interpretations I-01–I-13: resolved
+
+| ID | Spec says | Result |
+|---|---|---|
+| I-01 Fleet Manager or above | App. B.1 matches | ✅ Confirmed |
+| I-02 Who edits the register | B.1: **Fleet Manager can create and edit assets and client records**. Import, conversion, archive and restore stay Owner/Administrator. Sites stay Owner/Administrator (FM view) | ❌ **Change**: §3 item 2 |
+| I-03 Viewer and costs | EXP-03 and B.1: **Viewer sees costs** (view only) | ❌ **Change**: §3 item 3 |
+| I-04 Mandatory fields | AST-01: vehicles need **registration or VIN**; equipment needs **serial or asset number** | ❌ **Change**: §3 item 4 (current rule is stricter) |
+| I-05 Duplicates | AST-05 matches (warning + reason; no cross-org checks) | ✅ Confirmed |
+| I-06 Meter jump | AST-10 / CFG-44: 2,000 km or 24 h per elapsed day | ✅ Confirmed |
+| I-07 Grant eligibility | §3.2 matches | ✅ Confirmed |
+| I-08 Ownership changes | ACC-09, ACC-17: transfer is an Owner action | ✅ Confirmed; transfer workflow still to build |
+| I-09 Support access length | ADM-07: **60 minutes, read-only unless the Owner approves editing** | ❌ **Change**: §3 item 5 |
+| I-10 Password policy | ACC-01: at least 10 characters + breached-password check; no composition rule | ❌ **Change**: drop the "number or symbol" rule; enable leaked-password protection |
+| I-11 Job Manager acceptance | B.2: Job Managers post and accept (fees) | ✅ Confirmed |
+| I-12 Company approval | Not in spec; self-serve | ✅ Confirmed (AP-5) |
+| I-13 Out-of-sequence readings | AST-10, §14.4 match | ✅ Confirmed |
+
+## 3. Corrections to the built 2A
+
+Each item needs a new migration and, where permissions change, an update to `packages/permissions/src/matrix.ts`. Hosted changes need Ahmad's approval.
+
+| # | Spec | Current build | Change |
+|---|---|---|---|
+| 1 | §2.3, §2.5, §2.7 (D-06 confirmed): sessions bound to one audience; cross-portal switch by a single-use 60-second handoff token; one active organisation per browser tab | One Supabase session covers customer and provider portals; the org comes from the URL | **Decision needed.** Option A: separate cookies per portal host plus a handoff RPC. Option B: record a deviation for HVEMS approval. Recommend A when production domains exist |
+| 2 | B.1 | `assets.manage` and `clients.manage` are Owner/Administrator only | Split into `assets.edit` (Own/Adm/FM) and `assets.import_archive` (Own/Adm); give FM `clients.manage` |
+| 3 | EXP-03 | Viewer lacks `assets.costs.view` | Grant it (view only) |
+| 4 | AST-01 | Vehicles: make, model, rego, state, VIN; plant: make, model, serial | Vehicles: rego **or** VIN; equipment: serial **or** asset number (always present). Needs either-or rules, not a flat field list |
+| 5 | ADM-07 | 240-minute limit; no mode | 60 minutes; read-only by default; edit mode only with Owner approval; session shown to the Owner (NOT-01) |
+| 6 | AST-13 | `asset_disposal` = retired / sold / other | Reasons: sold, disposed, transferred out, written off, other |
+| 7 | §4.3, AST-16, §10.2 | Count events hold delta + reason | Add count before/after, actor, and a `merged` reason (AST-05) |
+| 8 | AUD-01–03 | Actor, method, action, entity, changes | Add portal, IP/device, before/after values, **daily hash chain** (AUD-03), **filters + CSV export** on the audit viewers (AUD-02) |
+| 9 | ACC-03 | TOTP only | 10 single-use **recovery codes** (custom table, hashed) plus Owner/Admin MFA reset for members (ACC-15) |
+| 10 | §2.5, CFG-45 | Supabase defaults | Lockout after 10 failed passwords for 15 min; idle timeout: portals 12 h, console 30 min (ADM-01) |
+| 11 | ACC-04 | Name, ABN | Add default timezone (Brisbane preselected) and contact details |
+| 12 | §2.5 (IR) | Staff can also hold memberships | Prevent staff accounts holding customer/provider memberships, or record the deviation. The current test accounts already follow this |
+| 13 | ACC-01 | Sign-up is generic; account type chosen at onboarding | Acceptable, as long as each portal offers only its own types. Check when provider sign-up moves to its own host |
+
+## 4. Things the spec adds that the roadmap must carry
+
+- **2B:** driver profiles (D-0001 IDs, 72-hour setup code), equipment codes (128-bit token + 10-character typed code), code-label reports (3/device/hour, bot protection), escalation timings, the condition test matrix T-12 (18 rows) and **NFR-17/18**.
+- **2C:** malware scanning, 17.3 file limits, the 15 reports (RPT-02), compliance summary, PDFs.
+- **2D:** the full fee/waiver ledger (§11), the acceptance-attempt state machine (§7.5), Appendix F settings CFG-01–48 (check `platform_settings` against it), ADM-10 helpdesk ticket context.
+- **Acceptance:** Appendix E T-01–T-47 becomes the E2E test list. T-01 (isolation) and T-02/T-03 apply to 2A now.

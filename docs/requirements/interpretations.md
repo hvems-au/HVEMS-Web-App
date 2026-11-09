@@ -1,6 +1,6 @@
 # Interpretations and assumptions register
 
-The companion *Development Scope and Functional Specification v2.2* was not available. These are the points where the Client Scope of Work (SoW) is implicit. Each one is implemented as stated and is easy to change; **please confirm or correct** (approval AP-6).
+Written before the companion *Development Scope and Functional Specification v2.2* arrived. It was received on 9 Nov 2026 and resolves every row below. See `dev-spec-reconciliation.md` §2: I-02, I-03, I-04, I-09 and I-10 need changes to the build (its §3); the rest are confirmed.
 
 | ID | Topic | SoW basis | Interpretation implemented | Label |
 |---|---|---|---|---|
