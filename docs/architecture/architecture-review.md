@@ -38,7 +38,7 @@
             │   (condition engine, consent guard, import, …)    │
             │ Storage (private buckets, signed URLs) — 2C       │
             │ Edge Functions pinned to ap-southeast-2 — 2D:     │
-            │   Stripe webhooks, ABR lookup, email, scheduled   │
+            │   Stripe webhooks, email, scheduled           │
             │ pg_cron / queues for background jobs — 2B+        │
             └───────────────────────────────────────────────────┘
 ```

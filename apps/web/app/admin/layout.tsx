@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const staff = await getStaffContext();
   if (!staff) notFound();
   if (user.aal !== "aal2") redirect("/account/security?required=1&next=/admin");
-  const label = staff.role === "platform_administrator" ? "Platform Administrator" : "Support Agent";
+  const label = staff.role === "platform_administrator" ? "Super Admin" : "Support Agent";
   const current = { id: "hvems", name: "HVEMS Console", kindLabel: "Administration", portal: "admin" as const, roleLabel: label, href: "/admin" };
   return (
     <AppShell nav={adminNav()} user={{ fullName: user.fullName, email: user.email }} current={current} contexts={[current]}>
