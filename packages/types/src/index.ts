@@ -1,11 +1,12 @@
 /**
  * Shared record types for web and (future) React Native clients.
  *
- * These describe rows as returned by the Supabase Data API under RLS. Once the
- * schema is applied to the hosted project, `pnpm db:types` generates
- * `database.generated.ts`; these hand-written domain types remain the stable
- * contract the UI and api-client depend on.
+ * These describe rows as returned by the Supabase Data API under RLS. They are
+ * the stable contract the UI and api-client depend on. `database.generated.ts`
+ * is generated from the hosted schema (`pnpm db:types`) and `schema-compat.ts`
+ * fails the typecheck if the two drift apart.
  */
+export type { Database, Json } from "./database.generated";
 import type {
   AssetCategory,
   AssetCondition,

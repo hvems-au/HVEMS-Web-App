@@ -172,7 +172,7 @@ describe("free tier (SoW §5.2, D-05)", () => {
 });
 
 describe("defaults mirror platform_settings seed", () => {
-  const sql = readFileSync(join(__dirname, "../../../supabase/migrations/20261109000100_foundation.sql"), "utf8");
+  const sql = readFileSync(join(__dirname, "../../../supabase/migrations/20261109072242_foundation.sql"), "utf8");
   const setting = (key: string) => {
     const m = sql.match(new RegExp(`\\('${key.replace(/\./g, "\\.")}',\\s*'([^']*)'`));
     return m?.[1];

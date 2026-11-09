@@ -1,6 +1,6 @@
 # ADR-002 — Hosting, data residency and backups
 
-**Status:** Proposed — **requires HVEMS approval (SoW A-05)** · **Date:** 2026-11-09
+**Status:** Accepted for hosting (Supabase ap-southeast-2 + Vercel `syd1`) on 2026-11-09, as communicated by Ahmad · Backups: owned by Ahmad (Omnific IT), managed outside this workstream · **Date:** 2026-11-09
 
 ## Context
 SoW §12.1 targets databases, files and backups in Australia (AWS Sydney), 99.5% availability, daily backups plus point-in-time recovery kept 35 days, RPO ≤ 1 hour, recovery within 8 business hours, restores tested before launch and quarterly. The development brief selects Supabase. The project `anvqykllajezwaasguqp` exists in **ap-southeast-2 (Sydney)** on the **Free** plan.
@@ -12,7 +12,7 @@ SoW §12.1 targets databases, files and backups in Australia (AWS Sydney), 99.5%
 - Edge Functions execute nearest the caller unless invoked with a region (`x-region` / `FunctionRegion.ApSoutheast2`).
 - The Storage CDN cache is global; private, signed-URL objects should not be cached publicly.
 
-## Decision (proposed)
+## Decision (hosting accepted; backup rows are the original recommendation, now owned by Ahmad)
 | Component | Choice | Residency |
 |---|---|---|
 | Database, Auth, Storage | Supabase Pro, ap-southeast-2 | Australia |
@@ -30,5 +30,5 @@ Alternatives: (a) HVEMS accepts 28 days instead of 35; (b) Supabase Enterprise (
 Supabase Pro ~US$25/month + compute add-on as needed + PITR 28 days ~US$400/month; Vercel Pro ~US$20 per member/month; S3 backup storage under US$10/month at pilot scale; email and monitoring low. This sits below the SoW's AUD 1,000–2,500/month AWS estimate, but HVEMS must approve the change of provider.
 
 ## Consequences
-- Until approved, the Free plan has **no backups**: no real customer data may be loaded.
+- The project is on the Free plan, which has no Supabase backups; the backup arrangement (and the plan upgrade, AP-9) is Ahmad's to put in place before real customer data is loaded.
 - Restore drills (SoW §12.4) are scripted in the operations runbook before staging.

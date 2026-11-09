@@ -111,7 +111,7 @@ describe("meter readings (SoW §3.1)", () => {
 });
 
 describe("asset classes mirror the database seed", () => {
-  const sql = readFileSync(join(__dirname, "../../../supabase/migrations/20261109000300_fleet.sql"), "utf8");
+  const sql = readFileSync(join(__dirname, "../../../supabase/migrations/20261109072703_fleet.sql"), "utf8");
   it.each(ASSET_CLASSES.map((c) => [c.code, c] as const))("%s", (code, cls) => {
     const line = sql.split("\n").find((l) => l.includes(`('${code}',`));
     expect(line, code).toBeDefined();

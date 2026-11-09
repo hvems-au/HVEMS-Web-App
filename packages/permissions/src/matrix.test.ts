@@ -13,7 +13,7 @@ import {
   type MemberRole,
 } from "./matrix";
 
-const MIGRATION = join(__dirname, "../../../supabase/migrations/20261109000200_identity.sql");
+const MIGRATION = join(__dirname, "../../../supabase/migrations/20261109072440_identity.sql");
 
 function seedPairs(sql: string, table: "role_capabilities" | "grant_capabilities"): Set<string> {
   const block = sql.split("-- BEGIN CAPABILITY SEED")[1]?.split("-- END CAPABILITY SEED")[0] ?? "";

@@ -2,7 +2,7 @@
  * HVEMS role, grant and capability model — SoW §2.4.
  *
  * This file mirrors the capability seed in
- * supabase/migrations/20261109000200_identity.sql. The database is the
+ * supabase/migrations/20261109072440_identity.sql. The database is the
  * enforcement point (RLS + RPC checks); this mirror lets web and mobile
  * clients shape navigation and controls. `matrix.test.ts` fails if the two
  * drift apart.

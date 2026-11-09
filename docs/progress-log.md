@@ -1,5 +1,22 @@
 # Development progress log
 
+## 2026-11-09 — Session 1 (continued): hosted database
+**Approvals received (Ahmad):** AP-1 apply migrations ✅ · AP-2 hosting (Supabase ap-southeast-2 + Vercel `syd1`) ✅ · AP-3 backups — owned by Ahmad, outside this workstream.
+
+**Done**
+- Applied `foundation`, `identity`, `fleet` to project `anvqykllajezwaasguqp`; renamed local migration files to the hosted versions.
+- Ran security and performance advisors; added `fk_indexes` migration (tenancy FK indexes) and recorded the accepted findings in `docs/database/schema.md`.
+- Hosted smoke test (PG 17), rolled back: 24/24 checks as expected; verified nothing persisted.
+- Generated `packages/types/src/database.generated.ts`; added a compile-time drift check (`schema-compat.ts`) between generated enums and the shared types.
+- pgTAP 130/130 and Vitest 107/107 re-run with the renamed migrations; typecheck clean.
+
+**Waiting on**
+- Auth dashboard settings (Site URL, redirect URLs, leaked-password protection, TOTP).
+- AP-4 (connection-fee deviation wording) and AP-5 F-04 / F-06 decisions — explained to Ahmad.
+
+**Next**
+- Playwright E2E against the hosted project (CI) → increment 2B Safety.
+
 ## 2026-11-09 — Session 1
 **Done**
 - Repository `ahmadkhattakOD/HVEMS-Web-App` created and pushed (5 commits).

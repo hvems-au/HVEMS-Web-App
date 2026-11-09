@@ -43,8 +43,9 @@ docs/               architecture, ADRs, requirements, design, mobile readiness, 
 
 ## Supabase
 - Project `anvqykllajezwaasguqp`, region ap-southeast-2, Postgres 17, **Free plan** (see ADR-002 / AP-9).
-- Schema changes: add a new timestamped file in `supabase/migrations/`; never edit a migration that has been applied to the hosted project.
+- Schema changes: add a new timestamped file in `supabase/migrations/`; never edit a migration that has been applied to the hosted project. After applying through the connector, rename the local file to the version the project assigned (`list_migrations`) so histories match.
+- After each migration: run the security and performance advisors, then regenerate `packages/types/src/database.generated.ts` (`schema-compat.ts` catches enum drift).
 - Errors: `app.raise('<code>', '<message>')` → PostgREST `hint` → `AppError.code`.
 
 ## Current status
-See `docs/progress-log.md` (latest entry first) and `docs/roadmap.md`. Increment 2A is complete locally; next: apply migrations (after approval AP-1), E2E tests, then increment 2B Safety.
+See `docs/progress-log.md` (latest entry first) and `docs/roadmap.md`. Increment 2A is complete and its migrations are applied to the hosted project (AP-1 done; hosting AP-2 approved; backups AP-3 owned by Ahmad). Next: Auth dashboard settings, E2E tests, then increment 2B Safety.

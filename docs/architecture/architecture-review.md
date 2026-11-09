@@ -58,10 +58,10 @@
 | Area | Delivered | Evidence |
 |---|---|---|
 | Accounts | Sign-up, email verification, login, password reset, sign-out, TOTP MFA enrolment and challenge, onboarding for all three account types, organisation/portal switcher | `apps/web/app/(auth)`, `account/security`, `onboarding`, `select-context` |
-| Roles and grants | 12 roles, 3 grants, 49 capabilities exactly per SoW §2.4; grant eligibility (drivers can't hold authority; technicians no marketplace); competency note for Clearance Authority; MFA rule §2.5; free-tier 5-login limit | `20261109000200_identity.sql`; `packages/permissions` |
+| Roles and grants | 12 roles, 3 grants, 49 capabilities exactly per SoW §2.4; grant eligibility (drivers can't hold authority; technicians no marketplace); competency note for Clearance Authority; MFA rule §2.5; free-tier 5-login limit | `20261109072440_identity.sql`; `packages/permissions` |
 | Invitations | Hashed one-time tokens, email-bound acceptance, expiry, revocation | identity migration; Team page |
 | Staff and support access | Staff need aal2 for everything; time-limited, logged support access visible to the customer Owner; admin console only on `ADMIN_HOST` | identity migration; `proxy.ts`; `app/admin` |
-| Equipment register | All SoW §3.1 fields; class-driven mandatory fields; duplicate asset number refused; duplicate VIN/serial/rego needs a reason; client/site links can't cross tenants (composite FKs) | `20261109000300_fleet.sql`; Equipment pages |
+| Equipment register | All SoW §3.1 fields; class-driven mandatory fields; duplicate asset number refused; duplicate VIN/serial/rego needs a reason; client/site links can't cross tenants (composite FKs) | `20261109072703_fleet.sql`; Equipment pages |
 | Sixth-asset consent | Database refuses a 6th current asset until Owner/Finance consents to the price with a saved payment method; serialised per company | fleet migration (`assets_before_write`) |
 | Archiving | Reason, effective date, disposal; open issues must be acknowledged for sale; history kept; stops counting | `archive_asset()` |
 | Meter readings | Never overwrite; lower → reason + manager acceptance; implausible jump → confirmation; out-of-sequence flagged; amendments; idempotent `client_request_id` | `record_meter_reading()` etc. |
@@ -84,16 +84,18 @@ Later-increment modules appear in navigation as muted items with an honest "deli
 | `next build` | Pass (33 routes + proxy) |
 | HTTP checks on the built app | Protected routes redirect to login; `/admin` 404 off the admin host; admin host redirects elsewhere to `/admin`; security headers present |
 | Visual check | Login (desktop and 360–390 px) and app shell compared with Figma; screenshots in `docs/design/` |
+| **Hosted project (PG 17)** | Migrations `foundation`, `identity`, `fleet`, `fk_indexes` applied 2026-11-09. Smoke test of 24 checks run inside one transaction and rolled back (no data left): sign-up → profile, create company, asset with class rules, meter reading + lower-reading rule, sixth-asset consent guard, count history, audit rows; a second user sees nothing and can't write; anon refused; API role can't set condition or open causes; critical → cleared → awaiting return to service → active; audit delete refused. **24/24 as expected** |
+| Supabase advisors | Security: only the intended `SECURITY DEFINER` RPCs (each checks capability inside) plus Supabase's own `rls_auto_enable` event-trigger function. Performance: tenancy FK indexes added (`fk_indexes`); remaining "unindexed FK" items are user-reference columns, accepted (see `docs/database/schema.md`); "unused index" items are expected on an empty database |
 
-**Not yet tested end to end:** the web app against the hosted Supabase project. This session's network blocks `*.supabase.co`, and migrations are not yet applied (§5). Postgres 17 behaviour is assumed compatible with the Postgres 16 test run; it will be confirmed by running the same pgTAP suite on the hosted project.
+**Not yet tested end to end:** the web app in a browser against the hosted project. This session's network blocks `*.supabase.co`; the Playwright suite runs in CI or from a machine that can reach Supabase.
 
 ## 5. Decisions and approvals needed
 
 | # | Decision | Why it matters | Recommendation |
 |---|---|---|---|
-| **AP-1** | **Apply the 2A migrations to project `anvqykllajezwaasguqp`** | Nothing works end to end until the schema exists. The project is empty, so this is additive and reversible (drop schema). | Approve; I apply via the Supabase connector, run the advisors and the pgTAP suite remotely, and generate types |
-| **AP-2** | **Hosting: Supabase + Vercel instead of the SoW's AWS Sydney (A-05)** | SoW §12.1 targets AWS Sydney. Supabase runs on AWS ap-southeast-2, but it is a different contract and subprocessor set, and it changes the running-cost estimate | HVEMS approves Supabase (ap-southeast-2) + Vercel (functions pinned to `syd1`) as the hosting design, with the cost estimate in ADR-002 |
-| **AP-3** | **Backups: 35 days in Australia, ≤1 h data loss (SoW §12.1)** | The Free plan has no backups. Supabase's maximum is 28-day PITR (30 days daily on Enterprise); Storage files are not in database backups | Pro plan + 28-day PITR (RPO ~2 min) **plus** a nightly encrypted logical dump and Storage sync to an HVEMS-owned S3 bucket in ap-southeast-2 with a 35-day lifecycle. Or HVEMS accepts 28 days |
+| **AP-1** | **Apply the 2A migrations to project `anvqykllajezwaasguqp`** | Nothing works end to end until the schema exists. | ✅ **Approved and done 2026-11-09** — applied, advisors run, smoke-tested, types generated (§4) |
+| **AP-2** | **Hosting: Supabase + Vercel instead of the SoW's AWS Sydney (A-05)** | SoW §12.1 targets AWS Sydney. Supabase runs on AWS ap-southeast-2, but it is a different contract and subprocessor set, and it changes the running-cost estimate | ✅ **Approved 2026-11-09** (communicated by Ahmad): Supabase ap-southeast-2 + Vercel `syd1`. ADR-002 accepted |
+| **AP-3** | **Backups: 35 days in Australia, ≤1 h data loss (SoW §12.1)** | The Free plan has no backups. Supabase's maximum is 28-day PITR (30 days daily on Enterprise); Storage files are not in database backups | **Owned by Ahmad (Omnific IT)** from 2026-11-09 — the backup arrangement is managed outside this workstream. The §12.1 targets remain acceptance criteria |
 | **AP-4** | **Two connection fees "together or not at all" (SoW §4.5, §5.4)** | Stripe can't make one atomic charge across two cards | Authorise both with manual capture and capture only when both succeed; release or refund otherwise. Disclosed deviation: a temporary card *authorisation hold* may briefly appear, and in a rare capture failure a refund follows a charge. See ADR-006 |
 | **AP-5** | **Figma conflicts F-01–F-12** | Several Figma screens contradict confirmed scope (custom roles, maps, company approval gate, provider job posting, in-app helpdesk, stock in Stage 2) | Build follows the SoW; designs updated in Figma. F-04 and F-06 need an HVEMS decision |
 | **AP-6** | **Interpretations I-01–I-13** | The companion spec is missing; a few permission details are implicit in the SoW | Confirm or correct (see `interpretations.md`) |
@@ -102,6 +104,7 @@ Later-increment modules appear in navigation as muted items with an honest "deli
 | **AP-9** | **Supabase plan** | Free projects pause when idle and have no backups | Upgrade to Pro before staging; add PITR before the pilot |
 
 ### Genuine technical blockers right now
+0. **Auth settings need a dashboard change** (the connector can't set them): Site URL, redirect URLs for `/auth/callback`, leaked-password protection, TOTP MFA, custom SMTP once HVEMS's sending domain exists.
 1. Supabase is unreachable from this development session's network (HTTP 403 from the egress proxy). Schema work goes through the Supabase connector; browser end-to-end tests need the project reachable (allow `*.supabase.co` in claude.ai capabilities, or run the Playwright suite in CI).
 2. Email delivery (invitations, alerts) needs HVEMS's sending domain and provider account. Until then, invitations show a one-time link to share.
 
@@ -110,7 +113,7 @@ Later-increment modules appear in navigation as muted items with an honest "deli
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Companion functional spec unavailable | Rework if it differs from interpretations | Interpretations register; obtain spec before 2B |
-| PITR maximum 28 days vs 35-day target | Acceptance target unmet | AP-3 supplementary backups |
+| PITR maximum 28 days vs 35-day target | Acceptance target unmet | AP-3 — backup arrangement owned by Ahmad |
 | Edge Functions default to global execution | Data processed outside AU | Always invoke with `region: ap-southeast-2`; Next.js server on Vercel `syd1` |
 | Sub-processors outside AU (Stripe, monitoring, email) | Privacy review | Minimise data sent; choose AU-capable providers; list in privacy policy (A-02) |
 | Email is not instant (SoW §6.3) | Missed critical alerts | In-app acknowledgement and escalation; push in Stage 3; UI wording |
@@ -119,7 +122,7 @@ Later-increment modules appear in navigation as muted items with an honest "deli
 
 ## 7. Next development tasks (in order)
 
-1. On approval AP-1: apply migrations, run the remote pgTAP suite and the security/performance advisors, generate `database.generated.ts`, configure Auth (email templates → `/auth/callback`, site URL, redirect URLs, password policy, TOTP on, leaked-password protection).
+1. ~~Apply migrations, advisors, remote checks, generated types~~ (done 2026-11-09). Configure Auth in the dashboard (Site URL, redirect URLs → `/auth/callback`, password policy, TOTP on, leaked-password protection).
 2. Playwright end-to-end suite against the hosted project (sign-up → onboarding → equipment → import → team → audit).
 3. Increment **2B Safety**: driver profiles and PIN, equipment codes/QR, public code page, inspection templates and versions, pre-start, defects/triage/holds/deferral, two-step clearance, breakdowns, critical alerts and escalation (pg_cron).
 4. Increments 2C and 2D per [`../roadmap.md`](../roadmap.md).

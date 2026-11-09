@@ -44,4 +44,26 @@ All are `SECURITY DEFINER` with `search_path = ''`, check `auth.uid()` and capab
 
 ## Performance notes
 - Policies use `(select app.orgs_with_capability(...))::uuid[]`, evaluated once per statement (initplan), not per row.
-- Indexes: `(organisation_id, archived_at, condition)`, case-insensitive asset number, VIN/serial/rego lookups, trigram search across identifiers, meter history by asset/unit/time, audit by org/time and entity.
+- Indexes: `(organisation_id, archived_at, condition)`, case-insensitive asset number, VIN/serial/rego lookups, trigram search across identifiers, meter history by asset/unit/time, audit by org/time and entity; composite tenancy FK indexes (`fk_indexes` migration).
+
+## Migration history (hosted project)
+Local filenames match the hosted migration versions, so `supabase db push` / `supabase migration list` line up.
+
+| Version | Name | Applied |
+|---|---|---|
+| 20261109072242 | foundation | 2026-11-09 |
+| 20261109072440 | identity | 2026-11-09 |
+| 20261109072703 | fleet | 2026-11-09 |
+| 20261109073547 | fk_indexes | 2026-11-09 |
+
+When a migration is applied through the Supabase connector, the hosted project assigns the version; rename the local file to that version before committing.
+
+## Advisor findings accepted (2026-11-09)
+| Finding | Why it is accepted |
+|---|---|
+| Security 0029 — `SECURITY DEFINER` RPCs executable by `authenticated` | Intended: these are the API (ADR-004). Each checks `auth.uid()`, capability and MFA inside and raises coded errors; pgTAP and the hosted smoke test prove refusals |
+| Security 0029 — `public.rls_auto_enable()` | Supabase's own event-trigger function (`ensure_rls`); returns `event_trigger`, so it can't be called through the API. Left as installed |
+| Performance 0001 — unindexed user-reference FKs (`created_by`, `opened_by`, `resolved_by`, `decided_by`, `recorded_by`, `invited_by`, `accepted_by`, `assigned_by`, `revoked_by`, `consented_by`) | Only scanned if an auth user is hard-deleted; HVEMS deactivates people and retains records (SoW §10). Revisit if hard deletion is ever introduced |
+| Performance 0001 — `meter_readings` / `asset_condition_history` `(asset_id, organisation_id)` | Served by existing indexes that lead with `asset_id` |
+| Performance 0001 — `assets.asset_class_id`, `asset_condition_history.cause_id` | Parent rows are never deleted |
+| Performance 0005 — unused indexes | Database is empty; re-check after the pilot loads real data |

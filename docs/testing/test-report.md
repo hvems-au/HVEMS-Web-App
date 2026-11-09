@@ -30,9 +30,9 @@
 | 12 | Providers can't see protected information before confirmation | 2D | ⏳ |
 | 13 | Audit history remains intact | pgTAP 010 (UPDATE/DELETE refused even as owner; redaction) | ✅ |
 | 14 | Reports reflect actual records | 2C | ⏳ |
-| 15 | Web workflows function end to end | Playwright against the hosted project after AP-1 | ⏳ |
+| 15 | Web workflows function end to end | Playwright against the hosted project (schema now applied) | ⏳ |
 
 ## Known gaps
-- Tests ran on Postgres **16** locally; the hosted project is Postgres **17**. Re-run `supabase test db --linked` after applying.
+- The full pgTAP suite runs on Postgres **16** locally. On the hosted Postgres **17** project, a 24-check smoke test (tenancy, anon denial, register rules, meter rules, consent guard, condition engine, audit immutability) ran inside one transaction and was rolled back: **24/24 as expected** (2026-11-09). pgTAP is not installed on the hosted project; run `supabase test db --linked` from CI if full remote runs are wanted.
 - No browser end-to-end tests yet. The dev environment can't reach `*.supabase.co`; CI or an allow-listed session will run them.
 - Concurrency (two sessions inserting the sixth asset at once) relies on `SELECT … FOR UPDATE` on the organisation row; a multi-session pgTAP test is planned.
