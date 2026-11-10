@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
     "@hvems/ui",
     "@hvems/validation",
   ],
+  // PDF records read the logo and static Montserrat files from disk at runtime.
+  outputFileTracingIncludes: {
+    "/customer/*/inspections/*/pdf": ["./lib/pdf/assets/**/*", "./node_modules/@fontsource/montserrat/files/montserrat-latin-*-normal.woff"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

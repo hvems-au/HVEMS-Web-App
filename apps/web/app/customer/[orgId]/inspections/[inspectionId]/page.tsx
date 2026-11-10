@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, OctagonAlert, TriangleAlert } from "lucide-react";
+import { CheckCircle2, FileDown, OctagonAlert, TriangleAlert } from "lucide-react";
 import { getInspection, signInspectionPhotos } from "@hvems/api-client";
 import { RECORDS_ONLY_NOTICE, formatDateTimeAU } from "@hvems/domain";
 import { ResultBadge, SeverityBadge } from "@/components/safety";
 import { PageHeader } from "@/components/shell/page";
+import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, CardHeader, Dl } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -67,7 +68,17 @@ export default async function InspectionPage({
         title={`Pre-start · ${h.asset_number}`}
         description={`${formatDateTimeAU(new Date(i.submitted_at), tz)} · ${h.operator_name ?? "Unknown operator"}`}
         breadcrumb={{ label: "Inspections", href: `/customer/${orgId}/inspections` }}
-        actions={<ResultBadge result={i.result} />}
+        actions={
+          <>
+            <ResultBadge result={i.result} />
+            <Button asChild variant="secondary">
+              {/* A plain link: the PDF is a download, not a page to prefetch. */}
+              <a href={`/customer/${orgId}/inspections/${i.id}/pdf`} download>
+                <FileDown /> Download PDF
+              </a>
+            </Button>
+          </>
+        }
       />
 
       {submitted ? (
