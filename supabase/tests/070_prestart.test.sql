@@ -53,14 +53,14 @@ insert into public.asset_operator_permissions (organisation_id, membership_id, a
 
 -- Operator not fit: fails, but the equipment is untouched.
 select tests.authenticate_as(:'driver');
-select public.submit_prestart(:'ex', pg_temp.answers(:'ex', 'S-01', 'Very tired'), null, 110, null, '[]', true, gen_random_uuid()) as r1 \gset
+select public.submit_prestart(:'ex', pg_temp.answers(:'ex', 'S-01', 'Very tired'), null, 110, null, '[]', true, gen_random_uuid(), true) as r1 \gset
 select is((:'r1'::jsonb ->> 'result'), 'fail', 'an operator who is not fit fails the pre-start');
 select is((select count(*)::int from public.defects where asset_id = :'ex'), 0, 'no defect is raised for the operator');
 select is((select condition::text from public.assets where id = :'ex'), 'active', 'the equipment stays Active');
 
 -- Critical fault: out of service, defect, managers told.
 select gen_random_uuid() as req \gset
-select public.submit_prestart(:'ex', pg_temp.answers(:'ex', 'EX-01', 'Quick hitch pin missing'), null, 120, null, '[]', true, :'req') as r2 \gset
+select public.submit_prestart(:'ex', pg_temp.answers(:'ex', 'EX-01', 'Quick hitch pin missing'), null, 120, null, '[]', true, :'req', true) as r2 \gset
 select is((:'r2'::jsonb ->> 'result'), 'fail', 'a critical fault fails the pre-start');
 select is((select condition::text from public.assets where id = :'ex'), 'out_of_service', 'the excavator is Out of service');
 select is((select severity::text from public.defects where asset_id = :'ex' and item_code = 'EX-01'), 'critical', 'a Critical defect is raised');
@@ -73,7 +73,7 @@ reset role;
 
 select tests.authenticate_as(:'owner');
 select is((select count(*)::int from public.notifications where kind = 'critical_defect'), 1, 'the Owner is alerted');
-select is((public.submit_prestart(:'ex', pg_temp.answers(:'ex', 'EX-01', 'Still missing'), null, 130, null, '[]', true) ->> 'result'), 'fail',
+select is((public.submit_prestart(:'ex', pg_temp.answers(:'ex', 'EX-01', 'Still missing'), null, 130, null, '[]', true, null, true) ->> 'result'), 'fail',
   'the same fault again still fails');
 select is((select count(*)::int from public.defects where asset_id = :'ex' and item_code = 'EX-01'), 1, 'but no duplicate defect is raised');
 reset role;
