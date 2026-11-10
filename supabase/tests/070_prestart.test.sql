@@ -27,7 +27,7 @@ language sql as $$
 $$;
 
 select tests.authenticate_as(:'owner');
-select is(jsonb_array_length(public.prestart_checklist(:'ex')), 52, 'an excavator gets safety (21), general (20) and excavator (11) items');
+select is(jsonb_array_length(public.prestart_checklist(:'ex')), 61, 'an excavator gets safety (23), general (27) and excavator (11) items');
 select is(tests.error_code(format($$select public.submit_prestart(%L, '[]'::jsonb, null, 100, null, '[]', true)$$, :'ex')), 'checklist_incomplete',
   'every item must be answered');
 select is(tests.error_code(format($$select public.submit_prestart(%L, pg_temp.answers(%L, 'EX-09', ''), null, 100, null, '[]', true)$$, :'ex', :'ex')),

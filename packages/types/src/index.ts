@@ -463,3 +463,44 @@ export interface PrestartSubmitResult {
   defects?: { id: UUID; severity: DefectSeverityValue; title: string }[];
   duplicate: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Equipment codes and driver profiles (O-10)
+// ---------------------------------------------------------------------------
+export interface EquipmentCode {
+  id: UUID;
+  asset_id: UUID;
+  token: string;
+  short_code: string;
+  created_at: ISODateTime;
+  revoked_at: ISODateTime | null;
+}
+
+export interface DriverProfile {
+  id: UUID;
+  organisation_id: UUID;
+  driver_number: number;
+  full_name: string;
+  phone: string | null;
+  user_id: UUID | null;
+  membership_id: UUID | null;
+  setup_expires_at: ISODateTime | null;
+  failed_attempts: number;
+  locked_until: ISODateTime | null;
+  last_sign_in_at: ISODateTime | null;
+  active: boolean;
+  created_at: ISODateTime;
+}
+
+/** What the driver portal shows about a scanned machine before sign-in. */
+export interface EquipmentPublic {
+  asset_id: UUID;
+  organisation_id: UUID;
+  asset_number: string;
+  make: string | null;
+  model: string | null;
+  class: string;
+  company: string;
+  short_code: string;
+  condition: "active" | "needs_attention" | "out_of_service";
+}

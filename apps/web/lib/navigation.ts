@@ -77,7 +77,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         { label: "Inspections", href: `${base}/inspections`, icon: "inspections" },
         { label: "Defects & Safety", href: `${base}/defects`, icon: "defects" },
         { label: "Alerts", href: `${base}/alerts`, icon: "alerts" },
-        { label: "Drivers", href: `${base}/module/drivers`, icon: "drivers", capability: "drivers.manage", increment: "2B" },
+        { label: "Drivers", href: `${base}/drivers`, icon: "drivers", capability: "drivers.manage" },
         { label: "Maintenance", href: `${base}/module/maintenance`, icon: "maintenance", increment: "2C" },
         { label: "Work Orders", href: `${base}/module/work-orders`, icon: "workorders", increment: "2C" },
         { label: "Technicians", href: `${base}/module/technicians`, icon: "technicians", capability: "workforce.manage", increment: "2C" },

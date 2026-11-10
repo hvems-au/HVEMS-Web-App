@@ -7,6 +7,7 @@ import {
   listAuditEvents,
   listConditionHistory,
   listDefects,
+  getEquipmentCode,
   listActiveSafetyEvents,
   listInspections,
   listMeterReadings,
@@ -26,6 +27,7 @@ import { formatNumber } from "@/lib/utils";
 import { ArchiveDialog } from "./archive-dialog";
 import { MeterForm } from "./meter-form";
 import { ReturnToServiceDialog } from "./return-to-service";
+import { QrCard } from "./qr-card";
 import { SafetyPanel } from "./safety-panel";
 
 export const metadata: Metadata = { title: "Equipment" };
@@ -41,7 +43,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
   const asset = await getAsset(db, assetId).catch(() => null);
   if (!asset || asset.organisation_id !== orgId) notFound();
 
-  const [readings, history, audit, defects, prestarts, causes, rtsEvents, safety] = await Promise.all([
+  const [readings, history, audit, defects, prestarts, causes, rtsEvents, safety, code] = await Promise.all([
     listMeterReadings(db, assetId, 20),
     listConditionHistory(db, assetId),
     can(ctx.capabilities, "audit.view") ? listAuditEvents(db, { organisationId: orgId, entityType: "assets", entityId: assetId, limit: 20 }) : Promise.resolve([]),
@@ -50,6 +52,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
     listOpenConditionCauses(db, assetId),
     listReturnToServiceEvents(db, assetId, 5),
     listActiveSafetyEvents(db, { organisationId: orgId, assetId }),
+    getEquipmentCode(db, assetId),
   ]);
   // Dates for the safety panel, formatted here in the company's timezone.
   const when: Record<string, string> = {};
@@ -156,6 +159,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
           </CardBody>
         </Card>
 
+        <div className="flex flex-col gap-5">
         <Card>
           <CardHeader title={READINGS_TITLE[asset.meter_type]} description="Readings never overwrite each other" />
           <CardBody className="flex flex-col gap-4">
@@ -176,6 +180,10 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
             ) : null}
           </CardBody>
         </Card>
+        {!asset.archived_at ? (
+          <QrCard orgId={orgId} assetId={assetId} code={code} canManage={can(ctx.capabilities, "assets.manage")} timezone={ctx.timezone} />
+        ) : null}
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">

@@ -8,6 +8,8 @@
 
 ---
 
+> **Update 10 Nov 2026 (v2):** added from the client's sample Daily Plant Inspection Check List: separate **ROPS** and **FOPS** items, **fire suppression** now Critical (mine sites), **neutral start**, chassis/frame/body cracks, wheels/tyres/tracks, hitch safety pin, articulated joint/linkage, compulsory signs and reflective tape, environmental spill kit, plant security. Operator details on the sample (driver's licence, plant ticket, induction card, track safety awareness) are candidates for the driver profile.
+
 ## 1. How a pre-start works
 
 1. The driver scans the machine's QR label (or opens it in the app) and signs in with their Driver ID and PIN.

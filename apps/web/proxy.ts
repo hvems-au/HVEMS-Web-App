@@ -34,12 +34,11 @@ export async function proxy(request: NextRequest) {
 
   const info = PORTAL_INFO[portal];
 
-  // Driver portal: equipment code + Driver ID + PIN only. No email sign-in.
-  if (portal === "driver") {
-    return startsWithAny(pathname, info.prefixes) ? NextResponse.next() : redirectTo(request, info.home);
-  }
+  // Driver portal: everything starts from an equipment code; pages decide who may
+  // continue (Driver ID + PIN, or a member's own login). Only /driver is served.
+  if (portal === "driver" && !startsWithAny(pathname, info.prefixes)) return redirectTo(request, info.home);
 
-  if (pathname !== "/" && !startsWithAny(pathname, AUTH_PREFIXES) && !startsWithAny(pathname, info.prefixes)) {
+  if (portal !== "driver" && pathname !== "/" && !startsWithAny(pathname, AUTH_PREFIXES) && !startsWithAny(pathname, info.prefixes)) {
     return new NextResponse("Not found", { status: 404 });
   }
   // Staff are provisioned by HVEMS; drivers by their company. No self sign-up there.
@@ -66,6 +65,9 @@ export async function proxy(request: NextRequest) {
   // Validates the JWT signature/claims; do not trust getSession() on the server.
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims?.sub;
+
+  // The driver portal keeps the session fresh but never sends people to /login.
+  if (portal === "driver") return response;
 
   if (!signedIn && startsWithAny(pathname, info.prefixes)) {
     const url = request.nextUrl.clone();

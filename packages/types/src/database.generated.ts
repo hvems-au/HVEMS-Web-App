@@ -760,6 +760,129 @@ export type Database = {
           },
         ]
       }
+      driver_profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          driver_number: number
+          failed_attempts: number
+          full_name: string
+          id: string
+          last_sign_in_at: string | null
+          locked_until: string | null
+          membership_id: string | null
+          organisation_id: string
+          phone: string | null
+          pin_hash: string | null
+          setup_code_hash: string | null
+          setup_expires_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          driver_number: number
+          failed_attempts?: number
+          full_name: string
+          id?: string
+          last_sign_in_at?: string | null
+          locked_until?: string | null
+          membership_id?: string | null
+          organisation_id: string
+          phone?: string | null
+          pin_hash?: string | null
+          setup_code_hash?: string | null
+          setup_expires_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          driver_number?: number
+          failed_attempts?: number
+          full_name?: string
+          id?: string
+          last_sign_in_at?: string | null
+          locked_until?: string | null
+          membership_id?: string | null
+          organisation_id?: string
+          phone?: string | null
+          pin_hash?: string | null
+          setup_code_hash?: string | null
+          setup_expires_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_membership_id_organisation_id_fkey"
+            columns: ["membership_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "org_memberships"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_codes: {
+        Row: {
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organisation_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          short_code: string
+          token: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organisation_id: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          short_code: string
+          token: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organisation_id?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          short_code?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_codes_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "equipment_codes_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_subscription_consents: {
         Row: {
           consented_at: string
@@ -1987,6 +2110,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_driver_profile: {
+        Args: {
+          p_full_name: string
+          p_organisation_id: string
+          p_phone?: string
+        }
+        Returns: Json
+      }
       create_invitation: {
         Args: {
           p_email: string
@@ -2019,10 +2150,28 @@ export type Database = {
         Args: { p_defect_id: string; p_reason: string }
         Returns: undefined
       }
+      driver_sign_in: {
+        Args: {
+          p_code: string
+          p_driver_number: number
+          p_new_pin?: string
+          p_secret: string
+        }
+        Returns: Json
+      }
       end_support_access: { Args: { p_grant_id: string }; Returns: undefined }
+      equipment_public: { Args: { p_code: string }; Returns: Json }
+      generate_equipment_code: {
+        Args: { p_asset_id: string; p_replace_reason?: string }
+        Returns: string
+      }
       import_assets: {
         Args: { p_dry_run?: boolean; p_organisation_id: string; p_rows: Json }
         Returns: Json
+      }
+      link_driver_account: {
+        Args: { p_driver_id: string; p_user_id: string }
+        Returns: undefined
       }
       mark_notifications_read: { Args: { p_ids?: string[] }; Returns: number }
       merge_defect: {
@@ -2136,6 +2285,7 @@ export type Database = {
         }
         Returns: string
       }
+      reset_driver_setup: { Args: { p_driver_id: string }; Returns: Json }
       resolve_breakdown: {
         Args: {
           p_breakdown_id: string
@@ -2154,6 +2304,10 @@ export type Database = {
       }
       revoke_invitation: {
         Args: { p_invitation_id: string }
+        Returns: undefined
+      }
+      set_driver_active: {
+        Args: { p_active: boolean; p_driver_id: string }
         Returns: undefined
       }
       start_support_access: {

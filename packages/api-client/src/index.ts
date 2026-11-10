@@ -22,6 +22,9 @@ import type {
   Hold,
   Breakdown,
   RegulatorNotice,
+  DriverProfile,
+  EquipmentCode,
+  EquipmentPublic,
   AssetClass,
   AssetListItem,
   AuditEvent,
@@ -728,4 +731,81 @@ export async function listCriticalAlerts(db: HvemsClient, organisationId: string
   return unwrap<WithAsset<CriticalAlert>[]>(
     await db.from("critical_alerts").select(`*, ${ASSET}`).eq("organisation_id", organisationId).order("raised_at", { ascending: false }).limit(limit),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Equipment QR codes and driver profiles (O-10)
+// ---------------------------------------------------------------------------
+
+/** Driver ID as shown to people: D-0001. */
+export function formatDriverId(n: number): string {
+  return `D-${String(n).padStart(4, "0")}`;
+}
+
+/** Accepts "D-0001", "d1", "0001" or "1". */
+export function parseDriverId(value: string): number | null {
+  const m = value.trim().match(/^d?-?0*(\d{1,6})$/i);
+  return m ? Number(m[1]) : null;
+}
+
+/** "ABCDEFGHJK" -> "ABCD-EFGH-JK" for labels and screens. */
+export function formatShortCode(code: string): string {
+  return `${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8)}`;
+}
+
+export async function getEquipmentCode(db: HvemsClient, assetId: string): Promise<EquipmentCode | null> {
+  return unwrap<EquipmentCode | null>(
+    await db.from("equipment_codes").select("id, asset_id, token, short_code, created_at, revoked_at").eq("asset_id", assetId).is("revoked_at", null).maybeSingle(),
+  );
+}
+
+export async function generateEquipmentCode(db: HvemsClient, assetId: string, replaceReason?: string): Promise<string> {
+  return unwrap<string>(await db.rpc("generate_equipment_code", { p_asset_id: assetId, p_replace_reason: replaceReason || null }));
+}
+
+/** Service role only: the scanned machine, or null for an unknown or revoked code. */
+export async function getEquipmentPublic(admin: HvemsClient, code: string): Promise<EquipmentPublic | null> {
+  return unwrap<EquipmentPublic | null>(await admin.rpc("equipment_public", { p_code: code }));
+}
+
+export async function listDrivers(db: HvemsClient, organisationId: string): Promise<DriverProfile[]> {
+  return unwrap<DriverProfile[]>(
+    await db
+      .from("driver_profiles")
+      .select("id, organisation_id, driver_number, full_name, phone, user_id, membership_id, setup_expires_at, failed_attempts, locked_until, last_sign_in_at, active, created_at")
+      .eq("organisation_id", organisationId)
+      .order("driver_number"),
+  );
+}
+
+export async function createDriverProfile(
+  db: HvemsClient,
+  input: { organisationId: string; fullName: string; phone?: string },
+): Promise<{ id: string; driver_number: number; setup_code: string; setup_expires_at: string }> {
+  return unwrap(await db.rpc("create_driver_profile", { p_organisation_id: input.organisationId, p_full_name: input.fullName, p_phone: input.phone || null }));
+}
+
+export async function resetDriverSetup(db: HvemsClient, driverId: string): Promise<{ driver_number: number; setup_code: string; setup_expires_at: string }> {
+  return unwrap(await db.rpc("reset_driver_setup", { p_driver_id: driverId }));
+}
+
+export async function setDriverActive(db: HvemsClient, driverId: string, active: boolean): Promise<void> {
+  unwrap(await db.rpc("set_driver_active", { p_driver_id: driverId, p_active: active }));
+}
+
+/** Equipment a member may operate (drivers see only these). */
+export async function listOperatorPermissions(db: HvemsClient, membershipId: string): Promise<{ id: string; asset_id: string | null; site_id: string | null }[]> {
+  return unwrap(await db.from("asset_operator_permissions").select("id, asset_id, site_id").eq("membership_id", membershipId));
+}
+
+export async function setOperatorEquipment(db: HvemsClient, organisationId: string, membershipId: string, assetIds: string[]): Promise<void> {
+  const current = await listOperatorPermissions(db, membershipId);
+  const have = new Set(current.filter((p) => p.asset_id).map((p) => p.asset_id as string));
+  const want = new Set(assetIds);
+  const remove = current.filter((p) => p.asset_id && !want.has(p.asset_id)).map((p) => p.id);
+  const add = assetIds.filter((a) => !have.has(a));
+  if (remove.length) unwrap(await db.from("asset_operator_permissions").delete().in("id", remove));
+  if (add.length) {
+    unwrap(await db.from("asset_operator_permissions").insert(add.map((asset_id) => ({ organisation_id: organisationId, membership_id: membershipId, asset_id }))));
+  }
 }

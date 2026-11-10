@@ -1,5 +1,12 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): QR codes, driver profiles and PIN sign-in; checklist v2
+**Done**
+- Decision O-10 (QR → sign-in → pre-start; codes generated on demand; no anonymous reports).
+- Migrations (applied by Claude): `20261110083110 equipment_codes` (Generate / Replace code, revoked on archive, 10-character typed code), `20261110083349 driver_profiles` (D-0001…, setup code 72 h, bcrypt PIN, 5 wrong → 15 min lock, attempts kept even on failure, deactivate suspends the membership; driver logins excluded from the member limit), `20261110090424 mfa_rule_excludes_drivers` (adding a driver had forced the Owner into MFA), `20261110090332 prestart_content_v2` (client's sample Daily Plant Inspection Check List: separate ROPS and FOPS, fire suppression Critical, neutral start, chassis cracks, wheels/tyres/tracks, hitch pin, articulation, signs and reflective tape, spill kit, plant security; templates v2). pgTAP `100`; `070` count updated.
+- Web: QR card on the equipment page (Generate QR code, typed code, Print label, Replace code); 100 × 150 mm QR label PDF; Drivers page (add driver with one-time setup code, reset PIN, deactivate, equipment access); driver portal (type a code, scanned-equipment page with Driver PIN / First time / Email login, pre-start, result page with Sign out); the driver portal keeps its own session.
+- Browser-checked end to end: QR generated, label downloaded (one page), driver added, first sign-in with setup code and new PIN, 56-item pre-start passed, sign out, wrong PIN refused, PIN sign-in, the owner sees the pre-start under the driver's name. Test data: driver "Test Driver (test)" (D-0001) with access to CAT-ESC-0001, two passed pre-starts.
+
 ## 2026-11-10 — Session 2 (continued): pre-start PDF; holds, breakdowns, defect notices, critical alerts
 **Done**
 - Pre-start PDF on HVEMS letterhead (`/customer/[org]/inspections/[id]/pdf`, react-pdf): logo, company, outcome banner, equipment and readings, faults with notes and photos, full checklist, declaration, footer with page numbers and the records-only notice. "Download PDF" on the record. Rendered and checked.

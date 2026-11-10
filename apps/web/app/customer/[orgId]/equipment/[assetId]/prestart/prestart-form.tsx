@@ -45,6 +45,7 @@ export function PrestartForm({
   tracksHours,
   lastKm,
   lastHours,
+  doneBase,
 }: {
   orgId: string;
   assetId: string;
@@ -53,6 +54,8 @@ export function PrestartForm({
   tracksHours: boolean;
   lastKm: number | null;
   lastHours: number | null;
+  /** Result page base path; the inspection id is appended (the driver portal has its own). */
+  doneBase?: string;
 }) {
   const router = useRouter();
   const [requestId] = React.useState(() => crypto.randomUUID());
@@ -160,7 +163,7 @@ export function PrestartForm({
         lower_reading_reason: lowerReason.trim() || undefined,
       });
       if (res.status === "success" && res.data) {
-        router.push(`/customer/${orgId}/inspections/${res.data.inspection_id}?submitted=1`);
+        router.push(doneBase ? `${doneBase}/${res.data.inspection_id}` : `/customer/${orgId}/inspections/${res.data.inspection_id}?submitted=1`);
         return;
       }
       if (res.status === "error") {
