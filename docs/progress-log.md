@@ -1,5 +1,17 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): pre-start PDF; holds, breakdowns, defect notices, critical alerts
+**Done**
+- Pre-start PDF on HVEMS letterhead (`/customer/[org]/inspections/[id]/pdf`, react-pdf): logo, company, outcome banner, equipment and readings, faults with notes and photos, full checklist, declaration, footer with page numbers and the records-only notice. "Download PDF" on the record. Rendered and checked.
+- Migrations `20261110075018 holds_breakdowns_notices_alerts` and `20261110075608 alerts_auto_acknowledge` (applied by Claude):
+  - Holds (Out of service / Needs attention, with a reason); removing an Out-of-service hold leads to Return to service.
+  - Breakdowns (anyone who reports defects; Out of service; resolve → Return to service).
+  - Regulator defect notices (Major → Out of service; Minor / self-clearing → Needs attention; clearing needs a date and reference).
+  - Critical alerts for every Out-of-service event, to Owner and Fleet Managers; Acknowledge on the Alerts page; escalation at 30 minutes (adds Company Admins) and 2 hours (settings `alerts.escalate_*`), run by pg_cron every 5 minutes (extension enabled); alerts acknowledge themselves when their cause is dealt with.
+  - pgTAP `090`.
+- Web: equipment page panel (Report breakdown, Place hold, Defect notice; remove / mark fixed / clear); Alerts page with critical alerts, escalation badges and Acknowledge; Defects & Safety lists open holds, breakdowns and notices across the fleet.
+- Checked: hosted smoke test (rolled back) and in the browser on CAT-ESC-0001 (hold → acknowledged → removed → returned; breakdown → fixed → returned; Minor notice → cleared). The trailer is Active; the test records stay in its history.
+
 ## 2026-11-10 — Session 2 (continued): defect triage and two-step clearance
 **Done**
 - Decision O-09: Owners and Fleet Managers (and Company Admins) hold the clearance powers by role; capability seed + `matrix.ts` updated.

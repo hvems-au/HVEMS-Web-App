@@ -7,6 +7,7 @@ import {
   listAuditEvents,
   listConditionHistory,
   listDefects,
+  listActiveSafetyEvents,
   listInspections,
   listMeterReadings,
   listOpenConditionCauses,
@@ -25,6 +26,7 @@ import { formatNumber } from "@/lib/utils";
 import { ArchiveDialog } from "./archive-dialog";
 import { MeterForm } from "./meter-form";
 import { ReturnToServiceDialog } from "./return-to-service";
+import { SafetyPanel } from "./safety-panel";
 
 export const metadata: Metadata = { title: "Equipment" };
 
@@ -39,7 +41,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
   const asset = await getAsset(db, assetId).catch(() => null);
   if (!asset || asset.organisation_id !== orgId) notFound();
 
-  const [readings, history, audit, defects, prestarts, causes, rtsEvents] = await Promise.all([
+  const [readings, history, audit, defects, prestarts, causes, rtsEvents, safety] = await Promise.all([
     listMeterReadings(db, assetId, 20),
     listConditionHistory(db, assetId),
     can(ctx.capabilities, "audit.view") ? listAuditEvents(db, { organisationId: orgId, entityType: "assets", entityId: assetId, limit: 20 }) : Promise.resolve([]),
@@ -47,7 +49,16 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
     listInspections(db, { organisationId: orgId, assetId, limit: 5 }),
     listOpenConditionCauses(db, assetId),
     listReturnToServiceEvents(db, assetId, 5),
+    listActiveSafetyEvents(db, { organisationId: orgId, assetId }),
   ]);
+  // Dates for the safety panel, formatted here in the company's timezone.
+  const when: Record<string, string> = {};
+  for (const h of safety.holds) when[h.id] = formatDateTimeAU(new Date(h.placed_at), ctx.timezone);
+  for (const b of safety.breakdowns) when[b.id] = formatDateTimeAU(new Date(b.reported_at), ctx.timezone);
+  for (const n of safety.notices) {
+    when[n.id] = formatDateAU(new Date(`${n.issued_on}T00:00:00Z`), "UTC");
+    if (n.clear_by) when[`${n.id}:clear`] = formatDateAU(new Date(`${n.clear_by}T00:00:00Z`), "UTC");
+  }
   // Two-step clearance: repaired Critical defects leave an "awaiting return to service" cause.
   const awaitingReturn = causes.some((c) => c.kind === "awaiting_return_to_service");
   const otherOutOfService = causes.some((c) =>
@@ -241,6 +252,23 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
           </CardBody>
         </Card>
       </div>
+
+      {!asset.archived_at ? (
+        <SafetyPanel
+          orgId={orgId}
+          assetId={assetId}
+          timezone={ctx.timezone}
+          holds={safety.holds}
+          breakdowns={safety.breakdowns}
+          notices={safety.notices}
+          formatWhen={when}
+          can={{
+            placeHold: can(ctx.capabilities, "holds.place"),
+            removeOutOfService: can(ctx.capabilities, "holds.remove_out_of_service"),
+            report: can(ctx.capabilities, "defects.report"),
+          }}
+        />
+      ) : null}
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Card>

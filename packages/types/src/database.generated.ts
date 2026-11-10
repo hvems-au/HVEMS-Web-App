@@ -457,6 +457,76 @@ export type Database = {
         }
         Relationships: []
       }
+      breakdowns: {
+        Row: {
+          asset_id: string
+          cause_id: string | null
+          description: string
+          evidence_paths: string[]
+          id: string
+          location: string | null
+          organisation_id: string
+          reported_at: string
+          reported_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          asset_id: string
+          cause_id?: string | null
+          description: string
+          evidence_paths?: string[]
+          id?: string
+          location?: string | null
+          organisation_id: string
+          reported_at?: string
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          asset_id?: string
+          cause_id?: string | null
+          description?: string
+          evidence_paths?: string[]
+          id?: string
+          location?: string | null
+          organisation_id?: string
+          reported_at?: string
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breakdowns_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "breakdowns_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "asset_condition_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breakdowns_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           abn: string | null
@@ -506,6 +576,66 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clients_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      critical_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          asset_id: string
+          escalation_level: number
+          id: string
+          kind: string
+          last_escalated_at: string | null
+          organisation_id: string
+          raised_at: string
+          source_id: string | null
+          source_type: string
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          asset_id: string
+          escalation_level?: number
+          id?: string
+          kind: string
+          last_escalated_at?: string | null
+          organisation_id: string
+          raised_at?: string
+          source_id?: string | null
+          source_type: string
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          asset_id?: string
+          escalation_level?: number
+          id?: string
+          kind?: string
+          last_escalated_at?: string | null
+          organisation_id?: string
+          raised_at?: string
+          source_id?: string | null
+          source_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "critical_alerts_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "critical_alerts_organisation_id_fkey"
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
@@ -674,6 +804,70 @@ export type Database = {
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holds: {
+        Row: {
+          asset_id: string
+          cause_id: string | null
+          id: string
+          kind: string
+          organisation_id: string
+          placed_at: string
+          placed_by: string | null
+          reason: string
+          removal_note: string | null
+          removed_at: string | null
+          removed_by: string | null
+        }
+        Insert: {
+          asset_id: string
+          cause_id?: string | null
+          id?: string
+          kind: string
+          organisation_id: string
+          placed_at?: string
+          placed_by?: string | null
+          reason: string
+          removal_note?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+        }
+        Update: {
+          asset_id?: string
+          cause_id?: string | null
+          id?: string
+          kind?: string
+          organisation_id?: string
+          placed_at?: string
+          placed_by?: string | null
+          reason?: string
+          removal_note?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holds_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "holds_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "asset_condition_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holds_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
@@ -1115,6 +1309,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          alert_id: string | null
           asset_id: string | null
           body: string | null
           created_at: string
@@ -1127,6 +1322,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          alert_id?: string | null
           asset_id?: string | null
           body?: string | null
           created_at?: string
@@ -1139,6 +1335,7 @@ export type Database = {
           title: string
         }
         Update: {
+          alert_id?: string | null
           asset_id?: string | null
           body?: string | null
           created_at?: string
@@ -1151,6 +1348,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_alert_fk"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "critical_alerts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_organisation_id_fkey"
             columns: ["organisation_id"]
@@ -1411,6 +1615,88 @@ export type Database = {
         }
         Relationships: []
       }
+      regulator_notices: {
+        Row: {
+          asset_id: string
+          authority: string
+          cause_id: string | null
+          clear_by: string | null
+          clearance_reference: string | null
+          cleared_by: string | null
+          cleared_on: string | null
+          details: string
+          evidence_paths: string[]
+          id: string
+          issued_on: string
+          notice_number: string | null
+          organisation_id: string
+          recorded_at: string
+          recorded_by: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          asset_id: string
+          authority: string
+          cause_id?: string | null
+          clear_by?: string | null
+          clearance_reference?: string | null
+          cleared_by?: string | null
+          cleared_on?: string | null
+          details: string
+          evidence_paths?: string[]
+          id?: string
+          issued_on: string
+          notice_number?: string | null
+          organisation_id: string
+          recorded_at?: string
+          recorded_by?: string | null
+          severity: string
+          status?: string
+        }
+        Update: {
+          asset_id?: string
+          authority?: string
+          cause_id?: string | null
+          clear_by?: string | null
+          clearance_reference?: string | null
+          cleared_by?: string | null
+          cleared_on?: string | null
+          details?: string
+          evidence_paths?: string[]
+          id?: string
+          issued_on?: string
+          notice_number?: string | null
+          organisation_id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulator_notices_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "regulator_notices_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "asset_condition_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulator_notices_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       return_to_service_events: {
         Row: {
           asset_id: string
@@ -1614,6 +1900,7 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      acknowledge_alert: { Args: { p_alert_id: string }; Returns: undefined }
       admin_set_organisation_suspended: {
         Args: {
           p_organisation_id: string
@@ -1663,6 +1950,15 @@ export type Database = {
           p_repaired_by?: string
         }
         Returns: Json
+      }
+      clear_regulator_notice: {
+        Args: {
+          p_cleared_on: string
+          p_evidence?: string[]
+          p_notice_id: string
+          p_reference: string
+        }
+        Returns: undefined
       }
       create_asset_class: {
         Args: {
@@ -1756,6 +2052,10 @@ export type Database = {
           role: Database["public"]["Enums"]["platform_role"]
         }[]
       }
+      place_hold: {
+        Args: { p_asset_id: string; p_kind: string; p_reason: string }
+        Returns: string
+      }
       prestart_checklist: { Args: { p_asset_id: string }; Returns: Json }
       record_fleet_subscription_consent: {
         Args: {
@@ -1806,8 +2106,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_regulator_notice: {
+        Args: {
+          p_asset_id: string
+          p_authority: string
+          p_clear_by?: string
+          p_details: string
+          p_evidence?: string[]
+          p_issued_on: string
+          p_notice_number?: string
+          p_severity: string
+        }
+        Returns: string
+      }
+      remove_hold: {
+        Args: { p_hold_id: string; p_note: string }
+        Returns: Json
+      }
       remove_member: {
         Args: { p_membership_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      report_breakdown: {
+        Args: {
+          p_asset_id: string
+          p_description: string
+          p_evidence?: string[]
+          p_location?: string
+        }
+        Returns: string
+      }
+      resolve_breakdown: {
+        Args: {
+          p_breakdown_id: string
+          p_evidence?: string[]
+          p_resolution: string
+        }
         Returns: undefined
       }
       return_to_service: {

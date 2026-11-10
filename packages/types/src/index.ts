@@ -375,13 +375,85 @@ export interface OpenConditionCause {
 export interface AppNotification {
   id: UUID;
   organisation_id: UUID;
-  kind: "critical_defect" | "minor_defect" | "operator_not_fit";
+  kind: NotificationKind;
   title: string;
   body: string | null;
   asset_id: UUID | null;
   inspection_id: UUID | null;
+  alert_id: UUID | null;
   created_at: ISODateTime;
   read_at: ISODateTime | null;
+}
+
+export type NotificationKind =
+  | "critical_defect"
+  | "minor_defect"
+  | "operator_not_fit"
+  | "out_of_service_hold"
+  | "needs_attention_hold"
+  | "breakdown"
+  | "regulator_notice"
+  | "alert_escalated";
+
+export interface CriticalAlert {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  kind: "critical_defect" | "out_of_service_hold" | "breakdown" | "regulator_notice";
+  title: string;
+  source_type: string;
+  source_id: UUID | null;
+  raised_at: ISODateTime;
+  acknowledged_at: ISODateTime | null;
+  acknowledged_by: UUID | null;
+  escalation_level: 0 | 1 | 2;
+  last_escalated_at: ISODateTime | null;
+}
+
+export interface Hold {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  kind: "out_of_service" | "needs_attention";
+  reason: string;
+  placed_by: UUID | null;
+  placed_at: ISODateTime;
+  removed_at: ISODateTime | null;
+  removed_by: UUID | null;
+  removal_note: string | null;
+}
+
+export interface Breakdown {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  description: string;
+  location: string | null;
+  reported_by: UUID | null;
+  reported_at: ISODateTime;
+  status: "open" | "resolved";
+  resolved_at: ISODateTime | null;
+  resolved_by: UUID | null;
+  resolution: string | null;
+  evidence_paths: string[];
+}
+
+export interface RegulatorNotice {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  authority: string;
+  notice_number: string | null;
+  severity: "major" | "minor" | "self_clearing";
+  issued_on: ISODate;
+  clear_by: ISODate | null;
+  details: string;
+  recorded_by: UUID | null;
+  recorded_at: ISODateTime;
+  status: "open" | "cleared";
+  cleared_on: ISODate | null;
+  clearance_reference: string | null;
+  evidence_paths: string[];
 }
 
 export interface PrestartSubmitResult {

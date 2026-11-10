@@ -1,6 +1,20 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { clearDefect, deferDefect, dismissDefect, mergeDefect, returnToService, triageDefect } from "@hvems/api-client";
+import {
+  acknowledgeAlert,
+  clearDefect,
+  clearRegulatorNotice,
+  deferDefect,
+  dismissDefect,
+  mergeDefect,
+  placeHold,
+  recordRegulatorNotice,
+  removeHold,
+  reportBreakdown,
+  resolveBreakdown,
+  returnToService,
+  triageDefect,
+} from "@hvems/api-client";
 import { z } from "@hvems/validation";
 import { errorState, type ActionState } from "@/lib/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -82,4 +96,73 @@ export async function returnToServiceAction(orgId: string, assetId: string, inpu
   const v = z.object({ note: reason, evidence: paths }).parse(input);
   const db = await createSupabaseServerClient();
   return run(orgId, assetId, "Returned to service", () => returnToService(db, assetId, v.note, v.evidence));
+}
+
+// ------------------------------------------------- holds, breakdowns, notices, alerts
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date");
+
+export async function placeHoldAction(orgId: string, assetId: string, input: { kind: string; reason: string }): Promise<ActionState> {
+  const v = z.object({ kind: z.enum(["out_of_service", "needs_attention"]), reason }).parse(input);
+  const db = await createSupabaseServerClient();
+  return run(orgId, assetId, "Hold placed", () => placeHold(db, assetId, v.kind, v.reason));
+}
+
+export async function removeHoldAction(orgId: string, assetId: string, input: { holdId: string; note: string }): Promise<ActionState> {
+  const v = z.object({ holdId: z.string().uuid(), note: reason }).parse(input);
+  const db = await createSupabaseServerClient();
+  return run(orgId, assetId, "Hold removed", () => removeHold(db, v.holdId, v.note));
+}
+
+export async function reportBreakdownAction(
+  orgId: string,
+  assetId: string,
+  input: { description: string; location?: string; evidence?: string[] },
+): Promise<ActionState> {
+  const v = z.object({ description: reason, location: z.string().trim().max(300).optional(), evidence: paths }).parse(input);
+  const db = await createSupabaseServerClient();
+  return run(orgId, assetId, "Breakdown reported. The Owner and Fleet Managers have been alerted.", () => reportBreakdown(db, { assetId, ...v }));
+}
+
+export async function resolveBreakdownAction(orgId: string, assetId: string, input: { breakdownId: string; resolution: string; evidence?: string[] }): Promise<ActionState> {
+  const v = z.object({ breakdownId: z.string().uuid(), resolution: reason, evidence: paths }).parse(input);
+  const db = await createSupabaseServerClient();
+  return run(orgId, assetId, "Breakdown resolved. Return the equipment to service when it's fit to use.", () =>
+    resolveBreakdown(db, v.breakdownId, v.resolution, v.evidence),
+  );
+}
+
+export async function recordNoticeAction(
+  orgId: string,
+  assetId: string,
+  input: { authority: string; severity: string; issuedOn: string; details: string; noticeNumber?: string; clearBy?: string; evidence?: string[] },
+): Promise<ActionState> {
+  const v = z
+    .object({
+      authority: z.string().trim().min(2, "Enter the authority").max(120),
+      severity: z.enum(["major", "minor", "self_clearing"]),
+      issuedOn: isoDate,
+      details: reason,
+      noticeNumber: z.string().trim().max(60).optional(),
+      clearBy: isoDate.optional().or(z.literal("")),
+      evidence: paths,
+    })
+    .parse(input);
+  const db = await createSupabaseServerClient();
+  return run(orgId, assetId, "Defect notice recorded", () => recordRegulatorNotice(db, { assetId, ...v, clearBy: v.clearBy || undefined }));
+}
+
+export async function clearNoticeAction(
+  orgId: string,
+  assetId: string,
+  input: { noticeId: string; clearedOn: string; reference: string; evidence?: string[] },
+): Promise<ActionState> {
+  const v = z.object({ noticeId: z.string().uuid(), clearedOn: isoDate, reference: reason, evidence: paths }).parse(input);
+  const db = await createSupabaseServerClient();
+  return run(orgId, assetId, "Defect notice cleared", () => clearRegulatorNotice(db, v.noticeId, v.clearedOn, v.reference, v.evidence));
+}
+
+export async function acknowledgeAlertAction(orgId: string, alertId: string): Promise<ActionState> {
+  const id = z.string().uuid().parse(alertId);
+  const db = await createSupabaseServerClient();
+  return run(orgId, undefined, "Alert acknowledged", () => acknowledgeAlert(db, id));
 }

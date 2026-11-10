@@ -18,6 +18,10 @@ import type {
   OpenConditionCause,
   ReturnToServiceEvent,
   DefectSeverityValue,
+  CriticalAlert,
+  Hold,
+  Breakdown,
+  RegulatorNotice,
   AssetClass,
   AssetListItem,
   AuditEvent,
@@ -632,5 +636,96 @@ export async function listOpenConditionCauses(db: HvemsClient, assetId: string):
 export async function listReturnToServiceEvents(db: HvemsClient, assetId: string, limit = 10): Promise<ReturnToServiceEvent[]> {
   return unwrap<ReturnToServiceEvent[]>(
     await db.from("return_to_service_events").select("*").eq("asset_id", assetId).order("returned_at", { ascending: false }).limit(limit),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Holds, breakdowns, regulator notices, critical alerts
+// ---------------------------------------------------------------------------
+type WithAsset<T> = T & { asset: { asset_number: string; make: string | null; model: string | null } | null };
+const ASSET = "asset:assets(asset_number, make, model)";
+
+export async function placeHold(db: HvemsClient, assetId: string, kind: Hold["kind"], reason: string): Promise<string> {
+  return unwrap<string>(await db.rpc("place_hold", { p_asset_id: assetId, p_kind: kind, p_reason: reason }));
+}
+
+export async function removeHold(db: HvemsClient, holdId: string, note: string): Promise<{ awaiting_return_to_service: boolean }> {
+  return unwrap(await db.rpc("remove_hold", { p_hold_id: holdId, p_note: note }));
+}
+
+export async function reportBreakdown(
+  db: HvemsClient,
+  input: { assetId: string; description: string; location?: string; evidence?: string[] },
+): Promise<string> {
+  return unwrap<string>(
+    await db.rpc("report_breakdown", {
+      p_asset_id: input.assetId,
+      p_description: input.description,
+      p_location: input.location || null,
+      p_evidence: input.evidence ?? [],
+    }),
+  );
+}
+
+export async function resolveBreakdown(db: HvemsClient, breakdownId: string, resolution: string, evidence: string[] = []): Promise<void> {
+  unwrap(await db.rpc("resolve_breakdown", { p_breakdown_id: breakdownId, p_resolution: resolution, p_evidence: evidence }));
+}
+
+export async function recordRegulatorNotice(
+  db: HvemsClient,
+  input: {
+    assetId: string;
+    authority: string;
+    severity: RegulatorNotice["severity"];
+    issuedOn: string;
+    details: string;
+    noticeNumber?: string;
+    clearBy?: string;
+    evidence?: string[];
+  },
+): Promise<string> {
+  return unwrap<string>(
+    await db.rpc("record_regulator_notice", {
+      p_asset_id: input.assetId,
+      p_authority: input.authority,
+      p_severity: input.severity,
+      p_issued_on: input.issuedOn,
+      p_details: input.details,
+      p_notice_number: input.noticeNumber || null,
+      p_clear_by: input.clearBy || null,
+      p_evidence: input.evidence ?? [],
+    }),
+  );
+}
+
+export async function clearRegulatorNotice(db: HvemsClient, noticeId: string, clearedOn: string, reference: string, evidence: string[] = []): Promise<void> {
+  unwrap(await db.rpc("clear_regulator_notice", { p_notice_id: noticeId, p_cleared_on: clearedOn, p_reference: reference, p_evidence: evidence }));
+}
+
+export async function acknowledgeAlert(db: HvemsClient, alertId: string): Promise<void> {
+  unwrap(await db.rpc("acknowledge_alert", { p_alert_id: alertId }));
+}
+
+/** Open holds, breakdowns and notices for one asset or the whole company. */
+export async function listActiveSafetyEvents(
+  db: HvemsClient,
+  filter: { organisationId: string; assetId?: string },
+): Promise<{ holds: WithAsset<Hold>[]; breakdowns: WithAsset<Breakdown>[]; notices: WithAsset<RegulatorNotice>[] }> {
+  const scope = <Q extends { eq: (c: string, v: string) => Q }>(q: Q) => (filter.assetId ? q.eq("asset_id", filter.assetId) : q);
+  const [holds, breakdowns, notices] = await Promise.all([
+    scope(db.from("holds").select(`*, ${ASSET}`).eq("organisation_id", filter.organisationId).is("removed_at", null)).order("placed_at", { ascending: false }),
+    scope(db.from("breakdowns").select(`*, ${ASSET}`).eq("organisation_id", filter.organisationId).eq("status", "open")).order("reported_at", { ascending: false }),
+    scope(db.from("regulator_notices").select(`*, ${ASSET}`).eq("organisation_id", filter.organisationId).eq("status", "open")).order("issued_on", { ascending: false }),
+  ]);
+  return {
+    holds: unwrap<WithAsset<Hold>[]>(holds),
+    breakdowns: unwrap<WithAsset<Breakdown>[]>(breakdowns),
+    notices: unwrap<WithAsset<RegulatorNotice>[]>(notices),
+  };
+}
+
+export async function listCriticalAlerts(db: HvemsClient, organisationId: string, limit = 50): Promise<WithAsset<CriticalAlert>[]> {
+  return unwrap<WithAsset<CriticalAlert>[]>(
+    await db.from("critical_alerts").select(`*, ${ASSET}`).eq("organisation_id", organisationId).order("raised_at", { ascending: false }).limit(limit),
   );
 }

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listDefects } from "@hvems/api-client";
+import { listActiveSafetyEvents, listDefects } from "@hvems/api-client";
 import { DEFECT_SEVERITY_EFFECT, DEFECT_STATUS_LABELS, formatDateAU, formatDateTimeAU, todayISO } from "@hvems/domain";
 import { SeverityBadge } from "@/components/safety";
 import { PageHeader } from "@/components/shell/page";
-import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { Badge, Card, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,28 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
   const ctx = await loadOrgContext(orgId, ["company"]);
   const db = await createSupabaseServerClient();
   const closed = view === "closed";
-  const all = await listDefects(db, { organisationId: orgId, limit: 300 });
+  const [all, safety] = await Promise.all([listDefects(db, { organisationId: orgId, limit: 300 }), listActiveSafetyEvents(db, { organisationId: orgId })]);
+  const events = [
+    ...safety.breakdowns.map((b) => ({ id: b.id, assetId: b.asset_id, asset: b.asset?.asset_number, tone: "red" as const, label: "Breakdown", text: b.description, at: b.reported_at })),
+    ...safety.holds.map((h) => ({
+      id: h.id,
+      assetId: h.asset_id,
+      asset: h.asset?.asset_number,
+      tone: h.kind === "out_of_service" ? ("red" as const) : ("amber" as const),
+      label: h.kind === "out_of_service" ? "Out-of-service hold" : "Needs-attention hold",
+      text: h.reason,
+      at: h.placed_at,
+    })),
+    ...safety.notices.map((n) => ({
+      id: n.id,
+      assetId: n.asset_id,
+      asset: n.asset?.asset_number,
+      tone: n.severity === "major" ? ("red" as const) : ("amber" as const),
+      label: `${n.severity === "major" ? "Major" : n.severity === "minor" ? "Minor" : "Self-clearing"} defect notice`,
+      text: `${n.authority}: ${n.details}`,
+      at: n.recorded_at,
+    })),
+  ];
   const open = all.filter((d) => d.status === "open").sort((a, b) => RANK[a.severity] - RANK[b.severity] || b.reported_at.localeCompare(a.reported_at));
   const done = all.filter((d) => d.status !== "open");
   const rows = closed ? done : open;
@@ -39,6 +60,23 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
           </Link>
         ))}
       </div>
+      {!closed && events.length ? (
+        <Card className="mb-5">
+          <CardHeader title={`Holds, breakdowns and defect notices (${events.length})`} description="Manage them from the equipment page" />
+          <ul className="divide-y divide-stroke">
+            {events.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center gap-2 px-5 py-2.5 text-[14px]">
+                <Badge tone={e.tone}>{e.label}</Badge>
+                <Link href={`/customer/${orgId}/equipment/${e.assetId}`} className="font-semibold text-link hover:underline">
+                  {e.asset ?? "Equipment"}
+                </Link>
+                <span className="text-ink-muted">{e.text}</span>
+                <span className="text-[12.5px] text-ink-subtle">{formatDateTimeAU(new Date(e.at), ctx.timezone)}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
       <Card>
         {rows.length === 0 ? (
           <EmptyState title={closed ? "No closed defects yet" : "No open defects"}>Faults reported at pre-start appear here.</EmptyState>
