@@ -42,9 +42,10 @@ select is((select count(*)::int from public.notifications n join public.org_memb
 select is(app.escalate_alerts(now() + interval '121 minutes'), 1, 'escalated again at 2 hours');
 select is((select escalation_level from public.critical_alerts where source_type = 'hold'), 2::smallint, 'at the second level');
 
+select id as hold_alert from public.critical_alerts where source_type = 'hold' \gset
 select tests.authenticate_as(:'driver');
-select is(tests.error_code(format($$select public.acknowledge_alert(%L)$$, (select id from public.critical_alerts limit 1))), 'forbidden',
-  'drivers cannot acknowledge alerts');
+select is((select count(*)::int from public.critical_alerts), 0, 'drivers cannot see alerts');
+select is(tests.error_code(format($$select public.acknowledge_alert(%L)$$, :'hold_alert')), 'forbidden', 'drivers cannot acknowledge alerts');
 reset role;
 select tests.authenticate_as(:'fm');
 select lives_ok(format($$select public.acknowledge_alert(%L)$$, (select id from public.critical_alerts where source_type = 'hold')), 'the Fleet Manager acknowledges');
