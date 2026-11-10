@@ -17,7 +17,7 @@
    - any **add-ons** ticked for that machine, for example a quick hitch, plus any items the company has added.
 3. The driver answers each item:
    - ✅ **OK**
-   - ❌ **Fault**: a note is required; a photo is required for a Critical item and optional otherwise.
+   - ❌ **Fault**: a note is always required. A photo is **recommended** (the app prompts for one), but never mandatory: where a photo isn't appropriate or possible, the note is enough (HVEMS, 10 Nov 2026).
    - **N/A**: only allowed on items marked "N/A allowed".
 4. The driver enters the current odometer or hours reading. It's checked against the last reading in the same way as meter readings are now.
 5. **General notes and photos** can be added at the end.
@@ -27,7 +27,7 @@
 | Result | When | What happens |
 |---|---|---|
 | **Pass** | No faults | The machine stays in its current condition |
-| **Pass with faults** | Only Minor or Major faults | A defect is raised for each fault. A Major fault makes the machine **Needs attention** and the Fleet Manager is notified |
+| **Pass with faults** | Only Minor or Major faults | A defect is raised for each fault. A Major fault makes the machine **Needs attention** and notifies the **Owner and Fleet Managers** (HVEMS, 10 Nov 2026) |
 | **Fail: do not operate** | Any Critical fault | A Critical defect is raised, the machine goes **Out of service**, the driver sees "Do not operate this machine", and the Owner and Fleet Managers get a critical alert (O-07) |
 
 Severity labels used below:
@@ -239,5 +239,5 @@ The driver enters:
 1. Approve or change the items and their severities.
 2. Add **Mobile crane** as a standard class (cranes are currently "Other mobile plant").
 3. Choose which items allow N/A.
-4. The photo rules: required for every Critical fault? Maximum number of photos?
-5. Whether Major faults should also notify the Fleet Manager straight away (the draft says yes).
+4. ~~Photo rules~~ **Decided 10 Nov 2026:** photos recommended, never mandatory; a note is always required. Still open: the maximum number of photos (draft: 10).
+5. ~~Major-fault notification~~ **Decided 10 Nov 2026:** a Major fault notifies the Owner and Fleet Managers.
