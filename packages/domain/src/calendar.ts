@@ -48,3 +48,32 @@ export function formatDateTimeAU(instant: Date, timeZone: string = BUSINESS_TIME
     hour12: false,
   }).format(instant);
 }
+
+/**
+ * Timezones an organisation or site can choose. The platform and the Super
+ * Admin console use BUSINESS_TIMEZONE; each organisation's members see dates
+ * and times in the organisation's own timezone (decision of 10 Nov 2026).
+ */
+export const AU_TIMEZONES = [
+  { value: "Australia/Brisbane", label: "Brisbane (QLD)" },
+  { value: "Australia/Sydney", label: "Sydney (NSW / ACT)" },
+  { value: "Australia/Melbourne", label: "Melbourne (VIC)" },
+  { value: "Australia/Hobart", label: "Hobart (TAS)" },
+  { value: "Australia/Adelaide", label: "Adelaide (SA)" },
+  { value: "Australia/Broken_Hill", label: "Broken Hill (NSW)" },
+  { value: "Australia/Darwin", label: "Darwin (NT)" },
+  { value: "Australia/Perth", label: "Perth (WA)" },
+  { value: "Australia/Eucla", label: "Eucla (WA)" },
+  { value: "Australia/Lord_Howe", label: "Lord Howe Island" },
+] as const;
+
+/** Options for a timezone select, keeping an unlisted current value selectable. */
+export function timezoneOptions(current?: string | null): { value: string; label: string }[] {
+  const list: { value: string; label: string }[] = AU_TIMEZONES.map((t) => ({ value: t.value, label: t.label }));
+  return current && !list.some((t) => t.value === current) ? [{ value: current, label: current }, ...list] : list;
+}
+
+/** Today's date (yyyy-mm-dd) in a timezone, for date inputs. */
+export function todayISO(timeZone: string = BUSINESS_TIMEZONE, now: Date = new Date()): string {
+  return now.toLocaleDateString("en-CA", { timeZone });
+}

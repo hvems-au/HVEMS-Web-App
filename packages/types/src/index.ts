@@ -43,6 +43,9 @@ export interface Organisation {
   abn: string | null;
   status: OrganisationStatus;
   timezone: string;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
   settings: {
     overdue_service_sets_needs_attention?: boolean;
     repairer_cannot_clear_own_critical?: boolean;

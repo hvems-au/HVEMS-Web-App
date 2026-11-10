@@ -45,7 +45,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         description={
           <span className="inline-flex flex-wrap items-center gap-2">
             {asset.asset_class?.name}
-            {asset.archived_at ? <Badge tone="grey">Archived {formatDateAU(new Date(asset.archived_at))}</Badge> : <ConditionBadge condition={asset.condition} />}
+            {asset.archived_at ? <Badge tone="grey">Archived {formatDateAU(new Date(asset.archived_at), ctx.timezone)}</Badge> : <ConditionBadge condition={asset.condition} />}
           </span>
         }
         breadcrumb={{ label: "Equipment", href: base }}
@@ -60,7 +60,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                   </Link>
                 </Button>
                 {can(ctx.capabilities, "assets.import_archive") ? (
-                  <ArchiveDialog orgId={orgId} assetId={assetId} assetNumber={asset.asset_number} />
+                  <ArchiveDialog orgId={orgId} assetId={assetId} assetNumber={asset.asset_number} timezone={ctx.timezone} />
                 ) : null}
               </>
             ) : null}
@@ -73,7 +73,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         </div>
       ) : (
         <div className="mb-5 rounded-[10px] border border-stroke bg-white px-4 py-3 text-[14px] text-ink-muted">
-          Archived ({asset.archive_disposal}) effective {asset.archive_effective_date ? formatDateAU(new Date(asset.archive_effective_date)) : "—"}: {asset.archive_reason}.
+          Archived ({asset.archive_disposal}) effective {asset.archive_effective_date ? formatDateAU(new Date(asset.archive_effective_date), ctx.timezone) : "—"}: {asset.archive_reason}.
           History is kept and the asset no longer counts towards the fleet subscription from the following month.
         </div>
       )}
@@ -110,12 +110,12 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
               <div className="rounded-[10px] bg-surface-muted p-3">
                 <p className="text-[12px] text-ink-muted">Odometer</p>
                 <p className="text-[20px] font-bold">{asset.current_odometer_km !== null ? `${formatNumber(asset.current_odometer_km)} km` : "—"}</p>
-                <p className="text-[11.5px] text-ink-subtle">{asset.odometer_read_at ? formatDateTimeAU(new Date(asset.odometer_read_at)) : "No reading"}</p>
+                <p className="text-[11.5px] text-ink-subtle">{asset.odometer_read_at ? formatDateTimeAU(new Date(asset.odometer_read_at), ctx.timezone) : "No reading"}</p>
               </div>
               <div className="rounded-[10px] bg-surface-muted p-3">
                 <p className="text-[12px] text-ink-muted">Engine hours</p>
                 <p className="text-[20px] font-bold">{asset.current_engine_hours !== null ? `${formatNumber(asset.current_engine_hours, 1)} h` : "—"}</p>
-                <p className="text-[11.5px] text-ink-subtle">{asset.engine_hours_read_at ? formatDateTimeAU(new Date(asset.engine_hours_read_at)) : "No reading"}</p>
+                <p className="text-[11.5px] text-ink-subtle">{asset.engine_hours_read_at ? formatDateTimeAU(new Date(asset.engine_hours_read_at), ctx.timezone) : "No reading"}</p>
               </div>
             </div>
             {canRecord ? (
@@ -144,7 +144,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 <tbody>
                   {readings.map((r) => (
                     <TR key={r.id}>
-                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(r.read_at))}</TD>
+                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(r.read_at), ctx.timezone)}</TD>
                       <TD className="font-semibold whitespace-nowrap">
                         {formatNumber(r.value, 1)} {r.unit === "km" ? "km" : "h"}
                         {r.out_of_sequence ? <span className="block text-[11.5px] font-normal text-[#9a4a00]">Out of sequence</span> : null}
@@ -179,7 +179,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 <tbody>
                   {history.map((h) => (
                     <TR key={h.id}>
-                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(h.changed_at))}</TD>
+                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(h.changed_at), ctx.timezone)}</TD>
                       <TD>
                         {CONDITION_LABELS[h.from_condition]} → <strong>{CONDITION_LABELS[h.to_condition]}</strong>
                       </TD>
@@ -212,7 +212,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 <tbody>
                   {audit.map((e) => (
                     <TR key={e.id}>
-                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(e.occurred_at))}</TD>
+                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(e.occurred_at), ctx.timezone)}</TD>
                       <TD className="capitalize">{e.action}</TD>
                       <TD>{e.actor_method.replace("_", " ")}</TD>
                       <TD className="max-w-[420px] truncate text-ink-muted">

@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { createInvitation, revokeInvitation } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
-import { createOrganisationSchema, inviteMemberSchema, z } from "@hvems/validation";
+import { createOrganisationSchema, inviteMemberSchema, organisationContactSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { currentOrigin } from "@/lib/current-portal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -116,13 +116,31 @@ export async function revokeGrantAction(portal: string, orgId: string, grantId: 
 
 export async function updateOrganisationAction(portal: string, orgId: string, _prev: ActionState, form: FormData): Promise<ActionState> {
   const base = createOrganisationSchema.safeParse({ kind: form.get("kind"), name: form.get("name"), abn: form.get("abn") ?? "" });
-  if (!base.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(base.error) };
+  const contact = organisationContactSchema.safeParse({
+    timezone: form.get("timezone"),
+    contact_name: form.get("contact_name") ?? "",
+    contact_email: form.get("contact_email") ?? "",
+    contact_phone: form.get("contact_phone") ?? "",
+  });
+  if (!base.success || !contact.success) {
+    return {
+      status: "error",
+      code: "invalid",
+      message: "Check the highlighted fields.",
+      fieldErrors: { ...(base.success ? {} : fieldErrorsFrom(base.error)), ...(contact.success ? {} : fieldErrorsFrom(contact.error)) },
+    };
+  }
   try {
     const db = await createSupabaseServerClient();
+    // Cleared contact fields are stored as empty (null).
     const patch: Record<string, unknown> = {
       name: base.data.name,
       abn: base.data.abn || null,
       legal_name: String(form.get("legal_name") ?? "").trim() || null,
+      timezone: contact.data.timezone,
+      contact_name: contact.data.contact_name ?? null,
+      contact_email: contact.data.contact_email ?? null,
+      contact_phone: contact.data.contact_phone ?? null,
     };
     if (form.get("kind") === "company") {
       patch.settings = {

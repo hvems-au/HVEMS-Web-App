@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/form";
 import { Card, CardBody, CardHeader } from "@/components/ui/primitives";
+import { TimezoneSelect } from "@/components/timezone-select";
 import { idleState } from "@/lib/client-state";
 import { updateOrganisationAction } from "./actions";
 
@@ -13,6 +14,10 @@ interface OrgSettings {
   name: string;
   legal_name: string;
   abn: string;
+  timezone: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
   overdue: boolean;
   repairer: boolean;
 }
@@ -51,6 +56,29 @@ export function SettingsForm({ portal, org, editable }: { portal: string; org: O
           </Field>
           <Field label="ABN" htmlFor="abn" error={fe("abn")} required={org.kind === "provider"}>
             <Input name="abn" defaultValue={org.abn} inputMode="numeric" disabled={!editable} />
+          </Field>
+          <Field
+            label="Timezone"
+            htmlFor="timezone"
+            error={fe("timezone")}
+            hint="Everyone in this organisation sees dates and times in this timezone. Billing months stay on Queensland time."
+          >
+            {/* A select keeps its first default when React resets the form after saving; the key remounts it with the saved value. */}
+            <TimezoneSelect key={org.timezone} id="timezone" value={org.timezone} disabled={!editable} />
+          </Field>
+        </CardBody>
+      </Card>
+      <Card>
+        <CardHeader title="Contact details" description="Who HVEMS and your service providers should contact about this account." />
+        <CardBody className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Contact name" htmlFor="contact_name" error={fe("contact_name")}>
+            <Input name="contact_name" defaultValue={org.contact_name} autoComplete="name" disabled={!editable} />
+          </Field>
+          <Field label="Contact email" htmlFor="contact_email" error={fe("contact_email")}>
+            <Input name="contact_email" type="email" defaultValue={org.contact_email} placeholder="name@company.com.au" disabled={!editable} />
+          </Field>
+          <Field label="Contact phone" htmlFor="contact_phone" error={fe("contact_phone")}>
+            <Input name="contact_phone" type="tel" defaultValue={org.contact_phone} placeholder="07 3000 0000" disabled={!editable} />
           </Field>
         </CardBody>
       </Card>

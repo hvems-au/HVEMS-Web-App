@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
 import { idleState, type ClientActionState } from "@/lib/client-state";
+import { TimezoneSelect } from "@/components/timezone-select";
 import { createClientAction, createSiteAction, updateClientAction, updateSiteAction } from "./actions";
-
-const TIMEZONES = ["Australia/Brisbane", "Australia/Sydney", "Australia/Melbourne", "Australia/Hobart", "Australia/Adelaide", "Australia/Darwin", "Australia/Perth"];
 
 function useDialogAction(action: (prev: ClientActionState, form: FormData) => Promise<ClientActionState>) {
   const [open, setOpen] = React.useState(false);
@@ -159,13 +158,7 @@ function SiteFields({ d, clients, site }: { d: DialogState; clients: Client[]; s
         </Field>
       </div>
       <Field label="Timezone" htmlFor="s-tz" error={d.fe("timezone")} hint="Used for this site's due dates and inspection days.">
-        <Select id="s-tz" name="timezone" defaultValue={site?.timezone ?? "Australia/Brisbane"}>
-          {TIMEZONES.map((t) => (
-            <option key={t} value={t}>
-              {t.replace("Australia/", "")}
-            </option>
-          ))}
-        </Select>
+        <TimezoneSelect id="s-tz" value={site?.timezone} />
       </Field>
       <Field label="Contact name" htmlFor="s-contact" error={d.fe("contact_name")}>
         <Input id="s-contact" name="contact_name" defaultValue={site?.contact_name ?? ""} />

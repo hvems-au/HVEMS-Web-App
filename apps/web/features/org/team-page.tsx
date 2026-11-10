@@ -71,7 +71,7 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                         </div>
                       </TD>
                     ) : null}
-                    <TD>{formatDateAU(new Date(m.created_at))}</TD>
+                    <TD>{formatDateAU(new Date(m.created_at), ctx.timezone)}</TD>
                     {manage ? (
                       <TD className="text-right">
                         {!isOwner && !self ? (
@@ -123,7 +123,7 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                     <TR key={i.id}>
                       <TD>{i.email}</TD>
                       <TD>{ROLE_LABELS[i.role]}</TD>
-                      <TD>{formatDateAU(new Date(i.expires_at))}</TD>
+                      <TD>{formatDateAU(new Date(i.expires_at), ctx.timezone)}</TD>
                       <TD className="text-right">
                         <RevokeInvitationButton portal={portal} orgId={orgId} invitationId={i.id} />
                       </TD>

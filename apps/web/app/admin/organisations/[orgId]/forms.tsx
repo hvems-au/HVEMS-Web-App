@@ -3,11 +3,10 @@ import * as React from "react";
 import { toast } from "sonner";
 import type { Organisation } from "@hvems/types";
 import { Button } from "@/components/ui/button";
-import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
+import { Field, FormAlert, Input, Textarea } from "@/components/ui/form";
 import { idleState, type ClientActionState } from "@/lib/client-state";
+import { TimezoneSelect } from "@/components/timezone-select";
 import { setSuspendedAction, updateOrganisationAction } from "./actions";
-
-const TIMEZONES = ["Australia/Brisbane", "Australia/Sydney", "Australia/Melbourne", "Australia/Hobart", "Australia/Adelaide", "Australia/Darwin", "Australia/Perth"];
 
 function useToastAction(action: (prev: ClientActionState, form: FormData) => Promise<ClientActionState>, onSuccess?: () => void) {
   const [state, run, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
@@ -49,13 +48,7 @@ export function OrganisationDetailsForm({ org, canEdit }: { org: Organisation; c
           <Input id="o-abn" name="abn" inputMode="numeric" defaultValue={org.abn ?? ""} placeholder="11 digits" />
         </Field>
         <Field label="Timezone" htmlFor="o-tz" error={a.fe("timezone")}>
-          <Select id="o-tz" name="timezone" defaultValue={org.timezone}>
-            {(TIMEZONES.includes(org.timezone) ? TIMEZONES : [org.timezone, ...TIMEZONES]).map((t) => (
-              <option key={t} value={t}>
-                {t.replace("Australia/", "")}
-              </option>
-            ))}
-          </Select>
+          <TimezoneSelect key={org.timezone} id="o-tz" value={org.timezone} />
         </Field>
       </fieldset>
       {canEdit ? (

@@ -3,6 +3,7 @@ import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { getMyCapabilities, getMyContexts, getMyStaffContext } from "@hvems/api-client";
 import type { Capability, OrganisationKind } from "@hvems/permissions";
+import { BUSINESS_TIMEZONE } from "@hvems/domain";
 import type { MyContext } from "@hvems/types";
 import { getCurrentPortal, portalPathFor, portalServesContext } from "@/lib/current-portal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -47,6 +48,8 @@ export interface OrgContext {
   context: MyContext;
   contexts: MyContext[];
   capabilities: ReadonlySet<Capability>;
+  /** The organisation's timezone: every member sees its dates and times in it. */
+  timezone: string;
 }
 
 /**
@@ -66,8 +69,12 @@ export const loadOrgContext = cache(async (organisationId: string, onlyKinds?: r
     redirect(`/account/security?required=1&next=${encodeURIComponent(portalPath(context))}`);
   }
   const db = await createSupabaseServerClient();
-  const caps = await getMyCapabilities(db, organisationId);
-  return { user, context, contexts, capabilities: new Set(caps as Capability[]) };
+  const [caps, org] = await Promise.all([
+    getMyCapabilities(db, organisationId),
+    db.from("organisations").select("timezone").eq("id", organisationId).maybeSingle(),
+  ]);
+  const timezone = org.data?.timezone ?? BUSINESS_TIMEZONE;
+  return { user, context, contexts, capabilities: new Set(caps as Capability[]), timezone };
 });
 
 export async function requireCapability(ctx: OrgContext, capability: Capability) {

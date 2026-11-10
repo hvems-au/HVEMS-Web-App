@@ -19,6 +19,10 @@ export async function SettingsPage({ ctx, portal }: { ctx: OrgContext; portal: "
           name: org.name,
           legal_name: org.legal_name ?? "",
           abn: org.abn ?? "",
+          timezone: org.timezone,
+          contact_name: org.contact_name ?? "",
+          contact_email: org.contact_email ?? "",
+          contact_phone: org.contact_phone ?? "",
           overdue: !!org.settings.overdue_service_sets_needs_attention,
           repairer: !!org.settings.repairer_cannot_clear_own_critical,
         }}

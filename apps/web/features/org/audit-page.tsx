@@ -35,7 +35,7 @@ export async function AuditPage({ ctx }: { ctx: OrgContext }) {
             <tbody>
               {events.map((e) => (
                 <TR key={e.id}>
-                  <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(e.occurred_at))}</TD>
+                  <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(e.occurred_at), ctx.timezone)}</TD>
                   <TD>{e.actor_user_id ? (who.get(e.actor_user_id) ?? "HVEMS staff or former member") : "System"}</TD>
                   <TD>
                     <Badge tone={methodTone(e.actor_method)}>

@@ -4,6 +4,7 @@ import { Building2, Store, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/form";
 import { idleState } from "@/lib/client-state";
+import { TimezoneSelect } from "@/components/timezone-select";
 import { cn } from "@/lib/utils";
 import { createOrganisationAction } from "./actions";
 
@@ -79,6 +80,13 @@ export function OnboardingForm({ kinds }: { kinds: readonly string[] }) {
           hint={kind === "provider" ? "Checked by HVEMS during verification." : "Optional."}
         >
           <Input name="abn" inputMode="numeric" placeholder="11 digits" />
+        </Field>
+        <Field
+          label="Timezone"
+          htmlFor="tz"
+          hint="Everyone in your organisation sees dates and times in this timezone. You can change it later in Settings."
+        >
+          <TimezoneSelect id="tz" />
         </Field>
       </div>
       <div className="flex justify-end">

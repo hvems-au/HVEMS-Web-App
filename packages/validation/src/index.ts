@@ -59,6 +59,7 @@ export const createOrganisationSchema = z
     kind: z.enum(["company", "marketplace_customer", "provider"]),
     name: trimmed(200).min(2, "Enter a name"),
     abn: abnSchema.optional().default(""),
+    timezone: z.string().min(1, "Choose a timezone").default("Australia/Brisbane"),
   })
   .refine((v) => v.kind !== "provider" || v.abn.length === 11, { path: ["abn"], message: "Provider accounts need an ABN" });
 export type CreateOrganisationInput = z.infer<typeof createOrganisationSchema>;
@@ -190,3 +191,15 @@ export const organisationSuspensionSchema = z.object({
 });
 
 export { z };
+
+/** Organisation timezone and contact details (ACC-04, reconciliation §3 item 11). */
+export const organisationContactSchema = z.object({
+  timezone: z.string().min(1, "Choose a timezone"),
+  contact_name: optionalText(200),
+  contact_email: z.union([z.literal(""), emailSchema]).optional().transform((v) => (v ? v : undefined)),
+  contact_phone: z
+    .union([z.literal(""), z.string().trim().max(40).regex(/^[0-9 +()-]+$/, "Use digits, spaces, +, ( ) or -")])
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+});
+export type OrganisationContactValues = z.output<typeof organisationContactSchema>;

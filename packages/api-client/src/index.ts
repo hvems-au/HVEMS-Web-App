@@ -85,8 +85,20 @@ export async function getMyStaffContext(db: HvemsClient): Promise<StaffContext |
   return rows?.[0] ?? null;
 }
 
-export async function createOrganisation(db: HvemsClient, input: { kind: OrganisationKind; name: string; abn?: string }): Promise<string> {
-  return unwrap(await db.rpc("create_organisation", { p_kind: input.kind, p_name: input.name, p_abn: input.abn || null }));
+/**
+ * Create an organisation; the creator becomes its Owner. A timezone other than
+ * the Brisbane default is saved straight after (the Owner may update it; the
+ * database rejects unknown timezones).
+ */
+export async function createOrganisation(
+  db: HvemsClient,
+  input: { kind: OrganisationKind; name: string; abn?: string; timezone?: string },
+): Promise<string> {
+  const id = unwrap<string>(await db.rpc("create_organisation", { p_kind: input.kind, p_name: input.name, p_abn: input.abn || null }));
+  if (input.timezone && input.timezone !== "Australia/Brisbane") {
+    unwrap(await db.from("organisations").update({ timezone: input.timezone }).eq("id", id).select("id").single());
+  }
+  return id;
 }
 
 export async function getOrganisation(db: HvemsClient, id: string): Promise<Organisation> {

@@ -800,6 +800,9 @@ export type Database = {
         Row: {
           abn: string | null
           closed_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string | null
           first_exceeded_free_allowance_at: string | null
@@ -817,6 +820,9 @@ export type Database = {
         Insert: {
           abn?: string | null
           closed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           first_exceeded_free_allowance_at?: string | null
@@ -834,6 +840,9 @@ export type Database = {
         Update: {
           abn?: string | null
           closed_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           first_exceeded_free_allowance_at?: string | null

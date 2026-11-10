@@ -2,6 +2,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Archive } from "lucide-react";
+import { todayISO } from "@hvems/domain";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -9,7 +10,7 @@ import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form"
 import { idleState, type ClientActionState } from "@/lib/client-state";
 import { archiveAssetAction } from "../actions";
 
-export function ArchiveDialog({ orgId, assetId, assetNumber }: { orgId: string; assetId: string; assetNumber: string }) {
+export function ArchiveDialog({ orgId, assetId, assetNumber, timezone }: { orgId: string; assetId: string; assetNumber: string; timezone: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [state, action, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
@@ -22,7 +23,7 @@ export function ArchiveDialog({ orgId, assetId, assetNumber }: { orgId: string; 
     return res;
   }, idleState);
   const [disposal, setDisposal] = React.useState("disposed");
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Brisbane" });
+  const today = todayISO(timezone);
 
   const fe = (k: string) => (state.status === "error" ? state.fieldErrors?.[k] : undefined);
   return (

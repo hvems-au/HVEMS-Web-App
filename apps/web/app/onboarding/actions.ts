@@ -8,7 +8,12 @@ import { PORTAL_INFO } from "@/lib/portals";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function createOrganisationAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const parsed = createOrganisationSchema.safeParse({ kind: form.get("kind"), name: form.get("name"), abn: form.get("abn") ?? "" });
+  const parsed = createOrganisationSchema.safeParse({
+    kind: form.get("kind"),
+    name: form.get("name"),
+    abn: form.get("abn") ?? "",
+    timezone: form.get("timezone") ?? undefined,
+  });
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };
   // Each portal creates only its own kind of account (ADR-009).
   if (!PORTAL_INFO[await getCurrentPortal()].orgKinds.includes(parsed.data.kind)) {
