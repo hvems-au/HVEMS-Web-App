@@ -1,5 +1,11 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): approved corrections, batch 1
+**Done**
+- HVEMS approved O-01 to O-05 and reconciliation §3 items 2–13. New decisions O-06 (MFA for every user later, as a setting) and O-07 (critical alerts to Owner and Fleet Managers).
+- Items 2, 3, 6 (migration `20261110044311 register_corrections`, applied by Claude): Fleet Managers create/edit equipment and clients; import and archive need the new `assets.import_archive` (Owner/Administrator); Viewers see costs; disposal reasons disposed / transferred out / written off / sold / other. pgTAP `050`; test `020` updated. Types regenerated; advisors unchanged.
+- Equipment page: a disabled **Pre-start — Coming soon** button. Checklist content is pending decision P-01 (`docs/roadmap.md`, "Pending decisions").
+
 ## 2026-11-10 — Session 2 (continued): Super Admin sees all organisations' team and fleet
 **Done**
 - O-05: read-only access for the Super Admin (Platform Administrator + MFA) to every organisation's equipment, clients, sites, meter readings and condition records; Support Agents unchanged. Applied by Claude through the Supabase connector (first use of the new local permission); recorded as `20261109123912 super_admin_fleet_read`; checked by simulation (MFA: sees all; no MFA: nothing).

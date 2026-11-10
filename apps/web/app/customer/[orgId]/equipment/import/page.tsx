@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Import equipment" };
 export default async function ImportPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const ctx = await loadOrgContext(orgId, ["company"]);
-  await requireCapability(ctx, "assets.manage");
+  await requireCapability(ctx, "assets.import_archive");
   return (
     <>
       <PageHeader

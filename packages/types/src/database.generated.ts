@@ -1,7 +1,3 @@
-// Generated from the hosted Supabase schema (project anvqykllajezwaasguqp).
-// Do not edit by hand. Regenerate after each migration:
-//   supabase gen types typescript --project-id anvqykllajezwaasguqp > packages/types/src/database.generated.ts
-
 export type Json =
   | string
   | number
@@ -1345,7 +1341,12 @@ export type Database = {
     Enums: {
       asset_category: "vehicle" | "equipment"
       asset_condition: "active" | "needs_attention" | "out_of_service"
-      asset_disposal: "retired" | "sold" | "other"
+      asset_disposal:
+        | "disposed"
+        | "transferred_out"
+        | "written_off"
+        | "sold"
+        | "other"
       asset_owner_type: "own" | "client_owned" | "hired_in"
       condition_cause_kind:
         | "critical_defect"
@@ -1532,7 +1533,13 @@ export const Constants = {
     Enums: {
       asset_category: ["vehicle", "equipment"],
       asset_condition: ["active", "needs_attention", "out_of_service"],
-      asset_disposal: ["retired", "sold", "other"],
+      asset_disposal: [
+        "disposed",
+        "transferred_out",
+        "written_off",
+        "sold",
+        "other",
+      ],
       asset_owner_type: ["own", "client_owned", "hired_in"],
       condition_cause_kind: [
         "critical_defect",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { ClipboardCheck, Pencil } from "lucide-react";
 import { getAsset, listAuditEvents, listConditionHistory, listMeterReadings } from "@hvems/api-client";
 import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -50,16 +50,21 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         }
         breadcrumb={{ label: "Equipment", href: base }}
         actions={
-          manage ? (
-            <>
-              <Button asChild variant="secondary">
-                <Link href={`${base}/${assetId}/edit`}>
-                  <Pencil /> Edit
-                </Link>
-              </Button>
-              <ArchiveDialog orgId={orgId} assetId={assetId} assetNumber={asset.asset_number} />
-            </>
-          ) : null
+          <>
+            {!asset.archived_at ? <PreStartButton /> : null}
+            {manage ? (
+              <>
+                <Button asChild variant="secondary">
+                  <Link href={`${base}/${assetId}/edit`}>
+                    <Pencil /> Edit
+                  </Link>
+                </Button>
+                {can(ctx.capabilities, "assets.import_archive") ? (
+                  <ArchiveDialog orgId={orgId} assetId={assetId} assetNumber={asset.asset_number} />
+                ) : null}
+              </>
+            ) : null}
+          </>
         }
       />
       {!asset.archived_at ? (
@@ -222,5 +227,21 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         </Card>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Pre-starts arrive in 2B. The standard checklists are waiting on HVEMS
+ * approval (docs/roadmap.md, "Pending decisions"), so the button is shown
+ * disabled rather than leading to a placeholder form.
+ */
+function PreStartButton() {
+  return (
+    <span title="Pre-start checklists are coming soon" className="cursor-not-allowed">
+      <Button variant="outline" disabled>
+        <ClipboardCheck /> Pre-start
+        <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-ink-muted">Coming soon</span>
+      </Button>
+    </span>
   );
 }

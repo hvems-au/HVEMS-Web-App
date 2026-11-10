@@ -11,8 +11,8 @@
  *  - "Fleet Manager or above" is read as Owner ⊇ Administrator ⊇ Fleet Manager
  *    for operational capabilities; Administrators still have no billing or
  *    closure authority.
- *  - Register changes (assets, clients, sites) belong to Owner/Administrator,
- *    because the SoW gives "manages ... sites and assets" to the Administrator.
+ *  - Fleet Managers create and edit equipment and clients (spec B.1); importing
+ *    and archiving equipment, and managing sites, stay with Owner/Administrator.
  */
 
 export const ORGANISATION_KINDS = ["company", "marketplace_customer", "provider"] as const;
@@ -57,6 +57,7 @@ export const CAPABILITIES = [
   "assets.view",
   "assets.view_permitted",
   "assets.manage",
+  "assets.import_archive",
   "assets.costs.view",
   "asset_classes.manage",
   "clients.view",
@@ -110,10 +111,13 @@ const CLEARANCE: Capability[] = [
 const OPERATIONS_MANAGER: Capability[] = [
   "org.view",
   "assets.view",
+  // Create and edit equipment and clients (spec B.1, reconciliation §3 item 2).
+  "assets.manage",
   "assets.costs.view",
   // Company asset classes (decision O-03); Owner and Administrator inherit it.
   "asset_classes.manage",
   "clients.view",
+  "clients.manage",
   "sites.view",
   "meter_readings.record",
   "meter_readings.accept",
@@ -138,8 +142,7 @@ const ADMINISTRATOR: Capability[] = [
   "org.members.manage",
   "org.grants.assign",
   "audit.view",
-  "assets.manage",
-  "clients.manage",
+  "assets.import_archive",
   "sites.manage",
   "templates.manage",
 ];
@@ -200,7 +203,7 @@ export const ROLE_CAPABILITIES: Record<MemberRole, readonly Capability[]> = {
     "reports.view",
     "reports.export",
   ],
-  viewer: ["org.view", "assets.view", "clients.view", "sites.view", "reports.view", "reports.export"],
+  viewer: ["org.view", "assets.view", "assets.costs.view", "clients.view", "sites.view", "reports.view", "reports.export"],
   account_owner: [...ACCOUNT_OWNER_COMMON, "marketplace.post", "marketplace.accept"],
   job_manager: ["org.view", "marketplace.post", "marketplace.accept"],
   provider_owner: [

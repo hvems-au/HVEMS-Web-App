@@ -57,9 +57,8 @@ select is(tests.error_code(format($$select app.open_condition_cause(%L, 'critica
 reset role;
 
 select tests.authenticate_as(:'fm');
-select is(tests.error_code(format($$insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, serial_number)
-  values (%L, 'EX-4', %L, 'CAT', '336F', 'S-12')$$, :'org', tests.class_id('excavator'))), '42501',
-  'Fleet Managers cannot add register assets (SoW §2.4: Administrator)');
+select is(tests.error_code(format($$select public.archive_asset(%L, 'Scrapped', current_date)$$, :'truck')), 'forbidden',
+  'Fleet Managers cannot archive equipment (spec B.1: Owner/Administrator); test 050 covers create and edit');
 reset role;
 
 -- --------------------------------------- condition engine (SoW §3.4, as owner)

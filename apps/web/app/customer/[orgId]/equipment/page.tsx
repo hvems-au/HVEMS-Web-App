@@ -63,11 +63,13 @@ export default async function EquipmentPage({
         actions={
           manage ? (
             <>
-              <Button asChild variant="secondary">
-                <Link href={`${base}/import`}>
-                  <Upload /> Import CSV
-                </Link>
-              </Button>
+              {can(ctx.capabilities, "assets.import_archive") ? (
+                <Button asChild variant="secondary">
+                  <Link href={`${base}/import`}>
+                    <Upload /> Import CSV
+                  </Link>
+                </Button>
+              ) : null}
               <Button asChild>
                 <Link href={`${base}/new`}>
                   <Plus /> New Equipment

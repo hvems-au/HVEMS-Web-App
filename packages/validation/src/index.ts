@@ -170,7 +170,7 @@ export const meterReadingSchema = z.object({
 export const archiveAssetSchema = z.object({
   reason: trimmed(1000).min(3, "Give a reason"),
   effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date"),
-  disposal: z.enum(["retired", "sold", "other"]).default("retired"),
+  disposal: z.enum(["disposed", "sold", "transferred_out", "written_off", "other"]).default("disposed"),
   open_issues_acknowledged: z.coerce.boolean().optional().default(false),
 });
 

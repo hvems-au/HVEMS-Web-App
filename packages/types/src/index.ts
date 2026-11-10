@@ -25,7 +25,7 @@ export type IdentificationMethod = "password" | "password_mfa" | "driver_pin" | 
 export type MeterUnit = "km" | "hours";
 export type MeterReadingStatus = "accepted" | "pending_acceptance" | "rejected" | "superseded";
 export type MeterReadingSource = "manual" | "inspection" | "work_order" | "import" | "onboarding";
-export type AssetDisposal = "retired" | "sold" | "other";
+export type AssetDisposal = "disposed" | "sold" | "transferred_out" | "written_off" | "other";
 
 export interface Profile {
   id: UUID;

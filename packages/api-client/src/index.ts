@@ -259,7 +259,7 @@ export async function updateAsset(db: HvemsClient, assetId: string, classId: str
 export async function archiveAsset(
   db: HvemsClient,
   assetId: string,
-  input: { reason: string; effective_date: string; disposal: "retired" | "sold" | "other"; open_issues_acknowledged: boolean },
+  input: { reason: string; effective_date: string; disposal: "disposed" | "sold" | "transferred_out" | "written_off" | "other"; open_issues_acknowledged: boolean },
 ): Promise<void> {
   unwrap(
     await db.rpc("archive_asset", {

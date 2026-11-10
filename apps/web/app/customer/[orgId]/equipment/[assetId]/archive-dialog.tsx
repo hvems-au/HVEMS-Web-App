@@ -21,7 +21,7 @@ export function ArchiveDialog({ orgId, assetId, assetNumber }: { orgId: string; 
     }
     return res;
   }, idleState);
-  const [disposal, setDisposal] = React.useState("retired");
+  const [disposal, setDisposal] = React.useState("disposed");
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Brisbane" });
 
   const fe = (k: string) => (state.status === "error" ? state.fieldErrors?.[k] : undefined);
@@ -41,8 +41,10 @@ export function ArchiveDialog({ orgId, assetId, assetNumber }: { orgId: string; 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Reason for archiving" htmlFor="disposal">
               <Select name="disposal" value={disposal} onChange={(e) => setDisposal(e.target.value)}>
-                <option value="retired">Retired</option>
+                <option value="disposed">Disposed</option>
                 <option value="sold">Sold</option>
+                <option value="transferred_out">Transferred out</option>
+                <option value="written_off">Written off</option>
                 <option value="other">Other</option>
               </Select>
             </Field>
@@ -53,10 +55,10 @@ export function ArchiveDialog({ orgId, assetId, assetNumber }: { orgId: string; 
           <Field label="Details" htmlFor="reason" error={fe("reason")} required>
             <Textarea name="reason" rows={3} placeholder="e.g. Sold to dealer, invoice 4471" />
           </Field>
-          {disposal === "sold" ? (
+          {disposal === "sold" || disposal === "transferred_out" ? (
             <label className="flex items-start gap-2 text-[14px] text-ink">
               <input type="checkbox" name="open_issues_acknowledged" className="mt-0.5 size-4 accent-[var(--brand)]" />
-              I acknowledge any open defects and holds on this asset before archiving it for sale.
+              I acknowledge any open defects and holds on this asset before it leaves the company.
             </label>
           ) : null}
           <div className="flex justify-end gap-2 pt-1">

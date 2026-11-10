@@ -60,7 +60,7 @@ export async function archiveAssetAction(orgId: string, assetId: string, _prev: 
   const parsed = archiveAssetSchema.safeParse({
     reason: form.get("reason"),
     effective_date: form.get("effective_date"),
-    disposal: form.get("disposal") ?? "retired",
+    disposal: form.get("disposal") ?? "disposed",
     open_issues_acknowledged: form.get("open_issues_acknowledged") === "on",
   });
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };

@@ -40,11 +40,13 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
         actions={
           can(ctx.capabilities, "assets.manage") ? (
             <>
-              <Button asChild variant="secondary">
-                <Link href={`${base}/equipment/import`}>
-                  <Upload /> Import
-                </Link>
-              </Button>
+              {can(ctx.capabilities, "assets.import_archive") ? (
+                <Button asChild variant="secondary">
+                  <Link href={`${base}/equipment/import`}>
+                    <Upload /> Import
+                  </Link>
+                </Button>
+              ) : null}
               <Button asChild>
                 <Link href={`${base}/equipment/new`}>
                   <Plus /> New Equipment
