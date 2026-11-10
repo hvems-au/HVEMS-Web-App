@@ -11,8 +11,8 @@ select tests.create_user('driver.p@example.test', 'Dan Driver') as driver \gset
 
 select tests.authenticate_as(:'owner');
 select public.create_organisation('company', 'Papa Plant') as org \gset
-insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, serial_number)
-  values (:'org', 'EX-P1', tests.class_id('excavator'), 'CAT', '320', 'SNP1') returning id as ex \gset
+insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, serial_number, meter_type)
+  values (:'org', 'EX-P1', tests.class_id('excavator'), 'CAT', '320', 'SNP1', 'hours') returning id as ex \gset
 reset role;
 select tests.add_member(:'org', :'fm', 'fleet_manager') as fm_m \gset
 select tests.add_member(:'org', :'driver', 'driver_operator') as driver_m \gset
