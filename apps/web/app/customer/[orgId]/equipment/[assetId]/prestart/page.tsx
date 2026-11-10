@@ -63,7 +63,7 @@ export default async function PrestartPage({ params }: { params: Promise<{ orgId
               { label: "Site", value: asset.site?.name ?? "—" },
               { label: "Client", value: asset.client?.name ?? "—" },
               ...(tracksKm ? [{ label: "Last odometer", value: reading(asset.current_odometer_km, "km", asset.odometer_read_at) }] : []),
-              ...(tracksHours ? [{ label: "Last hours", value: reading(asset.current_engine_hours, "h", asset.engine_hours_read_at) }] : []),
+              ...(tracksHours ? [{ label: "Last hour meter", value: reading(asset.current_engine_hours, "hours", asset.engine_hours_read_at) }] : []),
               { label: "Operator", value: ctx.user.fullName || ctx.user.email },
               { label: "Date", value: nowLabel(tz) },
             ]}

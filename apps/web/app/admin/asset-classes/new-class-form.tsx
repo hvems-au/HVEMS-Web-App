@@ -34,7 +34,7 @@ export function NewStandardClassForm() {
           <option value="equipment">Equipment (serial number)</option>
         </Select>
       </Field>
-      <Field label="Default meter" htmlFor="sc-meter" error={fe("default_meter_type")}>
+      <Field label="Odometer / hour meter" htmlFor="sc-meter" error={fe("default_meter_type")}>
         <Select id="sc-meter" name="default_meter_type" defaultValue="kilometres">
           {Object.entries(METER_TYPE_LABELS).map(([v, label]) => (
             <option key={v} value={v}>

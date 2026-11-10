@@ -47,7 +47,7 @@ export default async function AdminAssetClassesPage() {
             <tr>
               <TH>Class</TH>
               <TH>Category</TH>
-              <TH>Default meter</TH>
+              <TH>Odometer / hour meter</TH>
               <TH>Mandatory fields</TH>
             </tr>
           </THead>

@@ -12,7 +12,7 @@ const col = createColumnHelper<AssetListItem>();
 function meter(a: AssetListItem) {
   const parts: string[] = [];
   if (a.current_odometer_km !== null) parts.push(`${formatNumber(a.current_odometer_km)} km`);
-  if (a.current_engine_hours !== null) parts.push(`${formatNumber(a.current_engine_hours, 1)} hrs`);
+  if (a.current_engine_hours !== null) parts.push(`${formatNumber(a.current_engine_hours, 1)} hours`);
   return parts.join(" · ") || "—";
 }
 
@@ -68,7 +68,7 @@ export function AssetTable({ rows, base }: { rows: AssetListItem[]; base: string
           );
         },
       }),
-      col.display({ id: "meter", header: "Meter", cell: (c) => <span className="whitespace-nowrap">{meter(c.row.original)}</span> }),
+      col.display({ id: "meter", header: "Odometer / hours", cell: (c) => <span className="whitespace-nowrap">{meter(c.row.original)}</span> }),
       col.accessor("condition", {
         header: "Condition",
         cell: (c) => (c.row.original.archived_at ? <span className="text-[12px] font-semibold text-ink-subtle">Archived</span> : <ConditionBadge condition={c.getValue()} />),

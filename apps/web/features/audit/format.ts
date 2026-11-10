@@ -12,7 +12,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   assets: "Equipment",
   asset_operator_permissions: "Permitted operator",
   asset_condition_causes: "Condition cause",
-  meter_readings: "Meter reading",
+  meter_readings: "Odometer / hour meter reading",
   fleet_subscription_consents: "Subscription consent",
 };
 

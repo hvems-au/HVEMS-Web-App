@@ -43,9 +43,9 @@ export const CONDITION_LABELS = {
 
 export const METER_TYPE_LABELS: Record<MeterType, string> = {
   none: "None",
-  kilometres: "Kilometres",
-  hours: "Hours",
-  both: "Kilometres and hours",
+  kilometres: "Odometer (km)",
+  hours: "Hour meter (hours)",
+  both: "Odometer and hour meter",
 };
 
 export const OWNER_TYPE_LABELS: Record<AssetOwnerType, string> = {

@@ -18,6 +18,7 @@ import { MeterForm } from "./meter-form";
 
 export const metadata: Metadata = { title: "Equipment" };
 
+const READINGS_TITLE = { kilometres: "Odometer reading", hours: "Hour meter reading", both: "Odometer and hour meter", none: "Odometer / hour meter" } as const;
 const STATUS_TONE = { accepted: "green", pending_acceptance: "amber", rejected: "red", superseded: "grey" } as const;
 const STATUS_LABEL = { accepted: "Accepted", pending_acceptance: "Awaiting manager", rejected: "Rejected", superseded: "Amended" } as const;
 
@@ -105,7 +106,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 { label: "Owner type", value: OWNER_TYPE_LABELS[asset.owner_type] },
                 { label: "Client", value: asset.client?.name },
                 { label: "Site", value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null },
-                { label: "Meter type", value: METER_TYPE_LABELS[asset.meter_type] },
+                { label: "Odometer / hour meter", value: METER_TYPE_LABELS[asset.meter_type] },
               ]}
             />
             {asset.notes ? <p className="mt-5 rounded-[8px] bg-surface-muted p-3 text-[14px] whitespace-pre-wrap text-ink-muted">{asset.notes}</p> : null}
@@ -113,7 +114,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         </Card>
 
         <Card>
-          <CardHeader title="Meter" description="Readings never overwrite each other" />
+          <CardHeader title={READINGS_TITLE[asset.meter_type]} description="Readings never overwrite each other" />
           <CardBody className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-[10px] bg-surface-muted p-3">
@@ -122,7 +123,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 <p className="text-[11.5px] text-ink-subtle">{asset.odometer_read_at ? formatDateTimeAU(new Date(asset.odometer_read_at), ctx.timezone) : "No reading"}</p>
               </div>
               <div className="rounded-[10px] bg-surface-muted p-3">
-                <p className="text-[12px] text-ink-muted">Engine hours</p>
+                <p className="text-[12px] text-ink-muted">Hour meter</p>
                 <p className="text-[20px] font-bold">{asset.current_engine_hours !== null ? `${formatNumber(asset.current_engine_hours, 1)} h` : "—"}</p>
                 <p className="text-[11.5px] text-ink-subtle">{asset.engine_hours_read_at ? formatDateTimeAU(new Date(asset.engine_hours_read_at), ctx.timezone) : "No reading"}</p>
               </div>
@@ -136,7 +137,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Card>
-          <CardHeader title="Meter history" />
+          <CardHeader title="Reading history" />
           <CardBody className="px-0 pb-1">
             {readings.length === 0 ? (
               <EmptyState title="No readings yet" />

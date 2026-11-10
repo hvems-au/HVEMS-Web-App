@@ -117,7 +117,7 @@ export default async function InspectionPage({
                   ? [{ label: "Odometer", value: `${formatNumber(i.odometer_km, 1)} km${h.last_odometer_km !== null ? ` (was ${formatNumber(h.last_odometer_km, 1)})` : ""}` }]
                   : []),
                 ...(i.engine_hours !== null
-                  ? [{ label: "Hours", value: `${formatNumber(i.engine_hours, 1)} h${h.last_engine_hours !== null ? ` (was ${formatNumber(h.last_engine_hours, 1)})` : ""}` }]
+                  ? [{ label: "Hour meter", value: `${formatNumber(i.engine_hours, 1)} hours${h.last_engine_hours !== null ? ` (was ${formatNumber(h.last_engine_hours, 1)})` : ""}` }]
                   : []),
                 { label: "Checklist", value: i.templates.map((t) => `${t.name} v${t.version}`).join(", ") },
               ]}

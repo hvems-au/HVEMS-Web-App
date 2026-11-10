@@ -36,17 +36,17 @@ export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { 
       {state.status === "error" && !needsReason && !needsConfirm ? <FormAlert>{state.message}</FormAlert> : null}
       {state.status === "success" ? <FormAlert tone="success">{state.message}</FormAlert> : null}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Meter" htmlFor="unit">
+        <Field label="Reading" htmlFor="unit">
           <Select name="unit" value={unit} onChange={(e) => setUnit(e.target.value as "km" | "hours")}>
             {units.map((u) => (
               <option key={u} value={u}>
-                {u === "km" ? "Odometer (km)" : "Engine hours"}
+                {u === "km" ? "Odometer (km)" : "Hour meter (hours)"}
                 {tracked(u) ? "" : " (not tracked yet)"}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Reading" htmlFor="value" error={state.status === "error" ? state.fieldErrors?.value : undefined}>
+        <Field label="Odometer / hours" htmlFor="value" error={state.status === "error" ? state.fieldErrors?.value : undefined}>
           <Input name="value" inputMode="decimal" required />
         </Field>
       </div>
@@ -55,17 +55,17 @@ export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { 
           <label className="flex items-start gap-2 rounded-[6px] border border-stroke bg-surface-muted p-3 text-[13.5px] text-ink">
             <input type="checkbox" name="add_meter" required className="mt-0.5 size-4 accent-[var(--brand)]" />
             <span>
-              Also track {unit === "km" ? "kilometres" : "engine hours"} for this asset.
-              <span className="block text-[12.5px] text-ink-subtle">Its meter setting changes to {meterType === "none" ? (unit === "km" ? "kilometres" : "hours") : "both"}. The change is recorded in the audit history.</span>
+              Also record {unit === "km" ? "odometer" : "hour meter"} readings for this asset.
+              <span className="block text-[12.5px] text-ink-subtle">It will then record {meterType === "none" ? (unit === "km" ? "the odometer" : "the hour meter") : "both the odometer and the hour meter"}. The change is recorded in the audit history.</span>
             </span>
           </label>
         ) : (
-          <FormAlert tone="info">This asset doesn&apos;t track {unit === "km" ? "kilometres" : "engine hours"} yet. Ask a Fleet Manager or Company Admin to start tracking it.</FormAlert>
+          <FormAlert tone="info">This asset doesn&apos;t record {unit === "km" ? "odometer" : "hour meter"} readings yet. Ask a Fleet Manager or Company Admin to start tracking it.</FormAlert>
         )
       ) : null}
       {needsReason ? (
         <Field label="Reason for a lower reading" htmlFor="lower_reason" error={state.message}>
-          <Input name="lower_reason" placeholder="e.g. Odometer replaced" required />
+          <Input name="lower_reason" placeholder="e.g. Odometer or hour meter replaced" required />
         </Field>
       ) : null}
       {needsConfirm ? (

@@ -226,14 +226,14 @@ export function PrestartForm({
             </label>
           ) : null}
           {formError.code === "lower_reading_reason_required" ? (
-            <Input className="mt-2" value={lowerReason} onChange={(e) => setLowerReason(e.target.value)} placeholder="Why is it lower? e.g. meter replaced" />
+            <Input className="mt-2" value={lowerReason} onChange={(e) => setLowerReason(e.target.value)} placeholder="Why is it lower? e.g. odometer or hour meter replaced" />
           ) : null}
         </FormAlert>
       ) : null}
 
       {tracksKm || tracksHours ? (
         <Card>
-          <CardHeader title="Meter reading" description="Read it from the dash now" />
+          <CardHeader title={tracksKm && tracksHours ? "Odometer and hour meter" : tracksKm ? "Odometer reading" : "Hour meter reading"} description="Read it from the dash now" />
           <CardBody className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {tracksKm ? (
               <Field label="Odometer (km)" htmlFor="f-odometer_km" error={errors.odometer_km} hint={lastKm !== null ? `Last: ${lastKm.toLocaleString("en-AU")} km` : undefined} required>
@@ -241,7 +241,7 @@ export function PrestartForm({
               </Field>
             ) : null}
             {tracksHours ? (
-              <Field label="Hour meter (h)" htmlFor="f-engine_hours" error={errors.engine_hours} hint={lastHours !== null ? `Last: ${lastHours.toLocaleString("en-AU")} h` : undefined} required>
+              <Field label="Hour meter (hours)" htmlFor="f-engine_hours" error={errors.engine_hours} hint={lastHours !== null ? `Last: ${lastHours.toLocaleString("en-AU")} hours` : undefined} required>
                 <Input inputMode="decimal" value={hours} onChange={(e) => setHours(e.target.value.replace(/[^\d.]/g, ""))} placeholder="e.g. 5230.5" />
               </Field>
             ) : null}
