@@ -6,7 +6,15 @@
  */
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type {
+  AppNotification,
   Asset,
+  ChecklistItem,
+  Defect,
+  Inspection,
+  InspectionAnswer,
+  InspectionAnswerValue,
+  InspectionPhoto,
+  PrestartSubmitResult,
   AssetClass,
   AssetListItem,
   AuditEvent,
@@ -418,4 +426,133 @@ export async function listPlatformAuditEvents(
 
 export async function listPlatformSettings(db: HvemsClient): Promise<PlatformSetting[]> {
   return unwrap(await db.from("platform_settings").select("key, value, description, status, sow_reference").order("key"));
+}
+
+// ---------------------------------------------------------------------------
+// Pre-start inspections, defects, notifications
+// ---------------------------------------------------------------------------
+
+/** Bucket for pre-start photos; paths are <organisation>/<asset>/<clientRequestId>/<file>. */
+export const INSPECTION_PHOTO_BUCKET = "inspection-photos";
+
+export function inspectionPhotoPath(organisationId: string, assetId: string, clientRequestId: string, fileName: string): string {
+  const safe = fileName.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "").slice(-60) || "photo.jpg";
+  return `${organisationId}/${assetId}/${clientRequestId}/${Date.now()}-${safe}`;
+}
+
+/** The checklist that applies to an asset; refuses drivers not permitted on it. */
+export async function getPrestartChecklist(db: HvemsClient, assetId: string): Promise<ChecklistItem[]> {
+  return unwrap<ChecklistItem[]>(await db.rpc("prestart_checklist", { p_asset_id: assetId }));
+}
+
+export async function submitPrestart(
+  db: HvemsClient,
+  input: {
+    assetId: string;
+    answers: { item_code: string; answer: InspectionAnswerValue; note?: string }[];
+    odometerKm?: number | null;
+    engineHours?: number | null;
+    notes?: string;
+    photos?: { path: string; item_code?: string | null }[];
+    declaration: boolean;
+    clientRequestId: string;
+    confirmJump?: boolean;
+    lowerReadingReason?: string;
+  },
+): Promise<PrestartSubmitResult> {
+  return unwrap<PrestartSubmitResult>(
+    await db.rpc("submit_prestart", {
+      p_asset_id: input.assetId,
+      p_answers: input.answers,
+      p_odometer_km: input.odometerKm ?? null,
+      p_engine_hours: input.engineHours ?? null,
+      p_notes: input.notes || null,
+      p_photos: input.photos ?? [],
+      p_declaration: input.declaration,
+      p_client_request_id: input.clientRequestId,
+      p_confirm_jump: input.confirmJump ?? false,
+      p_lower_reading_reason: input.lowerReadingReason || null,
+    }),
+  );
+}
+
+export type InspectionListItem = Inspection & { asset: { asset_number: string; make: string | null; model: string | null } | null };
+
+export async function listInspections(
+  db: HvemsClient,
+  filter: { organisationId: string; assetId?: string; limit?: number },
+): Promise<InspectionListItem[]> {
+  let q = db
+    .from("inspections")
+    .select("*, asset:assets(asset_number, make, model)")
+    .eq("organisation_id", filter.organisationId)
+    .order("submitted_at", { ascending: false })
+    .limit(filter.limit ?? 50);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  return unwrap<InspectionListItem[]>(await q);
+}
+
+export async function getInspection(
+  db: HvemsClient,
+  id: string,
+): Promise<{ inspection: Inspection; answers: InspectionAnswer[]; photos: InspectionPhoto[]; defects: Defect[] }> {
+  const [inspection, answers, photos, defects] = await Promise.all([
+    db.from("inspections").select("*").eq("id", id).single(),
+    db.from("inspection_answers").select("*").eq("inspection_id", id).order("sort_order"),
+    db.from("inspection_photos").select("*").eq("inspection_id", id).order("created_at"),
+    db.from("defects").select("*").eq("inspection_id", id).order("reported_at"),
+  ]);
+  return {
+    inspection: unwrap<Inspection>(inspection),
+    answers: unwrap<InspectionAnswer[]>(answers),
+    photos: unwrap<InspectionPhoto[]>(photos),
+    defects: unwrap<Defect[]>(defects),
+  };
+}
+
+/** Short-lived signed URLs for private pre-start photos (RLS on storage decides who may see them). */
+export async function signInspectionPhotos(db: HvemsClient, paths: string[], expiresInSeconds = 600): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  const { data, error } = await db.storage.from(INSPECTION_PHOTO_BUCKET).createSignedUrls(paths, expiresInSeconds);
+  if (error) throw toAppError(error);
+  const out: Record<string, string> = {};
+  for (const d of data ?? []) if (d.path && d.signedUrl) out[d.path] = d.signedUrl;
+  return out;
+}
+
+export type DefectListItem = Defect & { asset: { asset_number: string; make: string | null; model: string | null } | null };
+
+export async function listDefects(
+  db: HvemsClient,
+  filter: { organisationId: string; assetId?: string; status?: "open" | "closed"; limit?: number },
+): Promise<DefectListItem[]> {
+  let q = db
+    .from("defects")
+    .select("*, asset:assets(asset_number, make, model)")
+    .eq("organisation_id", filter.organisationId)
+    .order("reported_at", { ascending: false })
+    .limit(filter.limit ?? 100);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  if (filter.status) q = q.eq("status", filter.status);
+  return unwrap<DefectListItem[]>(await q);
+}
+
+export async function listMyNotifications(db: HvemsClient, organisationId: string, limit = 50): Promise<AppNotification[]> {
+  return unwrap<AppNotification[]>(
+    await db.from("notifications").select("*").eq("organisation_id", organisationId).order("created_at", { ascending: false }).limit(limit),
+  );
+}
+
+export async function countUnreadNotifications(db: HvemsClient, organisationId: string): Promise<number> {
+  const { count, error } = await db
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("organisation_id", organisationId)
+    .is("read_at", null);
+  if (error) throw toAppError(error);
+  return count ?? 0;
+}
+
+export async function markNotificationsRead(db: HvemsClient, ids?: string[]): Promise<number> {
+  return unwrap<number>(await db.rpc("mark_notifications_read", { p_ids: ids ?? null }));
 }

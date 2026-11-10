@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClipboardCheck, Pencil } from "lucide-react";
-import { getAsset, listAuditEvents, listConditionHistory, listMeterReadings } from "@hvems/api-client";
+import { getAsset, listAuditEvents, listConditionHistory, listDefects, listInspections, listMeterReadings } from "@hvems/api-client";
 import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { ConditionBadge, ConditionBanner } from "@/components/condition";
+import { ResultBadge, SeverityBadge } from "@/components/safety";
 import { PageHeader } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardBody, CardHeader, Dl, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
@@ -27,10 +28,12 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
   const asset = await getAsset(db, assetId).catch(() => null);
   if (!asset || asset.organisation_id !== orgId) notFound();
 
-  const [readings, history, audit] = await Promise.all([
+  const [readings, history, audit, defects, prestarts] = await Promise.all([
     listMeterReadings(db, assetId, 20),
     listConditionHistory(db, assetId),
     can(ctx.capabilities, "audit.view") ? listAuditEvents(db, { organisationId: orgId, entityType: "assets", entityId: assetId, limit: 20 }) : Promise.resolve([]),
+    listDefects(db, { organisationId: orgId, assetId, status: "open" }),
+    listInspections(db, { organisationId: orgId, assetId, limit: 5 }),
   ]);
   const manage = can(ctx.capabilities, "assets.manage") && !asset.archived_at;
   // Assets without a meter show the form only to managers, who can start tracking one.
@@ -51,7 +54,13 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         breadcrumb={{ label: "Equipment", href: base }}
         actions={
           <>
-            {!asset.archived_at ? <PreStartButton /> : null}
+            {!asset.archived_at && can(ctx.capabilities, "inspections.submit") ? (
+              <Button asChild variant="outline">
+                <Link href={`${base}/${assetId}/prestart`}>
+                  <ClipboardCheck /> Pre-start
+                </Link>
+              </Button>
+            ) : null}
             {manage ? (
               <>
                 <Button asChild variant="secondary">
@@ -166,7 +175,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
           <CardHeader title="Condition history" description="Set automatically from defects and holds; no one can set it by hand" />
           <CardBody className="px-0 pb-1">
             {history.length === 0 ? (
-              <EmptyState title="Active since registration">Defects, holds and clearances arrive with increment 2B.</EmptyState>
+              <EmptyState title="Active since registration">Changes when a defect or hold is raised or cleared.</EmptyState>
             ) : (
               <Table>
                 <THead>
@@ -188,6 +197,65 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                   ))}
                 </tbody>
               </Table>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <Card>
+          <CardHeader
+            title={`Open defects (${defects.length})`}
+            description="Triage, repair and clearance are being built next"
+            action={
+              <Link href={`/customer/${orgId}/defects`} className="text-[13px] font-semibold text-link hover:underline">
+                All defects
+              </Link>
+            }
+          />
+          <CardBody className={defects.length ? "flex flex-col divide-y divide-stroke px-0 pb-0" : undefined}>
+            {defects.length === 0 ? (
+              <p className="text-[14px] text-ink-muted">No open defects.</p>
+            ) : (
+              defects.map((d) => (
+                <div key={d.id} className="flex items-start gap-2.5 px-5 py-2.5 text-[14px]">
+                  <SeverityBadge severity={d.severity} />
+                  <span className="min-w-0">
+                    {d.title}
+                    {d.description ? <span className="block text-[13px] text-ink-muted">“{d.description}”</span> : null}
+                    <span className="block text-[12px] text-ink-subtle">{formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}</span>
+                  </span>
+                </div>
+              ))
+            )}
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader
+            title="Recent pre-starts"
+            action={
+              <Link href={`/customer/${orgId}/inspections`} className="text-[13px] font-semibold text-link hover:underline">
+                All inspections
+              </Link>
+            }
+          />
+          <CardBody className={prestarts.length ? "flex flex-col divide-y divide-stroke px-0 pb-0" : undefined}>
+            {prestarts.length === 0 ? (
+              <p className="text-[14px] text-ink-muted">No pre-starts yet.</p>
+            ) : (
+              prestarts.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/customer/${orgId}/inspections/${p.id}`}
+                  className="flex items-center justify-between gap-3 px-5 py-2.5 text-[14px] hover:bg-surface-muted/60"
+                >
+                  <span>
+                    {formatDateTimeAU(new Date(p.submitted_at), ctx.timezone)}
+                    <span className="block text-[12.5px] text-ink-subtle">{p.header.operator_name ?? "—"}</span>
+                  </span>
+                  <ResultBadge result={p.result} />
+                </Link>
+              ))
             )}
           </CardBody>
         </Card>
@@ -230,18 +298,3 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
   );
 }
 
-/**
- * Pre-starts arrive in 2B. The standard checklists are waiting on HVEMS
- * approval (docs/roadmap.md, "Pending decisions"), so the button is shown
- * disabled rather than leading to a placeholder form.
- */
-function PreStartButton() {
-  return (
-    <span title="Pre-start checklists are coming soon" className="cursor-not-allowed">
-      <Button variant="outline" disabled>
-        <ClipboardCheck /> Pre-start
-        <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-ink-muted">Coming soon</span>
-      </Button>
-    </span>
-  );
-}

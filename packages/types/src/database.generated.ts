@@ -513,6 +513,83 @@ export type Database = {
           },
         ]
       }
+      defects: {
+        Row: {
+          asset_id: string
+          cause_id: string | null
+          description: string | null
+          id: string
+          inspection_id: string | null
+          item_code: string | null
+          organisation_id: string
+          reported_at: string
+          reported_by: string | null
+          severity: Database["public"]["Enums"]["defect_severity"]
+          source: string
+          status: Database["public"]["Enums"]["defect_status"]
+          title: string
+        }
+        Insert: {
+          asset_id: string
+          cause_id?: string | null
+          description?: string | null
+          id?: string
+          inspection_id?: string | null
+          item_code?: string | null
+          organisation_id: string
+          reported_at?: string
+          reported_by?: string | null
+          severity: Database["public"]["Enums"]["defect_severity"]
+          source: string
+          status?: Database["public"]["Enums"]["defect_status"]
+          title: string
+        }
+        Update: {
+          asset_id?: string
+          cause_id?: string | null
+          description?: string | null
+          id?: string
+          inspection_id?: string | null
+          item_code?: string | null
+          organisation_id?: string
+          reported_at?: string
+          reported_by?: string | null
+          severity?: Database["public"]["Enums"]["defect_severity"]
+          source?: string
+          status?: Database["public"]["Enums"]["defect_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "defects_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "defects_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "asset_condition_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "defects_inspection_id_organisation_id_fkey"
+            columns: ["inspection_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "defects_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_subscription_consents: {
         Row: {
           consented_at: string
@@ -557,6 +634,257 @@ export type Database = {
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_answers: {
+        Row: {
+          answer: Database["public"]["Enums"]["inspection_answer"]
+          id: number
+          inspection_id: string
+          item_code: string
+          note: string | null
+          operator_item: boolean
+          organisation_id: string
+          prompt: string
+          severity: Database["public"]["Enums"]["defect_severity"]
+          sort_order: number
+          template_code: string
+          template_name: string
+        }
+        Insert: {
+          answer: Database["public"]["Enums"]["inspection_answer"]
+          id?: never
+          inspection_id: string
+          item_code: string
+          note?: string | null
+          operator_item: boolean
+          organisation_id: string
+          prompt: string
+          severity: Database["public"]["Enums"]["defect_severity"]
+          sort_order: number
+          template_code: string
+          template_name: string
+        }
+        Update: {
+          answer?: Database["public"]["Enums"]["inspection_answer"]
+          id?: never
+          inspection_id?: string
+          item_code?: string
+          note?: string | null
+          operator_item?: boolean
+          organisation_id?: string
+          prompt?: string
+          severity?: Database["public"]["Enums"]["defect_severity"]
+          sort_order?: number
+          template_code?: string
+          template_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_answers_inspection_id_organisation_id_fkey"
+            columns: ["inspection_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      inspection_photos: {
+        Row: {
+          created_at: string
+          id: string
+          inspection_id: string
+          item_code: string | null
+          organisation_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inspection_id: string
+          item_code?: string | null
+          organisation_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inspection_id?: string
+          item_code?: string | null
+          organisation_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_photos_inspection_id_organisation_id_fkey"
+            columns: ["inspection_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      inspection_template_items: {
+        Row: {
+          active: boolean
+          code: string
+          id: string
+          na_allowed: boolean
+          operator_item: boolean
+          prompt: string
+          severity: Database["public"]["Enums"]["defect_severity"]
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          id?: string
+          na_allowed?: boolean
+          operator_item?: boolean
+          prompt: string
+          severity: Database["public"]["Enums"]["defect_severity"]
+          sort_order: number
+          template_id: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          id?: string
+          na_allowed?: boolean
+          operator_item?: boolean
+          prompt?: string
+          severity?: Database["public"]["Enums"]["defect_severity"]
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_templates: {
+        Row: {
+          active: boolean
+          applies_to_all: boolean
+          asset_class_codes: string[]
+          code: string
+          created_at: string
+          exclude_class_codes: string[]
+          id: string
+          kind: string
+          name: string
+          organisation_id: string | null
+          sort_order: number
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          applies_to_all?: boolean
+          asset_class_codes?: string[]
+          code: string
+          created_at?: string
+          exclude_class_codes?: string[]
+          id?: string
+          kind?: string
+          name: string
+          organisation_id?: string | null
+          sort_order?: number
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          applies_to_all?: boolean
+          asset_class_codes?: string[]
+          code?: string
+          created_at?: string
+          exclude_class_codes?: string[]
+          id?: string
+          kind?: string
+          name?: string
+          organisation_id?: string | null
+          sort_order?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_templates_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspections: {
+        Row: {
+          asset_id: string
+          client_request_id: string | null
+          engine_hours: number | null
+          header: Json
+          id: string
+          kind: string
+          notes: string | null
+          odometer_km: number | null
+          operator_fault: boolean
+          organisation_id: string
+          result: Database["public"]["Enums"]["inspection_result"]
+          submitted_at: string
+          submitted_by: string
+          templates: Json
+        }
+        Insert: {
+          asset_id: string
+          client_request_id?: string | null
+          engine_hours?: number | null
+          header: Json
+          id?: string
+          kind?: string
+          notes?: string | null
+          odometer_km?: number | null
+          operator_fault?: boolean
+          organisation_id: string
+          result: Database["public"]["Enums"]["inspection_result"]
+          submitted_at?: string
+          submitted_by: string
+          templates: Json
+        }
+        Update: {
+          asset_id?: string
+          client_request_id?: string | null
+          engine_hours?: number | null
+          header?: Json
+          id?: string
+          kind?: string
+          notes?: string | null
+          odometer_km?: number | null
+          operator_fault?: boolean
+          organisation_id?: string
+          result?: Database["public"]["Enums"]["inspection_result"]
+          submitted_at?: string
+          submitted_by?: string
+          templates?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "inspections_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
@@ -742,6 +1070,53 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "assets"
             referencedColumns: ["id", "organisation_id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          asset_id: string | null
+          body: string | null
+          created_at: string
+          id: string
+          inspection_id: string | null
+          kind: string
+          organisation_id: string
+          read_at: string | null
+          recipient_id: string
+          title: string
+        }
+        Insert: {
+          asset_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          inspection_id?: string | null
+          kind: string
+          organisation_id: string
+          read_at?: string | null
+          recipient_id: string
+          title: string
+        }
+        Update: {
+          asset_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          inspection_id?: string | null
+          kind?: string
+          organisation_id?: string
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1251,6 +1626,7 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_organisation_id: string; p_rows: Json }
         Returns: Json
       }
+      mark_notifications_read: { Args: { p_ids?: string[] }; Returns: number }
       my_capabilities: {
         Args: { p_organisation_id: string }
         Returns: string[]
@@ -1274,6 +1650,7 @@ export type Database = {
           role: Database["public"]["Enums"]["platform_role"]
         }[]
       }
+      prestart_checklist: { Args: { p_asset_id: string }; Returns: Json }
       record_fleet_subscription_consent: {
         Args: {
           p_free_assets: number
@@ -1339,6 +1716,21 @@ export type Database = {
         Args: { p_minutes: number; p_organisation_id: string; p_reason: string }
         Returns: string
       }
+      submit_prestart: {
+        Args: {
+          p_answers: Json
+          p_asset_id: string
+          p_client_request_id?: string
+          p_confirm_jump?: boolean
+          p_declaration?: boolean
+          p_engine_hours?: number
+          p_lower_reading_reason?: string
+          p_notes?: string
+          p_odometer_km?: number
+          p_photos?: Json
+        }
+        Returns: Json
+      }
       update_member_role: {
         Args: {
           p_membership_id: string
@@ -1366,6 +1758,8 @@ export type Database = {
         | "minor_defect"
         | "needs_attention_hold"
         | "overdue_service"
+      defect_severity: "critical" | "minor" | "advisory"
+      defect_status: "open" | "closed"
       identification_method:
         | "password"
         | "password_mfa"
@@ -1373,6 +1767,8 @@ export type Database = {
         | "support_access"
         | "system"
         | "unverified"
+      inspection_answer: "ok" | "fault" | "na"
+      inspection_result: "pass" | "pass_with_faults" | "fail"
       member_grant:
         | "clearance_authority"
         | "approval_limit"
@@ -1560,6 +1956,8 @@ export const Constants = {
         "needs_attention_hold",
         "overdue_service",
       ],
+      defect_severity: ["critical", "minor", "advisory"],
+      defect_status: ["open", "closed"],
       identification_method: [
         "password",
         "password_mfa",
@@ -1568,6 +1966,8 @@ export const Constants = {
         "system",
         "unverified",
       ],
+      inspection_answer: ["ok", "fault", "na"],
+      inspection_result: ["pass", "pass_with_faults", "fail"],
       member_grant: [
         "clearance_authority",
         "approval_limit",

@@ -203,3 +203,29 @@ export const organisationContactSchema = z.object({
     .transform((v) => (v ? v : undefined)),
 });
 export type OrganisationContactValues = z.output<typeof organisationContactSchema>;
+
+/** Pre-start submission (P-01). The database re-checks every rule. */
+export const prestartSchema = z.object({
+  answers: z
+    .array(
+      z.object({
+        item_code: z.string().min(1).max(20),
+        answer: z.enum(["ok", "fault", "na"]),
+        note: z.string().trim().max(2000).optional(),
+      }),
+    )
+    .min(1)
+    .max(300),
+  odometer_km: z.number().nonnegative().max(9_999_999).nullable().optional(),
+  engine_hours: z.number().nonnegative().max(999_999).nullable().optional(),
+  notes: z.string().trim().max(4000).optional(),
+  photos: z
+    .array(z.object({ path: z.string().min(10).max(400), item_code: z.string().max(20).nullable().optional() }))
+    .max(10)
+    .default([]),
+  declaration: z.literal(true, { message: "Tick the declaration to submit" }),
+  client_request_id: z.string().uuid(),
+  confirm_jump: z.boolean().default(false),
+  lower_reading_reason: z.string().trim().max(500).optional(),
+});
+export type PrestartInput = z.input<typeof prestartSchema>;

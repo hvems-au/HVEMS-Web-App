@@ -250,3 +250,112 @@ export interface PlatformSetting {
   status: "confirmed" | "recommended" | "to_be_confirmed" | "specialist_review";
   sow_reference: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Pre-start inspections, defects, notifications (2B start)
+// ---------------------------------------------------------------------------
+export type DefectSeverityValue = "critical" | "minor" | "advisory";
+export type InspectionResult = "pass" | "pass_with_faults" | "fail";
+export type InspectionAnswerValue = "ok" | "fault" | "na";
+
+/** One question of the checklist that applies to an asset (rpc prestart_checklist). */
+export interface ChecklistItem {
+  template_code: string;
+  template_name: string;
+  template_version: number;
+  item_code: string;
+  prompt: string;
+  severity: DefectSeverityValue;
+  na_allowed: boolean;
+  /** About the operator (fit for work, licence), not the machine: fails the pre-start without a defect. */
+  operator_item: boolean;
+}
+
+export interface InspectionHeader {
+  asset_number: string;
+  asset_class: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  registration_number: string | null;
+  registration_state: string | null;
+  vin: string | null;
+  serial_number: string | null;
+  condition_before: string;
+  operator_name: string | null;
+  last_odometer_km: number | null;
+  last_odometer_at: ISODateTime | null;
+  last_engine_hours: number | null;
+  last_engine_hours_at: ISODateTime | null;
+}
+
+export interface Inspection {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  kind: "prestart";
+  result: InspectionResult;
+  operator_fault: boolean;
+  submitted_by: UUID;
+  submitted_at: ISODateTime;
+  odometer_km: number | null;
+  engine_hours: number | null;
+  notes: string | null;
+  header: InspectionHeader;
+  templates: { code: string; name: string; version: number }[];
+}
+
+export interface InspectionAnswer {
+  id: number;
+  template_code: string;
+  template_name: string;
+  item_code: string;
+  prompt: string;
+  severity: DefectSeverityValue;
+  operator_item: boolean;
+  answer: InspectionAnswerValue;
+  note: string | null;
+  sort_order: number;
+}
+
+export interface InspectionPhoto {
+  id: UUID;
+  inspection_id: UUID;
+  item_code: string | null;
+  storage_path: string;
+}
+
+export interface Defect {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  severity: DefectSeverityValue;
+  status: "open" | "closed";
+  title: string;
+  description: string | null;
+  source: "prestart";
+  inspection_id: UUID | null;
+  item_code: string | null;
+  reported_by: UUID | null;
+  reported_at: ISODateTime;
+}
+
+export interface AppNotification {
+  id: UUID;
+  organisation_id: UUID;
+  kind: "critical_defect" | "minor_defect" | "operator_not_fit";
+  title: string;
+  body: string | null;
+  asset_id: UUID | null;
+  inspection_id: UUID | null;
+  created_at: ISODateTime;
+  read_at: ISODateTime | null;
+}
+
+export interface PrestartSubmitResult {
+  inspection_id: UUID;
+  result: InspectionResult;
+  operator_fault?: boolean;
+  defects?: { id: UUID; severity: DefectSeverityValue; title: string }[];
+  duplicate: boolean;
+}

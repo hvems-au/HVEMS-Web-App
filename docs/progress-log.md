@@ -1,5 +1,14 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): pre-start inspections (first version)
+**Done**
+- Migrations `20261110052909 prestart_inspections` and `20261110052952 prestart_fk_indexes` (applied by Claude): standard templates seeded from the P-01 draft (10 templates, 95 items; SoW severities Critical / Minor / Advisory), `inspections`, `inspection_answers`, `inspection_photos` (private `inspection-photos` bucket, org-scoped storage policies), `defects`, `notifications`; RPCs `prestart_checklist`, `submit_prestart`, `mark_notifications_read`. Operator items (fit for work, licence) fail the pre-start without a defect. Critical faults open a condition cause (Out of service); Minor faults Needs attention; Owner and Fleet Managers notified (O-07). Repeat faults don't duplicate open defects. Pre-starts are append-only.
+- Web: Pre-start button on the equipment page; pre-start form with the auto-filled header (equipment ID, class, make/model, rego, VIN/serial, site, client, last odometer and hours, operator, date), meter readings, OK / Fault / N/A per item, "Mark rest OK", notes on faults, photos (recommended, compressed, uploaded to private storage), general notes and photos, declaration. Result page with the outcome banner; Inspections list; Defects & Safety list; Alerts page with unread badge on the bell. Equipment page shows open defects and recent pre-starts.
+- Checked: hosted smoke test in a rolled-back transaction (trailer: 47 items; critical fault -> fail, Out of service, defect, owner notified; nothing persisted). Browser: a pre-start with an Advisory fault and a photo on CAT-ESC-0001 (kept as test data; the trailer stays Active). pgTAP `070`.
+
+**Not yet (rest of 2B)**
+- Defect triage, repair, two-step clearance and return to service (defects stay open until then); alert acknowledgement and escalation; driver PIN sign-in; template editor; Mobile crane class and add-on sections.
+
 ## 2026-11-10 — Session 2 (continued): approved corrections, batch 1
 **Done**
 - Item 11 and decision O-08 (migration `20261110050534 organisation_timezone_contact`): organisation timezone chosen at sign-up and in Settings, used for every date and time members see; contact name, email, phone; unknown timezones refused by the database. pgTAP `060`. Browser-checked: switching to Perth shows meter times two hours earlier; restored to Brisbane. Fixed the timezone select showing the old value after saving.

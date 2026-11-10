@@ -103,3 +103,24 @@ export function checkDeferral(
   if (input.newDue.getTime() > limit) return { allowed: false, reason: "beyond_deferral_limit" };
   return { allowed: true };
 }
+
+export const DEFECT_SEVERITY_LABELS: Record<DefectSeverity, string> = {
+  critical: "Critical",
+  minor: "Minor",
+  advisory: "Advisory",
+};
+
+/** What each severity does when a pre-start item fails (SoW §3.4). */
+export const DEFECT_SEVERITY_EFFECT: Record<DefectSeverity, string> = {
+  critical: "Takes the equipment out of service",
+  minor: "Equipment needs attention; Owner and Fleet Managers notified",
+  advisory: "Recorded for the workshop",
+};
+
+export type InspectionResultValue = "pass" | "pass_with_faults" | "fail";
+
+export const INSPECTION_RESULT_LABELS: Record<InspectionResultValue, string> = {
+  pass: "Pass",
+  pass_with_faults: "Pass with faults",
+  fail: "Fail: do not operate",
+};

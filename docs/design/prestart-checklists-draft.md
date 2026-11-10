@@ -1,6 +1,6 @@
 # Pre-start checklists: draft for HVEMS review (P-01)
 
-**Status:** draft, 10 Nov 2026. Not in the product. The equipment page shows a disabled **Pre-start (Coming soon)** button until HVEMS approves this content.
+**Status:** implemented as a first version on 10 Nov 2026 at Ahmad's request (migration `prestart_inspections`); HVEMS will revise the content. Severities use the SoW names: draft Critical = **Critical** (Out of service), draft Major = **Minor** (Needs attention, Owner and Fleet Managers notified), draft Minor = **Advisory** (recorded only). Mobile crane, tipper, hiab, water cart and attachment add-ons are not built yet (crane class pending).
 
 **Before release:** a competent person at HVEMS (for example Jaimie or a workshop supervisor) reviews every item and its severity. These become HVEMS's standard templates, so HVEMS owns their content.
 

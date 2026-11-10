@@ -1,19 +1,24 @@
+import { countUnreadNotifications } from "@hvems/api-client";
 import { AppShell } from "@/components/shell/app-shell";
 import { customerNav } from "@/lib/navigation";
 import { getCurrentPortal } from "@/lib/current-portal";
 import { loadOrgContext } from "@/lib/session";
 import { filterNav, toShellContext } from "@/lib/shell-data";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function CustomerLayout({ children, params }: { children: React.ReactNode; params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const [ctx, portal] = await Promise.all([loadOrgContext(orgId), getCurrentPortal()]);
   const restricted = ctx.context.status === "restricted";
+  const isCompany = ctx.context.kind === "company";
+  const unread = isCompany ? await countUnreadNotifications(await createSupabaseServerClient(), orgId).catch(() => 0) : 0;
   return (
     <AppShell
       nav={filterNav(customerNav(orgId, ctx.context.kind), ctx)}
       user={{ fullName: ctx.user.fullName, email: ctx.user.email }}
       current={toShellContext(ctx.context, portal)}
       contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
+      alerts={isCompany ? { href: `/customer/${orgId}/alerts`, unread } : undefined}
       banner={
         ctx.context.status === "suspended" ? (
           <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-[#9b0b0c]">

@@ -24,6 +24,8 @@ export interface AppShellProps {
   current: ShellContext;
   contexts: ShellContext[];
   banner?: React.ReactNode;
+  /** Where the bell goes and how many alerts are unread (company portal). */
+  alerts?: { href: string; unread: number };
   children: React.ReactNode;
 }
 
@@ -182,7 +184,7 @@ function SidebarBody({ nav, current, contexts, onNavigate }: Pick<AppShellProps,
   );
 }
 
-export function AppShell({ nav, user, current, contexts, banner, children }: AppShellProps) {
+export function AppShell({ nav, user, current, contexts, banner, alerts, children }: AppShellProps) {
   const [open, setOpen] = React.useState(false);
   return (
     <div className="min-h-dvh bg-canvas">
@@ -220,11 +222,16 @@ export function AppShell({ nav, user, current, contexts, banner, children }: App
           </p>
           <div className="flex items-center gap-3">
             <Link
-              href={current.href.replace(/\/dashboard$/, "") + "/module/notifications"}
+              href={alerts?.href ?? current.href.replace(/\/dashboard$/, "") + "/module/notifications"}
               className="relative rounded-full p-2 text-ink hover:bg-surface-muted"
-              aria-label="Notifications"
+              aria-label={alerts?.unread ? `Alerts: ${alerts.unread} unread` : "Alerts"}
             >
               <Bell className="size-[22px]" />
+              {alerts?.unread ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-bold text-white">
+                  {alerts.unread > 99 ? "99+" : alerts.unread}
+                </span>
+              ) : null}
             </Link>
             <UserMenu user={user} />
           </div>
