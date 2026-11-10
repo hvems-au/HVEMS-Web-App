@@ -1,35 +1,60 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getOrganisation } from "@hvems/api-client";
+import { getAssetConditionCounts, getOrganisation, listAssets, listClients, listInvitations, listMembers, listSites } from "@hvems/api-client";
 import { formatDateAU, formatDateTimeAU } from "@hvems/domain";
-import { KIND_LABELS } from "@hvems/permissions";
+import { GRANT_LABELS, KIND_LABELS, ROLE_LABELS } from "@hvems/permissions";
+import type { Organisation } from "@hvems/types";
+import { ConditionBadge } from "@/components/condition";
 import { PageHeader } from "@/components/shell/page";
-import { Badge, Card, CardBody, CardHeader } from "@/components/ui/primitives";
-import { getStaffContext } from "@/lib/session";
+import { Badge, Card, CardBody, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { getSessionUser, getStaffContext } from "@/lib/session";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cn, firstParam } from "@/lib/utils";
 import { OrganisationDetailsForm, SuspensionForm } from "./forms";
 
 export const metadata: Metadata = { title: "Organisation" };
 
 const STATUS_TONE = { active: "green", restricted: "amber", suspended: "red", closing: "grey", closed: "grey" } as const;
 const STATUS_LABEL = { active: "Active", restricted: "Restricted (billing)", suspended: "De-activated", closing: "Closing", closed: "Closed" } as const;
+const TABS = [
+  { id: "details", label: "Details" },
+  { id: "team", label: "Team" },
+  { id: "equipment", label: "Equipment" },
+  { id: "clients", label: "Clients & Sites" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
 
 /**
- * Super Admin view of one organisation (ADM-02). Customer records stay private:
- * this page shows only the organisation's own details. Editing and
- * de-activation are Super Admin only (Support Agents view; spec B.5), and the
- * database enforces that whatever this page shows.
+ * Super Admin view of one organisation (ADM-02). The Super Admin can see the
+ * organisation's team and full fleet at any time (decision O-05). Each view of
+ * those records is written to the organisation's security events, which its
+ * admins can see. Support Agents see details and team only (fleet records stay
+ * behind support access for them, enforced by the database).
  */
-export default async function AdminOrganisationPage({ params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = await params;
+export default async function AdminOrganisationPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orgId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ orgId }, sp] = await Promise.all([params, searchParams]);
+  const requested = firstParam(sp.tab);
+  const tab: Tab = TABS.some((t) => t.id === requested) ? (requested as Tab) : "details";
   const db = await createSupabaseServerClient();
-  const [org, staff, members] = await Promise.all([
-    getOrganisation(db, orgId).catch(() => null),
-    getStaffContext(),
-    db.from("org_memberships").select("id", { count: "exact", head: true }).eq("organisation_id", orgId).eq("status", "active"),
-  ]);
+  const [org, staff, user] = await Promise.all([getOrganisation(db, orgId).catch(() => null), getStaffContext(), getSessionUser()]);
   if (!org) notFound();
   const superAdmin = staff?.role === "platform_administrator";
+  const base = `/admin/organisations/${orgId}`;
+
+  // Transparency for the customer: record each time HVEMS opens its team or fleet records.
+  if (tab !== "details" && user) {
+    await createSupabaseAdminClient()
+      .from("security_events")
+      .insert({ user_id: user.id, organisation_id: orgId, event_type: "hvems_staff_viewed_records", detail: { area: tab, role: staff?.role ?? null } });
+  }
 
   return (
     <>
@@ -39,50 +64,280 @@ export default async function AdminOrganisationPage({ params }: { params: Promis
         breadcrumb={{ label: "Organisations", href: "/admin/organisations" }}
         actions={<Badge tone={STATUS_TONE[org.status]}>{STATUS_LABEL[org.status]}</Badge>}
       />
-      <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
+      <nav className="mb-5 flex gap-1 border-b border-stroke" aria-label="Organisation sections">
+        {TABS.filter((t) => org.kind === "company" || (t.id !== "equipment" && t.id !== "clients")).map((t) => (
+          <Link
+            key={t.id}
+            href={t.id === "details" ? base : `${base}?tab=${t.id}`}
+            aria-current={tab === t.id ? "page" : undefined}
+            className={cn(
+              "-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium",
+              tab === t.id ? "border-brand text-brand" : "border-transparent text-ink-muted hover:text-ink",
+            )}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
+      {tab === "details" ? <DetailsTab org={org} superAdmin={superAdmin} /> : null}
+      {tab === "team" ? <TeamTab orgId={orgId} /> : null}
+      {tab === "equipment" ? <EquipmentTab orgId={orgId} superAdmin={superAdmin} archived={firstParam(sp.archived) === "1"} /> : null}
+      {tab === "clients" ? <ClientsTab orgId={orgId} superAdmin={superAdmin} /> : null}
+    </>
+  );
+}
+
+async function DetailsTab({ org, superAdmin }: { org: Organisation; superAdmin: boolean }) {
+  const db = await createSupabaseServerClient();
+  const [members, counts] = await Promise.all([
+    db.from("org_memberships").select("id", { count: "exact", head: true }).eq("organisation_id", org.id).eq("status", "active"),
+    org.kind === "company" && superAdmin ? getAssetConditionCounts(db, org.id) : Promise.resolve(null),
+  ]);
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
+      <Card>
+        <CardHeader title="Details" description="Changes are recorded in the organisation's audit history." />
+        <CardBody>
+          <OrganisationDetailsForm org={org} canEdit={superAdmin} />
+        </CardBody>
+      </Card>
+      <div className="flex flex-col gap-5">
         <Card>
-          <CardHeader title="Details" description="Changes are recorded in the organisation's audit history." />
-          <CardBody>
-            <OrganisationDetailsForm org={org} canEdit={superAdmin} />
+          <CardHeader title="Status" />
+          <CardBody className="text-[14px]">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+              <dt className="text-ink-subtle">Status</dt>
+              <dd className="font-medium">{STATUS_LABEL[org.status]}</dd>
+              <dt className="text-ink-subtle">Active members</dt>
+              <dd>{members.count ?? "—"}</dd>
+              {counts ? (
+                <>
+                  <dt className="text-ink-subtle">Current equipment</dt>
+                  <dd>
+                    {counts.total} ({counts.active} active, {counts.needs_attention} needs attention, {counts.out_of_service} out of service)
+                  </dd>
+                </>
+              ) : null}
+              {org.status === "suspended" && org.suspended_at ? (
+                <>
+                  <dt className="text-ink-subtle">De-activated</dt>
+                  <dd>{formatDateTimeAU(new Date(org.suspended_at))}</dd>
+                  <dt className="text-ink-subtle">Reason</dt>
+                  <dd className="whitespace-pre-wrap">{org.suspension_reason}</dd>
+                </>
+              ) : null}
+            </dl>
           </CardBody>
         </Card>
-        <div className="flex flex-col gap-5">
+        {superAdmin && org.status !== "closed" && org.status !== "closing" ? (
           <Card>
-            <CardHeader title="Status" />
-            <CardBody className="text-[14px]">
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-                <dt className="text-ink-subtle">Status</dt>
-                <dd className="font-medium">{STATUS_LABEL[org.status]}</dd>
-                <dt className="text-ink-subtle">Active members</dt>
-                <dd>{members.count ?? "—"}</dd>
-                {org.status === "suspended" && org.suspended_at ? (
-                  <>
-                    <dt className="text-ink-subtle">De-activated</dt>
-                    <dd>{formatDateTimeAU(new Date(org.suspended_at))}</dd>
-                    <dt className="text-ink-subtle">Reason</dt>
-                    <dd className="whitespace-pre-wrap">{org.suspension_reason}</dd>
-                  </>
-                ) : null}
-              </dl>
+            <CardHeader
+              title={org.status === "suspended" ? "Reinstate" : "De-activate"}
+              description={
+                org.status === "suspended"
+                  ? "Lifts the suspension. Members can add equipment and invite people again."
+                  : "Members can still sign in and keep their safety records (inspections, defects, clearance), but can't add equipment, invite members, or post or accept jobs."
+              }
+            />
+            <CardBody>
+              <SuspensionForm org={org} />
             </CardBody>
           </Card>
-          {superAdmin && org.status !== "closed" && org.status !== "closing" ? (
-            <Card>
-              <CardHeader
-                title={org.status === "suspended" ? "Reinstate" : "De-activate"}
-                description={
-                  org.status === "suspended"
-                    ? "Lifts the suspension. Members can add equipment and invite people again."
-                    : "Members can still sign in and keep their safety records (inspections, defects, clearance), but can't add equipment, invite members, or post or accept jobs."
-                }
-              />
-              <CardBody>
-                <SuspensionForm org={org} />
-              </CardBody>
-            </Card>
-          ) : null}
-        </div>
+        ) : null}
       </div>
-    </>
+    </div>
+  );
+}
+
+async function TeamTab({ orgId }: { orgId: string }) {
+  const db = await createSupabaseServerClient();
+  const [members, invitations] = await Promise.all([listMembers(db, orgId), listInvitations(db, orgId).catch(() => [])]);
+  return (
+    <div className="flex flex-col gap-5">
+      <Card>
+        <CardHeader title={`Members (${members.length})`} />
+        {members.length === 0 ? (
+          <EmptyState title="No members" />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>Name</TH>
+                <TH>Email</TH>
+                <TH>Role</TH>
+                <TH>Grants</TH>
+                <TH>Status</TH>
+                <TH>Joined</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {members.map((m) => (
+                <TR key={m.id}>
+                  <TD className="font-semibold">{m.profile?.full_name || "—"}</TD>
+                  <TD>{m.profile?.email ?? "—"}</TD>
+                  <TD>{ROLE_LABELS[m.role]}</TD>
+                  <TD className="text-ink-muted">
+                    {(m.grants ?? [])
+                      .filter((g) => !g.revoked_at)
+                      .map((g) => GRANT_LABELS[g.grant_type])
+                      .join(", ") || "—"}
+                  </TD>
+                  <TD>
+                    <Badge tone={m.status === "active" ? "green" : "amber"}>{m.status}</Badge>
+                  </TD>
+                  <TD>{formatDateAU(new Date(m.created_at))}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+      {invitations.length ? (
+        <Card>
+          <CardHeader title={`Pending invitations (${invitations.length})`} />
+          <Table>
+            <THead>
+              <tr>
+                <TH>Email</TH>
+                <TH>Role</TH>
+                <TH>Expires</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {invitations.map((i) => (
+                <TR key={i.id}>
+                  <TD>{i.email}</TD>
+                  <TD>{ROLE_LABELS[i.role]}</TD>
+                  <TD>{formatDateTimeAU(new Date(i.expires_at))}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+function SupportOnly() {
+  return (
+    <Card>
+      <EmptyState title="Fleet records need support access">
+        Support Agents see an organisation&apos;s fleet only inside a logged support-access session. The Super Admin can view it directly.
+      </EmptyState>
+    </Card>
+  );
+}
+
+async function EquipmentTab({ orgId, superAdmin, archived }: { orgId: string; superAdmin: boolean; archived: boolean }) {
+  if (!superAdmin) return <SupportOnly />;
+  const db = await createSupabaseServerClient();
+  const { rows, total } = await listAssets(db, { organisationId: orgId, status: archived ? "archived" : "current", pageSize: 100 });
+  const base = `/admin/organisations/${orgId}?tab=equipment`;
+  return (
+    <Card>
+      <CardHeader
+        title={`${archived ? "Archived" : "Current"} equipment (${total})`}
+        description={total > rows.length ? `Showing the first ${rows.length}.` : undefined}
+        action={
+          <Link href={archived ? base : `${base}&archived=1`} className="text-[13px] font-semibold text-link hover:underline">
+            {archived ? "Show current" : "Show archived"}
+          </Link>
+        }
+      />
+      {rows.length === 0 ? (
+        <EmptyState title={archived ? "No archived equipment" : "No equipment yet"} />
+      ) : (
+        <Table>
+          <THead>
+            <tr>
+              <TH>Asset</TH>
+              <TH>Class</TH>
+              <TH>Make / model</TH>
+              <TH>Registration / serial</TH>
+              <TH>Site</TH>
+              <TH>Condition</TH>
+            </tr>
+          </THead>
+          <tbody>
+            {rows.map((a) => (
+              <TR key={a.id}>
+                <TD className="font-semibold">{a.asset_number}</TD>
+                <TD>{a.asset_class?.name ?? "—"}</TD>
+                <TD>{[a.make, a.model].filter(Boolean).join(" ") || "—"}</TD>
+                <TD>{a.registration_number ?? a.serial_number ?? "—"}</TD>
+                <TD>{a.site?.name ?? "—"}</TD>
+                <TD>
+                  <ConditionBadge condition={a.condition} />
+                </TD>
+              </TR>
+            ))}
+          </tbody>
+        </Table>
+      )}
+    </Card>
+  );
+}
+
+async function ClientsTab({ orgId, superAdmin }: { orgId: string; superAdmin: boolean }) {
+  if (!superAdmin) return <SupportOnly />;
+  const db = await createSupabaseServerClient();
+  const [clients, sites] = await Promise.all([listClients(db, orgId), listSites(db, orgId)]);
+  const clientName = new Map(clients.map((c) => [c.id, c.name]));
+  return (
+    <div className="flex flex-col gap-5">
+      <Card>
+        <CardHeader title={`Clients (${clients.length})`} />
+        {clients.length === 0 ? (
+          <EmptyState title="No clients" />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>Client</TH>
+                <TH>ABN</TH>
+                <TH>Contact</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {clients.map((c) => (
+                <TR key={c.id}>
+                  <TD className="font-semibold">{c.name}</TD>
+                  <TD>{c.abn ?? "—"}</TD>
+                  <TD>{[c.contact_name, c.contact_email, c.contact_phone].filter(Boolean).join(" · ") || "—"}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+      <Card>
+        <CardHeader title={`Sites (${sites.length})`} />
+        {sites.length === 0 ? (
+          <EmptyState title="No sites" />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>Site</TH>
+                <TH>Client</TH>
+                <TH>Location</TH>
+                <TH>Timezone</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {sites.map((s) => (
+                <TR key={s.id}>
+                  <TD className="font-semibold">{s.name}</TD>
+                  <TD>{s.client_id ? clientName.get(s.client_id) : "Own site"}</TD>
+                  <TD>{[s.suburb, s.state, s.postcode].filter(Boolean).join(" ") || "—"}</TD>
+                  <TD>{s.timezone.replace("Australia/", "")}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+    </div>
   );
 }

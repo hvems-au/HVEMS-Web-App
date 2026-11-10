@@ -12,14 +12,30 @@ export const metadata: Metadata = { title: "Organisations" };
 export default async function OrganisationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const kind = firstParam((await searchParams).kind) as OrganisationKind | undefined;
   const db = await createSupabaseServerClient();
-  let q = db.from("organisations").select("id, kind, name, abn, status, created_at").order("created_at", { ascending: false }).limit(200);
+  let q = db
+    .from("organisations")
+    .select("id, kind, name, abn, status, created_at, members:org_memberships(count), equipment:assets(count)")
+    .eq("members.status", "active")
+    .is("equipment.archived_at", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
   if (kind) q = q.eq("kind", kind);
-  const { data: orgs } = await q;
+  const { data } = await q;
+  const orgs = (data ?? []) as unknown as {
+    id: string;
+    kind: OrganisationKind;
+    name: string;
+    abn: string | null;
+    status: string;
+    created_at: string;
+    members: { count: number }[];
+    equipment: { count: number }[];
+  }[];
   return (
     <>
-      <PageHeader title="Organisations" description="Edit an organisation's details or de-activate it. Customer records stay private: opening them requires time-limited, logged support access (increment 2D screen)." />
+      <PageHeader title="Organisations" description="Every organisation on HVEMS. Open one to see its team and fleet, edit its details or de-activate it. Each time you open a company's team or fleet, it's recorded in that company's security log." />
       <Card>
-        {!orgs?.length ? (
+        {!orgs.length ? (
           <EmptyState title="No organisations yet" />
         ) : (
           <Table>
@@ -29,6 +45,8 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                 <TH>Type</TH>
                 <TH>ABN</TH>
                 <TH>Status</TH>
+                <TH className="text-right">Members</TH>
+                <TH className="text-right">Equipment</TH>
                 <TH>Joined</TH>
                 <TH className="w-24" />
               </tr>
@@ -46,6 +64,8 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                   <TD>
                     <Badge tone={o.status === "active" ? "green" : o.status === "restricted" ? "amber" : "red"}>{o.status === "suspended" ? "de-activated" : o.status}</Badge>
                   </TD>
+                  <TD className="text-right">{o.members[0]?.count ?? 0}</TD>
+                  <TD className="text-right">{o.kind === "company" ? (o.equipment[0]?.count ?? 0) : "—"}</TD>
                   <TD>{formatDateAU(new Date(o.created_at))}</TD>
                   <TD className="text-right">
                     <Link href={`/admin/organisations/${o.id}`} className="text-[13px] font-semibold text-link hover:underline">

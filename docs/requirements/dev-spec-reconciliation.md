@@ -48,6 +48,8 @@ Requirement IDs below (ACC-, AST-, BIL-, ADM-, AUD-, NFR-, CFG-, T-) are the spe
 
 Each item needs a new migration and, where permissions change, an update to `packages/permissions/src/matrix.ts`. Hosted changes need Ahmad's approval.
 
+**Approved 10 Nov 2026 (Ahmad, for HVEMS):** items 2–13, including item 9 (MFA recovery codes and Owner/Admin MFA reset). They are now build work, scheduled before 2B.
+
 | # | Spec | Current build | Change |
 |---|---|---|---|
 | 1 | §2.3, §2.5, §2.7 (D-06 confirmed): sessions bound to one audience; cross-portal switch by a single-use 60-second handoff token | ✅ **Done 9 Nov 2026** (ADR-009): five portals by host, host-only session cookies, signed 60-second single-use handoff | Remaining: the one-active-organisation-per-tab rule is met by the org id in the URL; switches are logged in `security_events` |
@@ -73,9 +75,12 @@ Each item needs a new migration and, where permissions change, an update to `pac
 
 ## 5. Omnific IT decisions (9 Nov 2026, Ahmad)
 
+**Approved 10 Nov 2026:** HVEMS has approved O-01 to O-05, including the change-control acknowledgement for O-01 (MKT-02) and the support-access exception in O-05.
+
 | # | Decision | Spec items affected | Notes |
 |---|---|---|---|
 | O-01 | **No ABN Lookup integration.** Provider ABNs are checked with the checksum (DB + TS, already built). The Verification Officer confirms the ABN is active and matches the business name by hand, and records that in the verification decision | INT-04, MKT-02 ("automatic ABN Lookup"), ADM-03, T-24 | MKT-02 is a BR, so HVEMS must acknowledge it through change control. `ABR_GUID` removed from `.env.example` |
 | O-02 | **Naming.** The HVEMS platform owner's console role is the **Super Admin** (code: `platform_administrator`). Company-level managers are **Company Admins**. They are customers who manage only their own company | Glossary; UI labels | Display names only, no schema change. Company roles stay Owner and Administrator in the database, because the spec gives them different powers (billing, closure) |
 | O-03 | **Company asset classes**, as well as HVEMS standard classes. Owner, Company Admin and Fleet Manager can add a class while creating equipment; it's saved for that company only and reused. Each class is based on a category (vehicle or equipment), which sets mandatory fields and keeps billing and waiver counts correct. The Super Admin can add standard classes for every company | AST-02 ("classes maintained by HVEMS"), INS-04 (templates by class, 2B) | Extends a BR, so HVEMS should acknowledge it through change control. Migration `asset_classes_and_meters`; capability `asset_classes.manage` |
 | O-04 | **Either meter unit on any asset.** An hours-only asset can record an odometer reading and the reverse. A manager role (`meter_readings.accept`) confirms it, and the asset's meter switches to both; the change is audited | AST-01 (meter type), AST-10 | An extension of AST-10 behaviour; no conflict with a BR |
+| O-05 | **Super Admin sees every organisation's team and fleet** (equipment, clients, sites, meter readings, condition) at any time, read-only, with MFA. Support Agents keep the support-access rule. Each time the Super Admin opens an organisation's team or fleet, a `hvems_staff_viewed_records` security event is written for that organisation | §2.3 ("customer data outside a support access session: can't reach"), ADM-07, CS-06, NFR-09 | **Departs from the agreed privacy design**, so HVEMS must approve it through change control and the privacy policy must disclose it. Migration `super_admin_fleet_read`; pgTAP `040` |

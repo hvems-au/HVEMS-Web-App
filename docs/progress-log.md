@@ -1,5 +1,13 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): Super Admin sees all organisations' team and fleet
+**Done**
+- O-05: read-only access for the Super Admin (Platform Administrator + MFA) to every organisation's equipment, clients, sites, meter readings and condition records; Support Agents unchanged. Applied by Claude through the Supabase connector (first use of the new local permission); recorded as `20261109123912 super_admin_fleet_read`; checked by simulation (MFA: sees all; no MFA: nothing).
+- Console: Organisations list shows member and equipment counts; each organisation has Details, Team, Equipment and Clients & Sites tabs. Opening a team or fleet tab writes a `hvems_staff_viewed_records` security event for that organisation.
+
+**Waiting on**
+- HVEMS approval of O-05 (privacy change) and a privacy-policy update.
+
 ## 2026-11-10 — Session 2 (continued): custom asset classes; either meter unit
 **Done**
 - Company asset classes (O-03): "+ Add a new class…" in the equipment form for Owner, Company Admin and Fleet Manager; the class is saved for the company and offered again. Super Admin → Asset Classes lists the standard classes and adds new ones for everyone. The database keeps each company's classes private and stops an asset using another company's class.
