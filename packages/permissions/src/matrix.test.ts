@@ -104,6 +104,14 @@ describe("SoW §2.4 role rules", () => {
     expect(has("driver_operator", "assets.view_permitted")).toBe(true);
   });
 
+  it("Fleet Managers clear defects by role (O-09); technicians need Clearance Authority", () => {
+    expect(has("fleet_manager", "defects.clear_critical")).toBe(true);
+    expect(has("fleet_manager", "assets.return_to_service")).toBe(true);
+    expect(has("technician", "defects.clear_critical")).toBe(false);
+    expect(has("technician", "defects.clear_critical", ["clearance_authority"])).toBe(true);
+    expect(has("viewer", "defects.clear_critical")).toBe(false);
+  });
+
   it("Finance approves parts only with the Approval Limit grant", () => {
     expect(has("finance", "parts.approve")).toBe(false);
     expect(has("finance", "parts.approve", ["approval_limit"])).toBe(true);

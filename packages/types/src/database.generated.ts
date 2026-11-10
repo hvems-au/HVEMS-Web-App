@@ -517,47 +517,80 @@ export type Database = {
         Row: {
           asset_id: string
           cause_id: string | null
+          closed_at: string | null
+          closed_by: string | null
+          deferral_reason: string | null
+          deferred_until: string | null
           description: string | null
+          due_date: string | null
+          evidence_paths: string[]
           id: string
           inspection_id: string | null
           item_code: string | null
+          merged_into: string | null
           organisation_id: string
+          repaired_by: string | null
           reported_at: string
           reported_by: string | null
+          resolution_note: string | null
           severity: Database["public"]["Enums"]["defect_severity"]
           source: string
           status: Database["public"]["Enums"]["defect_status"]
           title: string
+          triaged_at: string | null
+          triaged_by: string | null
         }
         Insert: {
           asset_id: string
           cause_id?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          deferral_reason?: string | null
+          deferred_until?: string | null
           description?: string | null
+          due_date?: string | null
+          evidence_paths?: string[]
           id?: string
           inspection_id?: string | null
           item_code?: string | null
+          merged_into?: string | null
           organisation_id: string
+          repaired_by?: string | null
           reported_at?: string
           reported_by?: string | null
+          resolution_note?: string | null
           severity: Database["public"]["Enums"]["defect_severity"]
           source: string
           status?: Database["public"]["Enums"]["defect_status"]
           title: string
+          triaged_at?: string | null
+          triaged_by?: string | null
         }
         Update: {
           asset_id?: string
           cause_id?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          deferral_reason?: string | null
+          deferred_until?: string | null
           description?: string | null
+          due_date?: string | null
+          evidence_paths?: string[]
           id?: string
           inspection_id?: string | null
           item_code?: string | null
+          merged_into?: string | null
           organisation_id?: string
+          repaired_by?: string | null
           reported_at?: string
           reported_by?: string | null
+          resolution_note?: string | null
           severity?: Database["public"]["Enums"]["defect_severity"]
           source?: string
           status?: Database["public"]["Enums"]["defect_status"]
           title?: string
+          triaged_at?: string | null
+          triaged_by?: string | null
         }
         Relationships: [
           {
@@ -579,6 +612,13 @@ export type Database = {
             columns: ["inspection_id", "organisation_id"]
             isOneToOne: false
             referencedRelation: "inspections"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "defects_merged_into_fk"
+            columns: ["merged_into", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "defects"
             referencedColumns: ["id", "organisation_id"]
           },
           {
@@ -1371,6 +1411,51 @@ export type Database = {
         }
         Relationships: []
       }
+      return_to_service_events: {
+        Row: {
+          asset_id: string
+          evidence_paths: string[]
+          id: string
+          note: string
+          organisation_id: string
+          returned_at: string
+          returned_by: string
+        }
+        Insert: {
+          asset_id: string
+          evidence_paths?: string[]
+          id?: string
+          note: string
+          organisation_id: string
+          returned_at?: string
+          returned_by: string
+        }
+        Update: {
+          asset_id?: string
+          evidence_paths?: string[]
+          id?: string
+          note?: string
+          organisation_id?: string
+          returned_at?: string
+          returned_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_to_service_events_asset_id_organisation_id_fkey"
+            columns: ["asset_id", "organisation_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "organisation_id"]
+          },
+          {
+            foreignKeyName: "return_to_service_events_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_events: {
         Row: {
           detail: Json
@@ -1570,6 +1655,15 @@ export type Database = {
         }
         Returns: string
       }
+      clear_defect: {
+        Args: {
+          p_defect_id: string
+          p_evidence?: string[]
+          p_repair_details: string
+          p_repaired_by?: string
+        }
+        Returns: Json
+      }
       create_asset_class: {
         Args: {
           p_category: Database["public"]["Enums"]["asset_category"]
@@ -1621,12 +1715,24 @@ export type Database = {
         Args: { p_accept: boolean; p_note?: string; p_reading_id: string }
         Returns: undefined
       }
+      defer_defect: {
+        Args: { p_defect_id: string; p_new_due: string; p_reason: string }
+        Returns: undefined
+      }
+      dismiss_defect: {
+        Args: { p_defect_id: string; p_reason: string }
+        Returns: undefined
+      }
       end_support_access: { Args: { p_grant_id: string }; Returns: undefined }
       import_assets: {
         Args: { p_dry_run?: boolean; p_organisation_id: string; p_rows: Json }
         Returns: Json
       }
       mark_notifications_read: { Args: { p_ids?: string[] }; Returns: number }
+      merge_defect: {
+        Args: { p_defect_id: string; p_into_id: string; p_reason?: string }
+        Returns: undefined
+      }
       my_capabilities: {
         Args: { p_organisation_id: string }
         Returns: string[]
@@ -1704,6 +1810,10 @@ export type Database = {
         Args: { p_membership_id: string; p_reason?: string }
         Returns: undefined
       }
+      return_to_service: {
+        Args: { p_asset_id: string; p_evidence?: string[]; p_note: string }
+        Returns: undefined
+      }
       revoke_grant: {
         Args: { p_grant_id: string; p_reason: string }
         Returns: undefined
@@ -1730,6 +1840,15 @@ export type Database = {
           p_photos?: Json
         }
         Returns: Json
+      }
+      triage_defect: {
+        Args: {
+          p_defect_id: string
+          p_evidence?: string[]
+          p_reason?: string
+          p_severity: Database["public"]["Enums"]["defect_severity"]
+        }
+        Returns: undefined
       }
       update_member_role: {
         Args: {
@@ -1759,7 +1878,7 @@ export type Database = {
         | "needs_attention_hold"
         | "overdue_service"
       defect_severity: "critical" | "minor" | "advisory"
-      defect_status: "open" | "closed"
+      defect_status: "open" | "closed" | "repaired" | "dismissed" | "merged"
       identification_method:
         | "password"
         | "password_mfa"
@@ -1957,7 +2076,7 @@ export const Constants = {
         "overdue_service",
       ],
       defect_severity: ["critical", "minor", "advisory"],
-      defect_status: ["open", "closed"],
+      defect_status: ["open", "closed", "repaired", "dismissed", "merged"],
       identification_method: [
         "password",
         "password_mfa",

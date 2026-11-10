@@ -91,7 +91,7 @@ select tests.authenticate_as(:'fm_a');
 select ok('assets.manage' = any (public.my_capabilities(:'org_a')), 'Fleet Manager can add and edit equipment (spec B.1)');
 select ok(not ('assets.import_archive' = any (public.my_capabilities(:'org_a'))), 'Fleet Manager cannot import or archive equipment (spec B.1)');
 select ok('defects.triage' = any (public.my_capabilities(:'org_a')), 'Fleet Manager can triage defects');
-select ok(not ('defects.clear_critical' = any (public.my_capabilities(:'org_a'))), 'Fleet Manager has no Clearance Authority without the grant');
+select ok('defects.clear_critical' = any (public.my_capabilities(:'org_a')), 'Fleet Managers hold the clearance powers by role (decision O-09)');
 select ok(not ('marketplace.post' = any (public.my_capabilities(:'org_a'))), 'Fleet Manager cannot post jobs without Marketplace Buyer');
 reset role;
 select tests.authenticate_as(:'owner_a', 'aal2');

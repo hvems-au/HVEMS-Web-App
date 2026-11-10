@@ -330,7 +330,7 @@ export interface Defect {
   organisation_id: UUID;
   asset_id: UUID;
   severity: DefectSeverityValue;
-  status: "open" | "closed";
+  status: DefectStatus;
   title: string;
   description: string | null;
   source: "prestart";
@@ -338,6 +338,38 @@ export interface Defect {
   item_code: string | null;
   reported_by: UUID | null;
   reported_at: ISODateTime;
+  triaged_at: ISODateTime | null;
+  triaged_by: UUID | null;
+  /** Minor defects: repair due date (D-07). */
+  due_date: ISODate | null;
+  deferred_until: ISODate | null;
+  deferral_reason: string | null;
+  closed_at: ISODateTime | null;
+  closed_by: UUID | null;
+  resolution_note: string | null;
+  repaired_by: UUID | null;
+  merged_into: UUID | null;
+  evidence_paths: string[];
+}
+
+/** "closed" is unused (kept in the enum); closed defects are repaired, dismissed or merged. */
+export type DefectStatus = "open" | "closed" | "repaired" | "dismissed" | "merged";
+
+export interface ReturnToServiceEvent {
+  id: UUID;
+  asset_id: UUID;
+  returned_by: UUID;
+  returned_at: ISODateTime;
+  note: string;
+  evidence_paths: string[];
+}
+
+export interface OpenConditionCause {
+  id: UUID;
+  kind: string;
+  source_type: string;
+  source_id: UUID | null;
+  opened_at: ISODateTime;
 }
 
 export interface AppNotification {

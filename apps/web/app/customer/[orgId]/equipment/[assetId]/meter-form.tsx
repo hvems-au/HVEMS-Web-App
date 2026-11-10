@@ -46,7 +46,7 @@ export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { 
             ))}
           </Select>
         </Field>
-        <Field label="Odometer / hours" htmlFor="value" error={state.status === "error" ? state.fieldErrors?.value : undefined}>
+        <Field label="Value" htmlFor="value" error={state.status === "error" ? state.fieldErrors?.value : undefined}>
           <Input name="value" inputMode="decimal" required />
         </Field>
       </div>

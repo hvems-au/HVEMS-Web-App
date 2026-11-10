@@ -124,3 +124,11 @@ export const INSPECTION_RESULT_LABELS: Record<InspectionResultValue, string> = {
   pass_with_faults: "Pass with faults",
   fail: "Fail: do not operate",
 };
+
+export const DEFECT_STATUS_LABELS: Record<"open" | "closed" | "repaired" | "dismissed" | "merged", string> = {
+  open: "Open",
+  closed: "Closed",
+  repaired: "Repaired",
+  dismissed: "Dismissed",
+  merged: "Merged",
+};

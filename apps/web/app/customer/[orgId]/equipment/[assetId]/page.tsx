@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClipboardCheck, Pencil } from "lucide-react";
-import { getAsset, listAuditEvents, listConditionHistory, listDefects, listInspections, listMeterReadings } from "@hvems/api-client";
+import {
+  getAsset,
+  listAuditEvents,
+  listConditionHistory,
+  listDefects,
+  listInspections,
+  listMeterReadings,
+  listOpenConditionCauses,
+  listReturnToServiceEvents,
+} from "@hvems/api-client";
 import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { ConditionBadge, ConditionBanner } from "@/components/condition";
@@ -15,6 +24,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatNumber } from "@/lib/utils";
 import { ArchiveDialog } from "./archive-dialog";
 import { MeterForm } from "./meter-form";
+import { ReturnToServiceDialog } from "./return-to-service";
 
 export const metadata: Metadata = { title: "Equipment" };
 
@@ -29,13 +39,20 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
   const asset = await getAsset(db, assetId).catch(() => null);
   if (!asset || asset.organisation_id !== orgId) notFound();
 
-  const [readings, history, audit, defects, prestarts] = await Promise.all([
+  const [readings, history, audit, defects, prestarts, causes, rtsEvents] = await Promise.all([
     listMeterReadings(db, assetId, 20),
     listConditionHistory(db, assetId),
     can(ctx.capabilities, "audit.view") ? listAuditEvents(db, { organisationId: orgId, entityType: "assets", entityId: assetId, limit: 20 }) : Promise.resolve([]),
     listDefects(db, { organisationId: orgId, assetId, status: "open" }),
     listInspections(db, { organisationId: orgId, assetId, limit: 5 }),
+    listOpenConditionCauses(db, assetId),
+    listReturnToServiceEvents(db, assetId, 5),
   ]);
+  // Two-step clearance: repaired Critical defects leave an "awaiting return to service" cause.
+  const awaitingReturn = causes.some((c) => c.kind === "awaiting_return_to_service");
+  const otherOutOfService = causes.some((c) =>
+    ["critical_defect", "unverified_unsafe_report", "critical_finding_awaiting_review", "out_of_service_hold"].includes(c.kind),
+  );
   const manage = can(ctx.capabilities, "assets.manage") && !asset.archived_at;
   // Assets without a meter show the form only to managers, who can start tracking one.
   const canRecord =
@@ -78,8 +95,23 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         }
       />
       {!asset.archived_at ? (
-        <div className="mb-5">
+        <div className="mb-5 flex flex-col gap-3">
           <ConditionBanner condition={asset.condition} />
+          {awaitingReturn ? (
+            <div className="flex flex-col gap-3 rounded-[12px] border-2 border-[#e8a33c] bg-warn-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[15px] font-bold text-[#7a3d00]">Repaired: waiting to return to service</p>
+                <p className="text-[13.5px] text-[#7a3d00]">
+                  {otherOutOfService
+                    ? "Other Critical defects or holds are still open. Clear them first."
+                    : "Step 2 of 2: confirm the equipment is fit to use. It stays Out of service until then."}
+                </p>
+              </div>
+              {!otherOutOfService && can(ctx.capabilities, "assets.return_to_service") ? (
+                <ReturnToServiceDialog orgId={orgId} assetId={assetId} assetNumber={asset.asset_number} />
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="mb-5 rounded-[10px] border border-stroke bg-white px-4 py-3 text-[14px] text-ink-muted">
@@ -173,7 +205,14 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         </Card>
 
         <Card>
-          <CardHeader title="Condition history" description="Set automatically from defects and holds; no one can set it by hand" />
+          <CardHeader
+            title="Condition history"
+            description={
+              rtsEvents[0]
+                ? `Set automatically from defects and holds. Last returned to service ${formatDateTimeAU(new Date(rtsEvents[0].returned_at), ctx.timezone)}: ${rtsEvents[0].note}`
+                : "Set automatically from defects and holds; no one can set it by hand"
+            }
+          />
           <CardBody className="px-0 pb-1">
             {history.length === 0 ? (
               <EmptyState title="Active since registration">Changes when a defect or hold is raised or cleared.</EmptyState>
@@ -207,7 +246,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
         <Card>
           <CardHeader
             title={`Open defects (${defects.length})`}
-            description="Triage, repair and clearance are being built next"
+            description="Open a defect to triage it or mark it repaired"
             action={
               <Link href={`/customer/${orgId}/defects`} className="text-[13px] font-semibold text-link hover:underline">
                 All defects
@@ -219,14 +258,14 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
               <p className="text-[14px] text-ink-muted">No open defects.</p>
             ) : (
               defects.map((d) => (
-                <div key={d.id} className="flex items-start gap-2.5 px-5 py-2.5 text-[14px]">
+                <Link key={d.id} href={`/customer/${orgId}/defects/${d.id}`} className="flex items-start gap-2.5 px-5 py-2.5 text-[14px] hover:bg-surface-muted/60">
                   <SeverityBadge severity={d.severity} />
                   <span className="min-w-0">
-                    {d.title}
+                    <span className="font-medium text-ink">{d.title}</span>
                     {d.description ? <span className="block text-[13px] text-ink-muted">“{d.description}”</span> : null}
                     <span className="block text-[12px] text-ink-subtle">{formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}</span>
                   </span>
-                </div>
+                </Link>
               ))
             )}
           </CardBody>

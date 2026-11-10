@@ -11,6 +11,7 @@
  *  - "Fleet Manager or above" is read as Owner ⊇ Administrator ⊇ Fleet Manager
  *    for operational capabilities; Administrators still have no billing or
  *    closure authority.
+ *  - Fleet Managers (and above) hold the clearance powers by role (O-09).
  *  - Fleet Managers create and edit equipment and clients (spec B.1); importing
  *    and archiving equipment, and managing sites, stay with Owner/Administrator.
  */
@@ -134,6 +135,9 @@ const OPERATIONS_MANAGER: Capability[] = [
   "parts.request",
   "reports.view",
   "reports.export",
+  // Owners and Fleet Managers clear defects and return equipment to service by role
+  // (decision O-09); Company Admins inherit it. Others need the Clearance Authority grant.
+  ...CLEARANCE,
 ];
 
 const ADMINISTRATOR: Capability[] = [

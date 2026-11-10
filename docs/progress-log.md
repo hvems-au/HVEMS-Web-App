@@ -1,5 +1,12 @@
 # Development progress log
 
+## 2026-11-10 — Session 2 (continued): defect triage and two-step clearance
+**Done**
+- Decision O-09: Owners and Fleet Managers (and Company Admins) hold the clearance powers by role; capability seed + `matrix.ts` updated.
+- Migration `20261110071142 defect_triage_clearance` (applied by Claude): defect statuses repaired / dismissed / merged; triage (raise freely; lower with a reason, and a photo for Critical), dismiss, merge (kept defect takes the more serious severity), defer Minor (reason, at most 30 days past due), mark repaired (repairer recorded; company rule "repairers can't clear their own Critical repairs" enforced), return to service (separate step, only when no other Out-of-service cause is open; recorded in `return_to_service_events`). Minor defects get a due date (7 days, setting). pgTAP `080`; `010` updated.
+- Web: defect page with Next step (Mark repaired, Triage, Defer, Merge duplicate, Dismiss) and evidence photos; Defects list with Open / Closed tabs, New, Due and Overdue badges; equipment page banner "Repaired: waiting to return to service" with the Return to service dialog.
+- Checked: hosted smoke test (rolled back) and in the browser on CAT-ESC-0001: Advisory raised to Critical -> Out of service; marked repaired with a photo -> still Out of service, banner shown; returned to service -> Active. The test defect is now closed as Repaired.
+
 ## 2026-11-10 — Session 2 (continued): pre-start inspections (first version)
 **Done**
 - Migrations `20261110052909 prestart_inspections` and `20261110052952 prestart_fk_indexes` (applied by Claude): standard templates seeded from the P-01 draft (10 templates, 95 items; SoW severities Critical / Minor / Advisory), `inspections`, `inspection_answers`, `inspection_photos` (private `inspection-photos` bucket, org-scoped storage policies), `defects`, `notifications`; RPCs `prestart_checklist`, `submit_prestart`, `mark_notifications_read`. Operator items (fit for work, licence) fail the pre-start without a defect. Critical faults open a condition cause (Out of service); Minor faults Needs attention; Owner and Fleet Managers notified (O-07). Repeat faults don't duplicate open defects. Pre-starts are append-only.

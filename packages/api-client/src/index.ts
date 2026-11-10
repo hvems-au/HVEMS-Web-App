@@ -15,6 +15,9 @@ import type {
   InspectionAnswerValue,
   InspectionPhoto,
   PrestartSubmitResult,
+  OpenConditionCause,
+  ReturnToServiceEvent,
+  DefectSeverityValue,
   AssetClass,
   AssetListItem,
   AuditEvent,
@@ -555,4 +558,79 @@ export async function countUnreadNotifications(db: HvemsClient, organisationId: 
 
 export async function markNotificationsRead(db: HvemsClient, ids?: string[]): Promise<number> {
   return unwrap<number>(await db.rpc("mark_notifications_read", { p_ids: ids ?? null }));
+}
+
+// ---------------------------------------------------------------------------
+// Defect triage and two-step clearance (O-09)
+// ---------------------------------------------------------------------------
+
+/** Evidence photos live in the same private bucket: <organisation>/<asset>/<folder>/<file>. */
+export function evidencePhotoPath(organisationId: string, assetId: string, folder: string, fileName: string): string {
+  return inspectionPhotoPath(organisationId, assetId, folder, fileName);
+}
+
+export async function getDefect(db: HvemsClient, id: string): Promise<DefectListItem> {
+  return unwrap<DefectListItem>(await db.from("defects").select("*, asset:assets(asset_number, make, model)").eq("id", id).single());
+}
+
+export async function triageDefect(
+  db: HvemsClient,
+  input: { defectId: string; severity: DefectSeverityValue; reason?: string; evidence?: string[] },
+): Promise<void> {
+  unwrap(
+    await db.rpc("triage_defect", {
+      p_defect_id: input.defectId,
+      p_severity: input.severity,
+      p_reason: input.reason || null,
+      p_evidence: input.evidence ?? [],
+    }),
+  );
+}
+
+export async function dismissDefect(db: HvemsClient, defectId: string, reason: string): Promise<void> {
+  unwrap(await db.rpc("dismiss_defect", { p_defect_id: defectId, p_reason: reason }));
+}
+
+export async function mergeDefect(db: HvemsClient, defectId: string, intoId: string, reason?: string): Promise<void> {
+  unwrap(await db.rpc("merge_defect", { p_defect_id: defectId, p_into_id: intoId, p_reason: reason || null }));
+}
+
+export async function deferDefect(db: HvemsClient, defectId: string, newDue: string, reason: string): Promise<void> {
+  unwrap(await db.rpc("defer_defect", { p_defect_id: defectId, p_new_due: newDue, p_reason: reason }));
+}
+
+/** Mark repaired. For a Critical defect the equipment then waits for return to service. */
+export async function clearDefect(
+  db: HvemsClient,
+  input: { defectId: string; repairDetails: string; repairedBy?: string | null; evidence?: string[] },
+): Promise<{ awaiting_return_to_service: boolean }> {
+  return unwrap(
+    await db.rpc("clear_defect", {
+      p_defect_id: input.defectId,
+      p_repair_details: input.repairDetails,
+      p_repaired_by: input.repairedBy || null,
+      p_evidence: input.evidence ?? [],
+    }),
+  );
+}
+
+export async function returnToService(db: HvemsClient, assetId: string, note: string, evidence: string[] = []): Promise<void> {
+  unwrap(await db.rpc("return_to_service", { p_asset_id: assetId, p_note: note, p_evidence: evidence }));
+}
+
+export async function listOpenConditionCauses(db: HvemsClient, assetId: string): Promise<OpenConditionCause[]> {
+  return unwrap<OpenConditionCause[]>(
+    await db
+      .from("asset_condition_causes")
+      .select("id, kind, source_type, source_id, opened_at")
+      .eq("asset_id", assetId)
+      .is("resolved_at", null)
+      .order("opened_at"),
+  );
+}
+
+export async function listReturnToServiceEvents(db: HvemsClient, assetId: string, limit = 10): Promise<ReturnToServiceEvent[]> {
+  return unwrap<ReturnToServiceEvent[]>(
+    await db.from("return_to_service_events").select("*").eq("asset_id", assetId).order("returned_at", { ascending: false }).limit(limit),
+  );
 }
