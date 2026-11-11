@@ -5,6 +5,8 @@
 - Decision O-11 (Ahmad). Migration `lockout_five_tries_unlock`: settings 5 tries and 180-minute portal idle timeout, new `security.password_warn_after_attempts` (3); `record_password_sign_in` returns the tries left; `member_sign_in_locks`, `unlock_member_sign_in` (`org.members.manage` + MFA rule) and `admin_unlock_sign_in` (Super Admin with MFA, recorded against each of the person's organisations).
 - Sign-in page: from the 3rd wrong password, "N tries left before this account is locked for 15 minutes". Team page: "N wrong passwords" or "Locked until 3:42 pm" badge with Unlock; same on the console's organisation Team tab for the Super Admin.
 - pgTAP `140` updated for 5 tries; new `150` (unlock rules).
+- Applied by Ahmad in the SQL editor (the connector refused it); history entry added. Browser-checked with a throwaway company (deleted): tries left shown at the 3rd and 4th wrong password, locked at the 5th, the Owner (with MFA) unlocks from the Team page, the member then signs in.
+- MFA screen simplified: "MFA required" heading and one line about the authenticator app (no role rules). Branded loading screen (HVEMS logo, pulse, orange bar): full screen outside the portals, in the content area inside them (`components/brand/brand-loader.tsx`).
 
 ## 2026-11-11 — Password lockout and idle timeouts
 **Done**

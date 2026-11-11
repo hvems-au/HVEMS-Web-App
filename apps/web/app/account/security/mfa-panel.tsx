@@ -146,7 +146,7 @@ export function MfaPanel({ next }: { next: string }) {
   if (phase.kind === "challenge") {
     return (
       <ChallengeWithRecovery
-        codeForm={codeField(phase.factorId, "Authentication code", false)}
+        codeForm={codeField(phase.factorId, "MFA code", false)}
         onRecovered={(message) => {
           setError(null);
           setPhase({ kind: "none", notice: message });
@@ -176,7 +176,8 @@ export function MfaPanel({ next }: { next: string }) {
       {phase.notice ? <FormAlert tone="success">{phase.notice}</FormAlert> : null}
       {error ? <FormAlert>{error}</FormAlert> : null}
       <p className="text-[14px] text-ink-muted">
-        Protect your account with an authenticator app. You&apos;ll enter a 6-digit code when you sign in.
+        Install an authenticator app on your phone (for example Microsoft Authenticator or Google Authenticator). You&apos;ll enter its 6-digit
+        code each time you sign in.
       </p>
       <Button onClick={() => void enrol()} disabled={busy}>
         {busy ? "Starting…" : "Set up authenticator app"}
@@ -195,7 +196,7 @@ function ChallengeWithRecovery({ codeForm, onRecovered }: { codeForm: React.Reac
   if (!recovering) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-[14px] text-ink-muted">Enter the code from your authenticator app to continue.</p>
+        <p className="text-[14px] text-ink-muted">Open your authenticator app and enter the 6-digit code shown for HVEMS.</p>
         {codeForm}
         <button type="button" className="self-center text-[13.5px] text-link hover:underline" onClick={() => setRecovering(true)}>
           Lost your phone? Use a recovery code
