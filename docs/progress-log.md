@@ -3,7 +3,7 @@
 ## 2026-11-11 — Sign-in & security events: Super Admin only
 **Done**
 - Decision (Ahmad): sign-in and security events are for the platform's Super Admin only. Company and provider audit pages show changes only (the tab, the URL and the CSV export all fall back to changes); in the console the tab shows only for the Super Admin. Companies still see HVEMS support sessions and member sign-in locks on the Team page.
-- Migration `20261111180000 security_events_super_admin_only` (read policy: Super Admin with MFA only); pgTAP `220`. **Waiting to be applied:** the Supabase connector refused it (`drop policy`); run it in the SQL editor.
+- Migration `20261111180000 security_events_super_admin_only` (read policy: Super Admin with MFA only); pgTAP `220`. Applied by Ahmad in the SQL editor (the connector refused `drop policy`); history entry added. Checked: the Owner (with MFA) now sees 0 security events.
 
 ## 2026-11-11 — Housekeeping
 **Done**
