@@ -10,10 +10,12 @@ export interface LabelData {
   qrPng: string;
   /** Driver portal address, e.g. https://driver.hvems.com.au (for phones without a camera). */
   portalUrl: string;
+  /** The company’s own logo as a data URI (PNG or JPEG); the company name is shown when absent. */
+  companyLogo?: string | null;
 }
 
 /** 100 × 150 mm equipment label (O-10): scan, sign in, pre-start. */
-export function EquipmentLabelPdf({ company, assetNumber, description, shortCode, qrPng, portalUrl }: LabelData) {
+export function EquipmentLabelPdf({ company, assetNumber, description, shortCode, qrPng, portalUrl, companyLogo }: LabelData) {
   registerBrandFonts();
   const mm = (n: number) => n * 2.8346;
   const portalText = portalUrl.replace(/^https?:\/\//, "");
@@ -23,7 +25,12 @@ export function EquipmentLabelPdf({ company, assetNumber, description, shortCode
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
           <Image src={LOGO} style={{ width: mm(34), height: mm(10) }} />
-          <Text style={{ fontSize: 7, color: C.muted, maxWidth: mm(46), textAlign: "right" }}>{company}</Text>
+          {companyLogo ? (
+            // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt
+            <Image src={companyLogo} style={{ width: mm(40), height: mm(12), objectFit: "contain", objectPosition: "right center" }} />
+          ) : (
+            <Text style={{ fontSize: 7, color: C.muted, maxWidth: mm(46), textAlign: "right" }}>{company}</Text>
+          )}
         </View>
         <View style={{ flexDirection: "row", marginTop: mm(2.5) }}>
           <View style={{ height: 3, backgroundColor: C.orange, flexGrow: 1 }} />

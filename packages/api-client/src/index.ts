@@ -443,6 +443,37 @@ export async function listPlatformSettings(db: HvemsClient): Promise<PlatformSet
 // ---------------------------------------------------------------------------
 
 /** Bucket for pre-start photos; paths are <organisation>/<asset>/<clientRequestId>/<file>. */
+export const ORGANISATION_LOGO_BUCKET = "organisation-logos";
+
+/** Where a new company logo is uploaded; the database only accepts this folder and pattern. */
+export function organisationLogoPath(organisationId: string, ext: "png" | "jpg" = "png"): string {
+  return `${organisationId}/logo-${crypto.randomUUID()}.${ext}`;
+}
+
+/** Point the organisation at a newly uploaded logo (or none), then delete the old file. */
+export async function setOrganisationLogo(db: HvemsClient, organisationId: string, path: string | null): Promise<void> {
+  const { data: before } = await db.from("organisations").select("logo_path").eq("id", organisationId).single();
+  const { error } = await db.from("organisations").update({ logo_path: path }).eq("id", organisationId);
+  if (error) throw toAppError(error);
+  const old = before?.logo_path;
+  if (old && old !== path) await db.storage.from(ORGANISATION_LOGO_BUCKET).remove([old]);
+}
+
+/** The logo file itself (for PDFs), or null when there is none or it can’t be read. */
+export async function downloadOrganisationLogo(db: HvemsClient, path: string | null | undefined): Promise<{ bytes: Uint8Array; type: string } | null> {
+  if (!path) return null;
+  const { data, error } = await db.storage.from(ORGANISATION_LOGO_BUCKET).download(path);
+  if (error || !data) return null;
+  return { bytes: new Uint8Array(await data.arrayBuffer()), type: data.type || (path.endsWith(".jpg") ? "image/jpeg" : "image/png") };
+}
+
+/** A short-lived link to show the logo on screen. */
+export async function signOrganisationLogo(db: HvemsClient, path: string | null | undefined, expiresInSeconds = 600): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db.storage.from(ORGANISATION_LOGO_BUCKET).createSignedUrl(path, expiresInSeconds);
+  return data?.signedUrl ?? null;
+}
+
 export const INSPECTION_PHOTO_BUCKET = "inspection-photos";
 
 export function inspectionPhotoPath(organisationId: string, assetId: string, clientRequestId: string, fileName: string): string {

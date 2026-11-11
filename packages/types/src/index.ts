@@ -46,6 +46,8 @@ export interface Organisation {
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  /** Company logo in the private organisation-logos bucket (<org>/logo-<id>.png). */
+  logo_path: string | null;
   settings: {
     overdue_service_sets_needs_attention?: boolean;
     repairer_cannot_clear_own_critical?: boolean;

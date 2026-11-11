@@ -1551,6 +1551,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["organisation_kind"]
           legal_name: string | null
+          logo_path: string | null
           name: string
           settings: Json
           status: Database["public"]["Enums"]["organisation_status"]
@@ -1571,6 +1572,7 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["organisation_kind"]
           legal_name?: string | null
+          logo_path?: string | null
           name: string
           settings?: Json
           status?: Database["public"]["Enums"]["organisation_status"]
@@ -1591,6 +1593,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["organisation_kind"]
           legal_name?: string | null
+          logo_path?: string | null
           name?: string
           settings?: Json
           status?: Database["public"]["Enums"]["organisation_status"]

@@ -1,5 +1,11 @@
 # Development progress log
 
+## 2026-11-11 — QR label: driver portal address and company logo
+**Done**
+- The label's "No camera?" box shows the driver portal address. Labels always print the live address (`driver.hvems.com.au`, or the configured `DRIVER_HOST` when it isn't a local host), never a local one.
+- Company logo (Settings → Company logo; Owners and Administrators): any image is converted to a PNG of at most 1000 px in the browser and uploaded to the private `organisation-logos` bucket (`<org>/logo-<id>.png`). Replacing or removing the logo deletes the old file. The label shows the logo in place of the company name. Migration `20261111045315 organisation_logo` (column, folder rule `invalid_logo`, bucket and storage policies); pgTAP `110`.
+- Browser-checked: SVG logo uploaded, shown in Settings and on the label (one page); replace and remove leave no files behind. The test logo was removed afterwards.
+
 ## 2026-11-10 — Session 2 (continued): QR codes, driver profiles and PIN sign-in; checklist v2
 **Done**
 - Decision O-10 (QR → sign-in → pre-start; codes generated on demand; no anonymous reports).

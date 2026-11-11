@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createInvitation, revokeInvitation } from "@hvems/api-client";
+import { createInvitation, revokeInvitation, setOrganisationLogo } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
 import { createOrganisationSchema, inviteMemberSchema, organisationContactSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
@@ -153,6 +153,21 @@ export async function updateOrganisationAction(portal: string, orgId: string, _p
     if (!data?.length) return { status: "error", code: "forbidden", message: "You don't have permission to change these settings." };
     revalidatePath(`/${portal}/${orgId}`, "layout");
     return { status: "success", message: "Settings saved" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** Save (or clear) the company logo after the browser has uploaded it to the organisation's folder. */
+export async function setOrganisationLogoAction(portal: string, orgId: string, path: string | null): Promise<ActionState> {
+  const validOrg = z.string().uuid().safeParse(orgId).success;
+  const validPath = path === null || new RegExp("^" + orgId + "/logo-[A-Za-z0-9-]{1,64}\\.(png|jpg)$").test(path);
+  if (!validOrg || !validPath) return { status: "error", code: "invalid", message: "That logo upload isn't valid. Try again." };
+  try {
+    const db = await createSupabaseServerClient();
+    await setOrganisationLogo(db, orgId, path);
+    revalidatePath(`/${portal}/${orgId}`, "layout");
+    return { status: "success", message: path ? "Logo saved" : "Logo removed" };
   } catch (e) {
     return errorState(e);
   }
