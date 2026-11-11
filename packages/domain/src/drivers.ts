@@ -39,10 +39,17 @@ export function credentialTitle(c: { kind: CredentialKind; label: string | null 
 }
 
 /** Pre-start frequency per equipment type, overridable per equipment (2B). */
-export const PRESTART_FREQUENCIES = ["daily", "weekly", "not_required"] as const;
+export const PRESTART_FREQUENCIES = ["daily", "weekly", "custom", "not_required"] as const;
 export type PrestartFrequency = (typeof PRESTART_FREQUENCIES)[number];
 export const PRESTART_FREQUENCY_LABELS: Record<PrestartFrequency, string> = {
   daily: "Daily (each working day)",
   weekly: "Weekly",
+  custom: "Every few days (custom)",
   not_required: "Not required",
 };
+
+/** "Daily (each working day)", or "Every 3 days" for a custom frequency. */
+export function prestartFrequencyText(f: PrestartFrequency | null | undefined, everyDays?: number | null): string | null {
+  if (!f) return null;
+  return f === "custom" ? (everyDays ? `Every ${everyDays} days` : "Custom") : PRESTART_FREQUENCY_LABELS[f];
+}

@@ -59,6 +59,7 @@ export function AssetForm({
   const { register, handleSubmit, control, setValue, setError, formState } = form;
   const classCode = useWatch({ control, name: "asset_class" });
   const ownerType = useWatch({ control, name: "owner_type" });
+  const frequency = useWatch({ control, name: "prestart_frequency" });
   const cls = classes.find((c) => c.code === classCode);
   const required = new Set<string>((cls?.required_fields ?? []).filter((f) => !f.includes("|")));
   // Either-or rules, e.g. a registration or a VIN (AST-01).
@@ -224,8 +225,8 @@ export function AssetForm({
       </Card>
 
       <Card>
-        <CardHeader title="Pre-start checks" description="How often this equipment needs a pre-start. Missed checks are listed under Inspections → Missed." />
-        <CardBody>
+        <CardHeader title="Pre-start checks" description="How often this equipment needs a pre-start." />
+        <CardBody className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Field label="Pre-start frequency" htmlFor="prestart_frequency">
             <Select id="prestart_frequency" {...register("prestart_frequency")}>
               <option value="">
@@ -238,6 +239,11 @@ export function AssetForm({
               ))}
             </Select>
           </Field>
+          {frequency === "custom" ? (
+            <Field label="Every how many days?" htmlFor="prestart_every_days" error={err("prestart_every_days")} hint="2 to 365 days">
+              <Input id="prestart_every_days" type="number" inputMode="numeric" min={2} max={365} {...register("prestart_every_days")} />
+            </Field>
+          ) : null}
         </CardBody>
       </Card>
 

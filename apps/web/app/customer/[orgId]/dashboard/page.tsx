@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertOctagon, AlertTriangle, Building2, CheckCircle2, MapPin, Plus, Truck, Upload, Users } from "lucide-react";
-import { getAssetConditionCounts, listAssets, listClients, listMembers, listSites } from "@hvems/api-client";
+import { AlertOctagon, AlertTriangle, Building2, CheckCircle2, ChevronRight, MapPin, Plus, Truck, Upload, Users } from "lucide-react";
+import { getAssetConditionCounts, getDashboardTodo, listAssets, listClients, listMembers, listSites } from "@hvems/api-client";
 import { fleetSubscriptionCents, formatAud, monthlyWaiverAllowance } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { ConditionBadge } from "@/components/condition";
+import { ReadMore } from "@/components/read-more";
 import { PageHeader, StatCard } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
-import { Card, CardBody, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { Badge, Card, CardBody, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { MODULE_INFO } from "@/lib/navigation";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -21,13 +21,23 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
 
   const db = await createSupabaseServerClient();
   const canAssets = can(ctx.capabilities, "assets.view") || can(ctx.capabilities, "assets.view_permitted");
-  const [counts, attention, clients, sites, members] = await Promise.all([
+  const [counts, attention, clients, sites, members, todo] = await Promise.all([
     canAssets ? getAssetConditionCounts(db, orgId) : Promise.resolve({ total: 0, active: 0, needs_attention: 0, out_of_service: 0 }),
     canAssets ? listAssets(db, { organisationId: orgId, pageSize: 50 }) : Promise.resolve({ rows: [], total: 0 }),
     can(ctx.capabilities, "clients.view") ? listClients(db, orgId) : Promise.resolve([]),
     can(ctx.capabilities, "sites.view") ? listSites(db, orgId) : Promise.resolve([]),
     listMembers(db, orgId),
+    getDashboardTodo(db, orgId),
   ]);
+  const todoItems = [
+    { n: todo.criticalDefects, label: "Critical defects", href: `/customer/${orgId}/defects`, tone: "red" as const },
+    { n: todo.otherDefects, label: "Other open defects", href: `/customer/${orgId}/defects`, tone: "amber" as const },
+    { n: todo.missedPrestarts, label: "Missed pre-starts to review", href: `/customer/${orgId}/inspections?tab=missed`, tone: "amber" as const },
+    { n: todo.overdueServices, label: "Services overdue", href: `/customer/${orgId}/maintenance`, tone: "red" as const },
+    { n: todo.dueSoonServices, label: "Services due soon", href: `/customer/${orgId}/maintenance`, tone: "amber" as const },
+    { n: todo.workOrdersToReview, label: "Work orders to review", href: `/customer/${orgId}/work-orders`, tone: "amber" as const },
+    { n: todo.openWorkOrders, label: "Open work orders", href: `/customer/${orgId}/work-orders`, tone: "blue" as const },
+  ].filter((t) => t.n > 0);
   const flagged = attention.rows.filter((a) => a.condition !== "active").slice(0, 6);
   const base = `/customer/${orgId}`;
   const canBilling = can(ctx.capabilities, "org.billing.view");
@@ -36,7 +46,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     <>
       <PageHeader
         title="Dashboard"
-        description="Overview of your HVEMS operations"
+        description="Your fleet at a glance"
         actions={
           can(ctx.capabilities, "assets.manage") ? (
             <>
@@ -67,8 +77,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader
-            title="Assets needing attention"
-            description="Condition is set automatically from open defects and holds"
+            title="Equipment needing attention"
             action={
               <Link href={`${base}/equipment`} className="text-[12px] font-medium text-link hover:underline">
                 View all
@@ -80,7 +89,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
               <EmptyState icon={<CheckCircle2 />} title={counts.total === 0 ? "No equipment yet" : "No assets need attention"}>
                 {counts.total === 0
                   ? "Add your first vehicle or piece of equipment, or import your register from a CSV file."
-                  : "Assets will appear here when a defect or hold is recorded (increment 2B)."}
+                  : "Equipment shows here when a defect or hold is recorded."}
               </EmptyState>
             ) : (
               <Table>
@@ -118,6 +127,30 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
 
         <div className="flex flex-col gap-5">
           <Card>
+            <CardHeader title="To do" />
+            <CardBody className="px-0 py-1">
+              {todoItems.length === 0 ? (
+                <p className="flex items-center gap-2 px-5 py-3 text-[13.5px] text-ink-muted">
+                  <CheckCircle2 className="size-4 text-[#16a34a]" aria-hidden /> All caught up
+                </p>
+              ) : (
+                <ul>
+                  {todoItems.map((t) => (
+                    <li key={t.label}>
+                      <Link href={t.href} className="flex items-center gap-3 px-5 py-2.5 text-[13.5px] hover:bg-surface-muted">
+                        <Badge tone={t.tone} className="min-w-8 justify-center">
+                          {t.n}
+                        </Badge>
+                        <span className="flex-1 text-ink">{t.label}</span>
+                        <ChevronRight className="size-4 text-ink-subtle" aria-hidden />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardBody>
+          </Card>
+          <Card>
             <CardHeader title="Organisation" />
             <CardBody className="grid grid-cols-3 gap-3 text-center">
               <Link href={`${base}/clients`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-[#ececef]">
@@ -139,38 +172,22 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
           </Card>
           {canBilling ? (
             <Card>
-              <CardHeader title="Fleet subscription" description="Estimate at today's count. Billed monthly in arrears on the highest count." />
+              <CardHeader title="Fleet subscription" />
               <CardBody>
                 <p className="text-[26px] font-bold text-ink">
                   {formatAud(fleetSubscriptionCents(counts.total))}
                   <span className="text-[14px] font-medium text-ink-subtle"> / month</span>
                 </p>
-                <p className="mt-1 text-[13px] text-ink-muted">
-                  First five assets free · $30 per additional asset · {monthlyWaiverAllowance(counts.total)} company-side connection-fee waiver(s) per
-                  month once assets have been current for 14 days.
-                </p>
+                <ReadMore className="mt-1" summary="Estimate at today's count.">
+                  First five assets are free, then $30 per asset a month. You&apos;re billed monthly in arrears on the month&apos;s highest count. You also get{" "}
+                  {monthlyWaiverAllowance(counts.total)} connection-fee waiver(s) a month once assets have been current for 14 days.
+                </ReadMore>
               </CardBody>
             </Card>
           ) : null}
         </div>
       </div>
 
-      <Card className="mt-5">
-        <CardHeader title="Coming in the next increments" description="These modules are part of Stage 2 and are being delivered in order." />
-        <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {(["inspections", "defects", "maintenance", "work-orders", "parts", "reports", "marketplace", "notifications"] as const).map((k) => {
-            const m = MODULE_INFO[k]!;
-            return (
-              <div key={k} className="rounded-[10px] border border-dashed border-stroke p-3">
-                <p className="flex items-center justify-between text-[14px] font-semibold text-ink">
-                  {m.title} <span className="rounded bg-surface-muted px-1.5 text-[11px] text-ink-muted">{m.increment}</span>
-                </p>
-                <p className="mt-1 text-[12.5px] text-ink-muted">{m.scope}</p>
-              </div>
-            );
-          })}
-        </CardBody>
-      </Card>
     </>
   );
 }

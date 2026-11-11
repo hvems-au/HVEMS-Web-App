@@ -267,7 +267,7 @@ export const ROLE_LABELS: Record<MemberRole, string> = {
   administrator: "Administrator",
   fleet_manager: "Fleet Manager",
   technician: "Technician",
-  driver_operator: "Driver or Operator",
+  driver_operator: "Operator",
   finance: "Finance",
   viewer: "Viewer",
   account_owner: "Account Owner",

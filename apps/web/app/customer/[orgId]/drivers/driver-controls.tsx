@@ -15,14 +15,14 @@ function SetupCard({ setup, expiresLabel }: { setup: Setup; expiresLabel: string
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-[12px] border-2 border-brand bg-[#fff7f0] p-4 text-center">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">Driver ID</p>
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">Operator ID</p>
         <p className="text-[26px] font-bold text-ink">{setup.driverId}</p>
         <p className="mt-2 text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">Setup code</p>
         <p className="font-mono text-[26px] font-bold tracking-[0.2em] text-brand">{setup.setupCode}</p>
         <p className="mt-1 text-[12.5px] text-ink-muted">Valid until {expiresLabel}</p>
       </div>
       <FormAlert tone="info">
-        Give these to the driver now; the setup code is shown only once. They scan the QR label on a machine, enter their Driver ID and this code, and
+        Give these to the operator now; the setup code is shown only once. They scan the QR label on a machine, enter their Operator ID and this code, and
         choose a 6-digit PIN.
       </FormAlert>
     </div>
@@ -54,10 +54,10 @@ export function AddDriverDialog({ orgId }: { orgId: string }) {
     <Dialog open={open} onOpenChange={close}>
       <DialogTrigger asChild>
         <Button>
-          <UserPlus /> Add driver
+          <UserPlus /> Add operator
         </Button>
       </DialogTrigger>
-      <DialogContent title={setup ? "Driver added" : "Add a driver"} description={setup ? undefined : "Drivers sign in on the equipment with a Driver ID and PIN; they don't need an email address."}>
+      <DialogContent title={setup ? "Operator added" : "Add an operator"} description={setup ? undefined : "Operators sign in on the equipment with an Operator ID and PIN; they don't need an email address."}>
         {setup ? (
           <div className="flex flex-col gap-4">
             <SetupCard setup={setup} expiresLabel={fmt(setup.expiresAt)} />
@@ -91,7 +91,7 @@ export function AddDriverDialog({ orgId }: { orgId: string }) {
                 Cancel
               </Button>
               <Button type="submit" disabled={pending || name.trim().length < 2}>
-                {pending ? "Adding…" : "Add driver"}
+                {pending ? "Adding…" : "Add operator"}
               </Button>
             </div>
           </form>
@@ -114,7 +114,7 @@ export function ResetPinDialog({ orgId, driverId, label }: { orgId: string; driv
           <KeyRound /> {label}
         </Button>
       </DialogTrigger>
-      <DialogContent title="New setup code" description={setup ? undefined : "The driver's current PIN stops working. They set a new PIN with the new setup code."}>
+      <DialogContent title="New setup code" description={setup ? undefined : "The operator's current PIN stops working. They set a new PIN with the new setup code."}>
         {setup ? (
           <div className="flex flex-col gap-4">
             <SetupCard setup={setup} expiresLabel={fmt(setup.expiresAt)} />
@@ -227,7 +227,7 @@ export function EquipmentAccessDialog({
           <Truck /> Equipment ({selected.length})
         </Button>
       </DialogTrigger>
-      <DialogContent title={`Equipment ${name} may operate`} description="Drivers can only sign in and do pre-starts on the equipment ticked here." className="max-w-xl">
+      <DialogContent title={`Equipment ${name} may operate`} description="Operators can only sign in and do pre-starts on the equipment ticked here." className="max-w-xl">
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
             <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search equipment" aria-label="Search equipment" />

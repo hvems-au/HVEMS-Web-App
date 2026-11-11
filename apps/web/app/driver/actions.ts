@@ -10,14 +10,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 const codeSchema = z.string().trim().min(6).max(40);
 
 /**
- * Driver sign-in on the driver portal (O-10). The database checks the Driver
+ * Operator sign-in on the operator portal (O-10). The database checks the Operator
  * ID and PIN (or setup code + new PIN) for the company that owns the scanned
  * equipment and counts wrong attempts; on success the server opens a session
- * for the driver's linked account on this portal only.
+ * for the operator's linked account on this portal only.
  */
 export async function driverSignInAction(input: { code: string; driverId: string; secret: string; newPin?: string }): Promise<ActionState> {
   const number = parseDriverId(input.driverId);
-  if (!number) return { status: "error", code: "invalid", message: "Enter your Driver ID, e.g. D-0001" };
+  if (!number) return { status: "error", code: "invalid", message: "Enter your Operator ID, e.g. OP-0001" };
   const v = z
     .object({ code: codeSchema, secret: z.string().trim().min(4, "Enter your PIN").max(20), newPin: z.string().regex(/^\d{6}$/, "Your new PIN must be 6 digits").optional() })
     .safeParse(input);
@@ -32,10 +32,10 @@ export async function driverSignInAction(input: { code: string; driverId: string
     });
     if (error) throw toAppError(error);
     const res = data as { ok: boolean; code?: string; message?: string; user_id?: string };
-    if (!res.ok || !res.user_id) return { status: "error", code: res.code ?? "invalid_credentials", message: res.message ?? "Driver ID or PIN is not right" };
+    if (!res.ok || !res.user_id) return { status: "error", code: res.code ?? "invalid_credentials", message: res.message ?? "Operator ID or PIN is not right" };
 
     const { data: user } = await admin.auth.admin.getUserById(res.user_id);
-    if (!user.user?.email) throw new Error("Driver login is not set up");
+    if (!user.user?.email) throw new Error("Operator login is not set up");
     const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: "magiclink", email: user.user.email });
     if (linkError || !link.properties?.hashed_token) throw new Error("Could not sign in");
     const db = await createSupabaseServerClient();

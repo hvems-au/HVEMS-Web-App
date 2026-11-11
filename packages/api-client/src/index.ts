@@ -285,7 +285,9 @@ function assetPayload(organisationId: string, classId: string, v: AssetFormValue
     meter_type: v.meter_type,
     notes: v.notes ?? null,
     duplicate_reason: v.duplicate_reason ?? null,
-    ...(v.prestart_frequency === undefined ? {} : { prestart_frequency: v.prestart_frequency || null }),
+    ...(v.prestart_frequency === undefined
+      ? {}
+      : { prestart_frequency: v.prestart_frequency || null, prestart_every_days: v.prestart_frequency === "custom" ? (v.prestart_every_days ?? null) : null }),
     ...(v.rops_fitted === undefined ? {} : { rops_fitted: v.rops_fitted }),
     ...(v.fops_fitted === undefined ? {} : { fops_fitted: v.fops_fitted }),
     ...(v.fire_suppression_fitted === undefined ? {} : { fire_suppression_fitted: v.fire_suppression_fitted }),
@@ -573,7 +575,17 @@ export type InspectionListItem = Inspection & { asset: { asset_number: string; m
 
 export async function listInspections(
   db: HvemsClient,
-  filter: { organisationId: string; assetId?: string; limit?: number },
+  filter: {
+    organisationId: string;
+    assetId?: string;
+    /** Who submitted it. */
+    submittedBy?: string;
+    result?: InspectionListItem["result"];
+    /** Submitted at or after / before these instants. */
+    from?: Date;
+    to?: Date;
+    limit?: number;
+  },
 ): Promise<InspectionListItem[]> {
   let q = db
     .from("inspections")
@@ -582,6 +594,10 @@ export async function listInspections(
     .order("submitted_at", { ascending: false })
     .limit(filter.limit ?? 50);
   if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  if (filter.submittedBy) q = q.eq("submitted_by", filter.submittedBy);
+  if (filter.result) q = q.eq("result", filter.result);
+  if (filter.from) q = q.gte("submitted_at", filter.from.toISOString());
+  if (filter.to) q = q.lt("submitted_at", filter.to.toISOString());
   return unwrap<InspectionListItem[]>(await q);
 }
 
@@ -820,14 +836,14 @@ export async function listCriticalAlerts(db: HvemsClient, organisationId: string
 // Equipment QR codes and driver profiles (O-10)
 // ---------------------------------------------------------------------------
 
-/** Driver ID as shown to people: D-0001. */
+/** Operator ID as shown to people: OP-0001. */
 export function formatDriverId(n: number): string {
-  return `D-${String(n).padStart(4, "0")}`;
+  return `OP-${String(n).padStart(4, "0")}`;
 }
 
-/** Accepts "D-0001", "d1", "0001" or "1". */
+/** Accepts "OP-0001", "op1", "0001" or "1"; older "D-0001" IDs still work. */
 export function parseDriverId(value: string): number | null {
-  const m = value.trim().match(/^d?-?0*(\d{1,6})$/i);
+  const m = value.trim().match(/^(?:op|o|d)?\s*-?\s*0*(\d{1,6})$/i);
   return m ? Number(m[1]) : null;
 }
 
@@ -1063,12 +1079,20 @@ export async function listAssetCountEvents(db: HvemsClient, organisationId: stri
 
 // ------------------------------------------------------------- missed pre-starts (2B)
 /** Missed pre-starts, newest first (RLS: inspections.review). */
-export async function listMissedPrestarts(db: HvemsClient, organisationId: string, status: "open" | "reviewed" = "open", limit = 200): Promise<MissedPrestart[]> {
+export async function listMissedPrestarts(
+  db: HvemsClient,
+  organisationId: string,
+  status: "open" | "reviewed" = "open",
+  limit = 200,
+  filter: { assetId?: string; frequency?: MissedPrestart["frequency"] } = {},
+): Promise<MissedPrestart[]> {
   let q = db
     .from("missed_prestarts")
     .select("id, organisation_id, asset_id, frequency, period_start, period_end, status, review_note, reviewed_by, reviewed_at, asset:assets(asset_number, make, model)")
     .eq("organisation_id", organisationId);
   q = status === "open" ? q.eq("status", "open") : q.neq("status", "open");
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  if (filter.frequency) q = q.eq("frequency", filter.frequency);
   return unwrap(await q.order("period_start", { ascending: false }).limit(limit)) as unknown as MissedPrestart[];
 }
 
@@ -1245,4 +1269,36 @@ export async function updateWorkOrderStatus(
       p_cost_cents: extra.cost_cents ?? null,
     }),
   );
+}
+
+/** Names for people by user id (co-members only, RLS). Operator accounts have no real email, so it is never shown. */
+export async function getPersonNames(db: HvemsClient, ids: readonly (string | null | undefined)[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter((v): v is string => !!v))];
+  if (unique.length === 0) return new Map();
+  const { data } = await db.from("profiles").select("id, full_name, email").in("id", unique);
+  return new Map(
+    ((data ?? []) as { id: string; full_name: string | null; email: string | null }[]).map((p) => [
+      p.id,
+      p.full_name || (p.email && !p.email.endsWith(".invalid") ? p.email : "Operator"),
+    ]),
+  );
+}
+
+/** Counts for the dashboard's "To do" card. Each is 0 when the person can't see that area (RLS). */
+export async function getDashboardTodo(db: HvemsClient, organisationId: string) {
+  const count = async (p: PromiseLike<{ count: number | null; error: unknown }>) => {
+    const { count: n, error } = await p;
+    return error ? 0 : (n ?? 0);
+  };
+  const head = { count: "exact" as const, head: true };
+  const [criticalDefects, otherDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview] = await Promise.all([
+    count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "critical")),
+    count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").neq("severity", "critical")),
+    count(db.from("missed_prestarts").select("id", head).eq("organisation_id", organisationId).eq("status", "open")),
+    count(raw(db).from("service_schedule").select("id", head).eq("organisation_id", organisationId).eq("status", "overdue")),
+    count(raw(db).from("service_schedule").select("id", head).eq("organisation_id", organisationId).eq("status", "due_soon")),
+    count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).in("status", ["open", "in_progress"])),
+    count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).eq("status", "completed")),
+  ]);
+  return { criticalDefects, otherDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview };
 }

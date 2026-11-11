@@ -8,7 +8,7 @@ import { driverSignInAction, memberSignInAction } from "../../actions";
 
 type Mode = "pin" | "setup" | "email";
 
-/** Driver ID + PIN; first time: setup code + new PIN; or a member's own email login. */
+/** Operator ID + PIN; first time: setup code + new PIN; or a member's own email login. */
 export function DriverSignIn({ code }: { code: string }) {
   const router = useRouter();
   const [mode, setMode] = React.useState<Mode>("pin");
@@ -64,7 +64,7 @@ export function DriverSignIn({ code }: { code: string }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="flex gap-1 rounded-[8px] bg-surface-muted p-1">
-        {tab("pin", "Driver PIN")}
+        {tab("pin", "Operator PIN")}
         {tab("setup", "First time")}
         {tab("email", "Email login")}
       </div>
@@ -80,13 +80,13 @@ export function DriverSignIn({ code }: { code: string }) {
         </>
       ) : (
         <>
-          <Field label="Driver ID" htmlFor="d-id">
+          <Field label="Operator ID" htmlFor="d-id">
             <Input
               value={driverId}
               onChange={(e) => setDriverId(e.target.value)}
               autoCapitalize="characters"
               autoComplete="username"
-              placeholder="D-0001"
+              placeholder="OP-0001"
               className="font-mono text-[18px] uppercase"
             />
           </Field>

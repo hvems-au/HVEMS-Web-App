@@ -16,7 +16,7 @@ function meter(a: AssetListItem) {
   return parts.join(" · ") || "—";
 }
 
-export function AssetTable({ rows, base }: { rows: AssetListItem[]; base: string }) {
+export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem[]; base: string; operators?: Record<string, string> }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const columns = React.useMemo(
     () => [
@@ -68,13 +68,18 @@ export function AssetTable({ rows, base }: { rows: AssetListItem[]; base: string
           );
         },
       }),
+      col.accessor((a) => (a.current_operator_id ? (operators[a.current_operator_id] ?? "") : ""), {
+        id: "operator",
+        header: "Operator",
+        cell: (c) => <span className={c.getValue() ? "font-medium" : "text-ink-subtle"}>{c.getValue() || "—"}</span>,
+      }),
       col.display({ id: "meter", header: "Odometer / hours", cell: (c) => <span className="whitespace-nowrap">{meter(c.row.original)}</span> }),
       col.accessor("condition", {
         header: "Condition",
         cell: (c) => (c.row.original.archived_at ? <span className="text-[12px] font-semibold text-ink-subtle">Archived</span> : <ConditionBadge condition={c.getValue()} />),
       }),
     ],
-    [base],
+    [base, operators],
   );
   const table = useReactTable({
     data: rows,

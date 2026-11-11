@@ -9,7 +9,7 @@ export interface LabelData {
   description: string;
   shortCode: string;
   qrPng: string;
-  /** Driver portal address, e.g. https://driver.hvems.com.au (for phones without a camera). */
+  /** Operator portal address, e.g. https://driver.hvems.com.au (for phones without a camera). */
   portalUrl: string;
   /** The company’s own logo as a data URI (PNG or JPEG); the company name is shown when absent. */
   companyLogo?: PdfImage | null;
@@ -60,7 +60,7 @@ export function EquipmentLabelPdf({ company, assetNumber, description, shortCode
           <Text style={{ fontSize: 15, fontWeight: 700, color: C.charcoal, letterSpacing: 2, marginTop: 2 }}>{shortCode}</Text>
         </View>
 
-        <Text style={{ marginTop: mm(2.5), fontSize: 7.5, color: C.ink, textAlign: "center" }}>Sign in with your Driver ID and PIN. Every check is recorded with your name.</Text>
+        <Text style={{ marginTop: mm(2.5), fontSize: 7.5, color: C.ink, textAlign: "center" }}>Sign in with your Operator ID and PIN. Every check is recorded with your name.</Text>
         <View style={{ marginTop: mm(2.5), backgroundColor: C.redSoft, borderRadius: 4, paddingVertical: 4 }}>
           <Text style={{ fontSize: 7.5, fontWeight: 700, color: C.red, textAlign: "center" }}>If anyone is injured or in danger, call 000 first.</Text>
         </View>

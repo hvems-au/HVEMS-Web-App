@@ -174,7 +174,12 @@ export interface Asset {
   meter_type: MeterType;
   /** Safety equipment fitted: its pre-start checks appear only when ticked. */
   /** Overrides the type's pre-start frequency; null = as per type. */
-  prestart_frequency?: "daily" | "weekly" | "not_required" | null;
+  prestart_frequency?: "daily" | "weekly" | "custom" | "not_required" | null;
+  /** Days between pre-starts when the frequency is custom. */
+  prestart_every_days?: number | null;
+  /** Who did the latest pre-start; set by the database. */
+  current_operator_id?: UUID | null;
+  current_operator_since?: ISODateTime | null;
   rops_fitted: boolean;
   fops_fitted: boolean;
   fire_suppression_fitted: boolean;
@@ -561,7 +566,7 @@ export interface MissedPrestart {
   id: UUID;
   organisation_id: UUID;
   asset_id: UUID;
-  frequency: "daily" | "weekly" | "not_required";
+  frequency: "daily" | "weekly" | "custom" | "not_required";
   period_start: string;
   period_end: string;
   status: "open" | "not_used" | "missed";

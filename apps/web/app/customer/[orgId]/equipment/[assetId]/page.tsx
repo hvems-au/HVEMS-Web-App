@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ClipboardCheck, Pencil } from "lucide-react";
 import {
   getAsset,
+  getPersonNames,
   listAuditEvents,
   listConditionHistory,
   listDefects,
@@ -14,7 +15,7 @@ import {
   listOpenConditionCauses,
   listReturnToServiceEvents,
 } from "@hvems/api-client";
-import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, PRESTART_FREQUENCY_LABELS, formatDateAU, formatDateTimeAU } from "@hvems/domain";
+import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, prestartFrequencyText, formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { ConditionBadge, ConditionBanner } from "@/components/condition";
 import { ResultBadge, SeverityBadge } from "@/components/safety";
@@ -43,7 +44,7 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
   const asset = await getAsset(db, assetId).catch(() => null);
   if (!asset || asset.organisation_id !== orgId) notFound();
 
-  const [readings, history, audit, defects, prestarts, causes, rtsEvents, safety, code] = await Promise.all([
+  const [readings, history, audit, defects, prestarts, causes, rtsEvents, safety, code, names] = await Promise.all([
     listMeterReadings(db, assetId, 20),
     listConditionHistory(db, assetId),
     can(ctx.capabilities, "audit.view") ? listAuditEvents(db, { organisationId: orgId, entityType: "assets", entityId: assetId, limit: 20 }) : Promise.resolve([]),
@@ -53,7 +54,9 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
     listReturnToServiceEvents(db, assetId, 5),
     listActiveSafetyEvents(db, { organisationId: orgId, assetId }),
     getEquipmentCode(db, assetId),
+    getPersonNames(db, [asset.current_operator_id]),
   ]);
+  const operator = asset.current_operator_id ? (names.get(asset.current_operator_id) ?? "Former operator") : null;
   // Dates for the safety panel, formatted here in the company's timezone.
   const when: Record<string, string> = {};
   for (const h of safety.holds) when[h.id] = formatDateTimeAU(new Date(h.placed_at), ctx.timezone);
@@ -154,8 +157,14 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 { label: "Site", value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null },
                 { label: "Odometer / hour meter", value: METER_TYPE_LABELS[asset.meter_type] },
                 {
+                  label: "Current operator",
+                  value: operator
+                    ? `${operator} (since ${formatDateTimeAU(new Date(asset.current_operator_since!), ctx.timezone)})`
+                    : "No pre-start yet",
+                },
+                {
                   label: "Pre-start checks",
-                  value: asset.prestart_frequency ? PRESTART_FREQUENCY_LABELS[asset.prestart_frequency] : "As per type",
+                  value: prestartFrequencyText(asset.prestart_frequency, asset.prestart_every_days) ?? "As per type",
                 },
                 {
                   label: "Safety equipment fitted",

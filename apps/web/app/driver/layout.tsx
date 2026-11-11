@@ -1,6 +1,6 @@
 import { Logo } from "@/components/brand/logo";
 
-/** Driver portal: phone-first, no navigation; everything starts from an equipment code. */
+/** Operator portal: phone-first, no navigation; everything starts from an equipment code. */
 export default function DriverLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-canvas">
@@ -9,7 +9,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
           <div className="w-28">
             <Logo variant="horizontal" priority />
           </div>
-          <span className="ml-3 text-[13px] font-semibold text-ink-muted">Driver</span>
+          <span className="ml-3 text-[13px] font-semibold text-ink-muted">Operator</span>
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-5">{children}</main>

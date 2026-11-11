@@ -34,7 +34,7 @@ export default async function ClientsPage({
     <>
       <PageHeader
         title="Clients & Sites"
-        description="Clients, client-owned equipment and the sites where work happens. Private to your company."
+        description="Your clients and the sites where work happens."
         actions={
           <>
             {can(ctx.capabilities, "sites.manage") ? <NewSiteDialog orgId={orgId} clients={clients} /> : null}

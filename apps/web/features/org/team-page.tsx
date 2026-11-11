@@ -33,7 +33,7 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
         title="Team"
         description={
           kind === "company"
-            ? "Members, roles and grants. Companies with five or fewer assets can have up to five member logins; driver profiles are unlimited."
+            ? "Members, roles and grants."
             : kind === "provider"
               ? "Provider Managers find jobs and manage engagements; Provider Technicians work on engagements assigned to them."
               : "Job Managers can post and manage jobs for this account."

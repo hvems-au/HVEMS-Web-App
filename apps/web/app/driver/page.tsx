@@ -3,9 +3,9 @@ import { QrCode } from "lucide-react";
 import { Card, CardBody } from "@/components/ui/primitives";
 import { CodeForm } from "./code-form";
 
-export const metadata: Metadata = { title: "Driver Sign-in" };
+export const metadata: Metadata = { title: "Operator Sign-in" };
 
-/** Driver portal home: scan the QR label (opens the equipment directly) or type its code. */
+/** Operator portal home: scan the QR label (opens the equipment directly) or type its code. */
 export default function DriverPortalPage() {
   return (
     <div className="mx-auto max-w-md">
@@ -15,7 +15,7 @@ export default function DriverPortalPage() {
         <CardBody className="flex flex-col gap-4">
           <div className="flex items-start gap-3 rounded-[10px] bg-surface-muted p-3 text-[14px] text-ink">
             <QrCode className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />
-            Then sign in with your Driver ID and PIN. Your company gives you these.
+            Then sign in with your Operator ID and PIN. Your company gives you these.
           </div>
           <CodeForm />
         </CardBody>

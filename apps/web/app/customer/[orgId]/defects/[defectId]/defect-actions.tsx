@@ -293,7 +293,7 @@ function DismissDialog({ orgId, assetId, defect }: DefectActionsProps) {
         >
           {s.error ? <FormAlert>{s.error}</FormAlert> : null}
           <Field label="Reason" htmlFor="x-reason" required>
-            <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Driver misread the gauge; checked, level is fine" />
+            <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Operator misread the gauge; checked, level is fine" />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => s.setOpen(false)}>

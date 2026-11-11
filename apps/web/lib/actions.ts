@@ -14,7 +14,7 @@ const MESSAGES: Record<string, string> = {
   forbidden: "You don't have permission to do that.",
   not_authenticated: "Please sign in again.",
   mfa_required: "This action needs multi-factor authentication. Set it up under Account security.",
-  member_limit_reached: "Companies with five or fewer assets can have up to five member logins. Driver profiles are unlimited.",
+  member_limit_reached: "Companies with five or fewer assets can have up to five member logins. Operator profiles are unlimited.",
   fleet_consent_required:
     "Adding more than five assets needs the Owner or a Finance member to agree to the fleet subscription ($30 per asset above five, per month) and add a payment method.",
   account_restricted: "This account is restricted for non-payment. Safety functions keep working.",

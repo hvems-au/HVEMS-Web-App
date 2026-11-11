@@ -8,15 +8,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CredentialsDialog, type CredentialRow } from "./credentials-dialog";
 import { ActiveToggle, AddDriverDialog, EquipmentAccessDialog, FinishAccountButton, ResetPinDialog } from "./driver-controls";
 
-export const metadata: Metadata = { title: "Drivers" };
+export const metadata: Metadata = { title: "Operators" };
 
 function nowMs() {
   return Date.now();
 }
 
 /**
- * Driver profiles (O-10): Driver ID + PIN sign-in on the equipment, no email.
- * Driver profiles are unlimited and don't count towards member logins.
+ * Operator profiles (O-10): Operator ID + PIN sign-in on the equipment, no email.
+ * Operator profiles are unlimited and don't count towards member logins.
  */
 export default async function DriversPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
@@ -54,18 +54,18 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
   return (
     <>
       <PageHeader
-        title="Drivers"
-        description="Drivers sign in on the equipment with a Driver ID and 6-digit PIN. Driver profiles are unlimited."
+        title="Operators"
+        description="Operators sign in on the equipment with an Operator ID and PIN."
         actions={<AddDriverDialog orgId={orgId} />}
       />
       <Card>
         {drivers.length === 0 ? (
-          <EmptyState title="No drivers yet">Add a driver to get a Driver ID and a one-time setup code. Then choose the equipment they may operate.</EmptyState>
+          <EmptyState title="No operators yet">Add an operator to get an Operator ID and a one-time setup code. Then choose the equipment they may operate.</EmptyState>
         ) : (
           <Table>
             <THead>
               <tr>
-                <TH>Driver ID</TH>
+                <TH>Operator ID</TH>
                 <TH>Name</TH>
                 <TH>Status</TH>
                 <TH>Credentials</TH>

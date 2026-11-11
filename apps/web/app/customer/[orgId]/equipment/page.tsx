@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Search, Upload } from "lucide-react";
-import { getAssetConditionCounts, listAssets } from "@hvems/api-client";
+import { getAssetConditionCounts, getPersonNames, listAssets } from "@hvems/api-client";
 import type { AssetCondition } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
@@ -44,6 +44,7 @@ export default async function EquipmentPage({
     getAssetConditionCounts(db, orgId),
     listAssets(db, { organisationId: orgId, search: q, condition: tab.condition, status: tab.archived ? "archived" : "current", page, pageSize: PAGE_SIZE }),
   ]);
+  const operators = Object.fromEntries(await getPersonNames(db, rows.map((r) => r.current_operator_id)));
   const base = `/customer/${orgId}/equipment`;
   const pages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
   const href = (over: Record<string, string | number | undefined>) => {
@@ -131,7 +132,7 @@ export default async function EquipmentPage({
             {tab.key === "all" && !q ? "Add vehicles, trailers, mobile plant and other equipment. The first five assets are free." : null}
           </EmptyState>
         ) : (
-          <AssetTable rows={rows} base={base} />
+          <AssetTable rows={rows} base={base} operators={operators} />
         )}
         <div className="flex items-center justify-between gap-3 px-4 py-3 text-[13px] text-ink-subtle">
           <span>

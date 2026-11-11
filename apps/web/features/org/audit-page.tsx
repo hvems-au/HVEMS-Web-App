@@ -22,7 +22,7 @@ export async function AuditPage({ ctx, basePath, searchParams }: { ctx: OrgConte
     <>
       <PageHeader
         title="Audit History"
-        description="Every creation, change and approval, with who did it, how they identified themselves and from where. These records cannot be edited or deleted."
+        description="Every change, who made it and when. Records can't be edited or deleted."
       />
       <AuditFilterBar basePath={basePath} q={q} people={people} />
       <Card>

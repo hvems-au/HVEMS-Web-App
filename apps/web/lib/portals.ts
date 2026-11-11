@@ -120,9 +120,9 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
     home: "/select-context",
   },
   driver: {
-    name: "Driver sign-in",
-    loginTitle: "Driver Sign-in",
-    loginSubtitle: "Scan the code on the vehicle or machine, then enter your Driver ID and PIN.",
+    name: "Operator sign-in",
+    loginTitle: "Operator Sign-in",
+    loginSubtitle: "Scan the code on the vehicle or machine, then enter your Operator ID and PIN.",
     orgKinds: [],
     signUp: false,
     prefixes: ["/driver"],

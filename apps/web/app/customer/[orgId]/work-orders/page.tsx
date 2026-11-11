@@ -43,7 +43,7 @@ export default async function WorkOrdersPage({
     <>
       <PageHeader
         title="Work Orders"
-        description="Maintenance and repair work, done in-house or by an outside vendor. Technicians complete it; a manager reviews and closes it."
+        description="Repairs and services, done in-house or by a vendor."
         actions={manager ? <NewWorkOrderDialog orgId={orgId} equipment={opts.equipment} people={opts.people} /> : null}
       />
       <nav className="mb-5 flex gap-1 border-b border-stroke" aria-label="Work order views">

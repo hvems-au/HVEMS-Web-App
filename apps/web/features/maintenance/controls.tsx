@@ -31,7 +31,7 @@ export function AddServicePlanDialog({ orgId, equipment, assetId }: { orgId: str
           <Plus /> Add service plan
         </Button>
       </DialogTrigger>
-      <DialogContent title="Add a service plan" description="The service repeats at whichever interval comes first. Next due is worked out from the last service and the latest odometer or hour meter reading.">
+      <DialogContent title="Add a service plan" description="Repeats at whichever interval comes first.">
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -160,7 +160,7 @@ export function NewWorkOrderDialog({
           {preset ? <Wrench /> : <Plus />} {label}
         </Button>
       </DialogTrigger>
-      <DialogContent title={label} description="Done in-house or by an outside vendor. Technicians complete it; a manager reviews and closes it.">
+      <DialogContent title={label} description="A technician completes it; a manager reviews and closes it.">
         <form
           className="flex flex-col gap-4"
           onSubmit={(e) => {

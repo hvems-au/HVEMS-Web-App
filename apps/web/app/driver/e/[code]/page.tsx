@@ -17,10 +17,10 @@ import { DriverSignIn } from "./sign-in";
 export const metadata: Metadata = { title: "Pre-start" };
 
 /**
- * Scanned equipment (O-10): confirm the machine, sign in (Driver ID + PIN or a
+ * Scanned equipment (O-10): confirm the machine, sign in (Operator ID + PIN or a
  * member's own login), then the pre-start. The checklist and every answer are
  * checked by the database for the signed-in person, so each pre-start records
- * who did it, and drivers only see equipment they're permitted to operate.
+ * who did it, and operators only see equipment they're permitted to operate.
  */
 export default async function ScannedEquipmentPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
@@ -111,7 +111,7 @@ export default async function ScannedEquipmentPage({ params }: { params: Promise
         {who}
         {machine}
         <Card>
-          <CardHeader title="Not permitted" description="You're not set up to operate this equipment. Ask your Fleet Manager to add it to your Driver profile." />
+          <CardHeader title="Not permitted" description="You're not set up to operate this equipment. Ask your Fleet Manager to add it to your Operator profile." />
         </Card>
       </div>
     );

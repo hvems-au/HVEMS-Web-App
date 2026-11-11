@@ -93,7 +93,11 @@ export const assetFormSchema = z
     notes: optionalText(5000),
     duplicate_reason: optionalText(1000),
     // Safety equipment fitted (left out: the class default, plant ticked and vehicles not).
-    prestart_frequency: z.enum(["", "daily", "weekly", "not_required"]).optional(),
+    prestart_frequency: z.enum(["", "daily", "weekly", "custom", "not_required"]).optional(),
+    prestart_every_days: z
+      .union([z.literal(""), z.coerce.number().int().min(2, "At least 2 days").max(365, "At most 365 days")])
+      .optional()
+      .transform((v) => (v === "" || v === undefined ? undefined : v)),
     rops_fitted: z.boolean().optional(),
     fops_fitted: z.boolean().optional(),
     fire_suppression_fitted: z.boolean().optional(),
@@ -103,6 +107,9 @@ export const assetFormSchema = z
     // route; forms add them up front with assetFormSchemaFor(classes).
     if (v.owner_type === "client_owned" && !v.client_id) {
       ctx.addIssue({ code: "custom", path: ["client_id"], message: "Client-owned assets need a client" });
+    }
+    if (v.prestart_frequency === "custom" && !v.prestart_every_days) {
+      ctx.addIssue({ code: "custom", path: ["prestart_every_days"], message: "Enter the number of days" });
     }
   });
 export type AssetFormInput = z.input<typeof assetFormSchema>;

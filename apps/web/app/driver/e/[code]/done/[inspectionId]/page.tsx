@@ -8,7 +8,7 @@ import { driverSignOutAction } from "../../../../actions";
 
 export const metadata: Metadata = { title: "Pre-start submitted" };
 
-/** The driver's result: what to do now, then sign out (phones are often shared). */
+/** The operator's result: what to do now, then sign out (phones are often shared). */
 export default async function DriverDonePage({ params }: { params: Promise<{ code: string; inspectionId: string }> }) {
   const { code, inspectionId } = await params;
   const db = await createSupabaseServerClient();

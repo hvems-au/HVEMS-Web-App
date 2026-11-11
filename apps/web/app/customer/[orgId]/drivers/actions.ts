@@ -20,9 +20,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type SetupResult = { driverId: string; setupCode: string; expiresAt: string };
 
 /**
- * The login account behind a driver profile: created with the service role
+ * The login account behind an operator profile: created with the service role
  * (the address is internal and never used for email), then linked by the
- * database, which gives it the driver role in that company only.
+ * database, which gives it the operator role in that company only.
  */
 async function ensureDriverAccount(driverId: string, fullName: string) {
   const admin = createSupabaseAdminClient();
@@ -32,7 +32,7 @@ async function ensureDriverAccount(driverId: string, fullName: string) {
     email_confirm: true,
     user_metadata: { full_name: fullName, kind: "driver_profile" },
   });
-  if (error || !data.user) throw new Error(error?.message ?? "Could not create the driver's login");
+  if (error || !data.user) throw new Error(error?.message ?? "Could not create the operator's login");
   const { error: linkError } = await (admin as unknown as HvemsClient).rpc("link_driver_account", { p_driver_id: driverId, p_user_id: data.user.id });
   if (linkError) {
     await admin.auth.admin.deleteUser(data.user.id);
@@ -43,7 +43,7 @@ async function ensureDriverAccount(driverId: string, fullName: string) {
 export async function createDriverAction(orgId: string, input: { fullName: string; phone?: string }): Promise<ActionState<SetupResult>> {
   const parsed = z
     .object({
-      fullName: z.string().trim().min(2, "Enter the driver's name").max(120),
+      fullName: z.string().trim().min(2, "Enter the operator's name").max(120),
       phone: z.union([z.literal(""), z.string().trim().max(40).regex(/^[0-9 +()-]+$/, "Use digits, spaces, +, ( ) or -")]).optional(),
     })
     .safeParse(input);
@@ -65,7 +65,7 @@ export async function finishDriverAccountAction(orgId: string, driverId: string,
     const db = await createSupabaseServerClient();
     // Only someone who can manage this profile may finish it (RLS hides others).
     const { data } = await db.from("driver_profiles").select("id, user_id").eq("id", driverId).eq("organisation_id", orgId).maybeSingle();
-    if (!data) return { status: "error", code: "not_found", message: "Driver not found" };
+    if (!data) return { status: "error", code: "not_found", message: "Operator not found" };
     if (!data.user_id) await ensureDriverAccount(driverId, fullName);
     revalidatePath(`/customer/${orgId}/drivers`);
     return { status: "success", message: "Login set up" };
@@ -90,7 +90,7 @@ export async function setDriverActiveAction(orgId: string, driverId: string, act
     const db = await createSupabaseServerClient();
     await setDriverActive(db, z.string().uuid().parse(driverId), active);
     revalidatePath(`/customer/${orgId}/drivers`);
-    return { status: "success", message: active ? "Driver re-activated" : "Driver deactivated" };
+    return { status: "success", message: active ? "Operator re-activated" : "Operator deactivated" };
   } catch (e) {
     return errorState(e);
   }
@@ -143,7 +143,7 @@ export async function saveDriverCredentialAction(orgId: string, driverId: string
     return { status: "success", message: "Credential saved" };
   } catch (e) {
     const s = errorState(e);
-    if (s.status === "error" && s.code === "23505") return { ...s, message: "This driver already has that credential. Edit it instead." };
+    if (s.status === "error" && s.code === "23505") return { ...s, message: "This operator already has that credential. Edit it instead." };
     return s;
   }
 }

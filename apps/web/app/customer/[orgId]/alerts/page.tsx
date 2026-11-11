@@ -54,7 +54,7 @@ export default async function AlertsPage({ params }: { params: Promise<{ orgId: 
 
   return (
     <>
-      <PageHeader title="Alerts" description="Critical alerts need acknowledging. Unacknowledged alerts escalate after 30 minutes and again after 2 hours." actions={unread ? <MarkAllRead orgId={orgId} /> : null} />
+      <PageHeader title="Alerts" description="Critical alerts need acknowledging, or they escalate." actions={unread ? <MarkAllRead orgId={orgId} /> : null} />
 
       {canAck ? (
         <Card className="mb-5">
