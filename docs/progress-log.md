@@ -1,5 +1,9 @@
 # Development progress log
 
+## 2026-11-11 — HVEMS staff accounts kept separate
+**Done**
+- Migration `20261111103641 staff_account_separation` (applied by Claude): a staff login can't join, create or be invited into a customer organisation (`staff_account`), and a member of one can't be made HVEMS staff (`member_account`). The only staff account had no memberships. Checked on the hosted project that ordinary sign-up still creates an organisation (rolled back). pgTAP `190`.
+
 ## 2026-11-11 — Support access (ADM-07, NOT-01)
 **Done**
 - Reconciliation item 5. Migration `20261111102856 support_access_owner` (applied by Claude): sessions at most **60 minutes** (setting, was 240), reason of at least 10 characters, one active session per staff member and organisation; read-only (support sessions only widen read policies). The Owner (and anyone with `support_access.view`) is notified when a session starts and can end it (`owner_end_support_access`); who ended it is recorded; every step is a security event.
