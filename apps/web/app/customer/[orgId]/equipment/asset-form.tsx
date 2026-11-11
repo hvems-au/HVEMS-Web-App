@@ -50,7 +50,10 @@ export function AssetForm({
   const classCode = useWatch({ control, name: "asset_class" });
   const ownerType = useWatch({ control, name: "owner_type" });
   const cls = classes.find((c) => c.code === classCode);
-  const required = new Set<string>(cls?.required_fields ?? []);
+  const required = new Set<string>((cls?.required_fields ?? []).filter((f) => !f.includes("|")));
+  // Either-or rules, e.g. a registration or a VIN (AST-01).
+  const eitherOr = (cls?.required_fields ?? []).filter((f) => f.includes("|"));
+  const regoOrVin = eitherOr.some((f) => f.includes("registration_number") && f.includes("vin"));
   const err = (k: keyof AssetFormInput) => formState.errors[k]?.message as string | undefined;
 
   React.useEffect(() => {
@@ -129,7 +132,7 @@ export function AssetForm({
           <Field label="Serial number" htmlFor="serial_number" error={err("serial_number")} required={required.has("serial_number")}>
             <Input {...register("serial_number")} />
           </Field>
-          <Field label="Registration" htmlFor="registration_number" error={err("registration_number")} required={required.has("registration_number")}>
+          <Field label="Registration" htmlFor="registration_number" error={err("registration_number")} required={required.has("registration_number")} hint={regoOrVin ? "Registration or VIN: at least one" : undefined}>
             <Input className="uppercase" {...register("registration_number")} />
           </Field>
           <Field label="State or territory" htmlFor="registration_state" error={err("registration_state")} required={required.has("registration_state")}>
@@ -142,7 +145,7 @@ export function AssetForm({
               ))}
             </Select>
           </Field>
-          <Field label="VIN" htmlFor="vin" error={err("vin")} required={required.has("vin")}>
+          <Field label="VIN" htmlFor="vin" error={err("vin")} required={required.has("vin")} hint={regoOrVin ? "Registration or VIN: at least one" : undefined}>
             <Input className="uppercase" {...register("vin")} />
           </Field>
           {classCode === NEW_CLASS ? (

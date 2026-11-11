@@ -180,14 +180,14 @@ select is(tests.error_code(format($$delete from public.asset_count_events where 
 -- -------------------------------------------------------------- CSV import
 select tests.authenticate_as(:'admin');
 select public.import_assets(:'org', '[
-  {"asset_number":"IMP-1","asset_class":"excavator","make":"CAT","model":"320"},
+  {"asset_number":"IMP-1","asset_class":"excavator","model":"320"},
   {"asset_number":"IMP-2","asset_class":"spaceship","make":"X","model":"Y"},
   {"asset_number":"imp-1","asset_class":"loader","make":"CAT","model":"950","serial_number":"L1"},
   {"asset_number":"IMP-4","asset_class":"rigid_truck","make":"Isuzu","model":"FVZ","registration_number":"123ABC","registration_state":"QQ","vin":"V1"}
 ]'::jsonb, true) as dry \gset
 select is((:'dry'::jsonb ->> 'valid')::boolean, false, 'a trial run with errors is reported as invalid');
 select ok(jsonb_array_length(:'dry'::jsonb -> 'errors') >= 4, 'the trial run reports every row''s errors');
-select ok((:'dry'::jsonb -> 'errors') @> '[{"row":1,"field":"serial_number"}]', 'row 1: missing serial number reported');
+select ok((:'dry'::jsonb -> 'errors') @> '[{"row":1,"field":"make"}]', 'row 1: missing make reported');
 select ok((:'dry'::jsonb -> 'errors') @> '[{"row":2,"code":"invalid_class"}]', 'row 2: unknown class reported');
 select ok((:'dry'::jsonb -> 'errors') @> '[{"row":3,"code":"duplicate_in_file"}]', 'row 3: duplicate in file reported');
 select ok((:'dry'::jsonb -> 'errors') @> '[{"row":4,"code":"invalid_state"}]', 'row 4: invalid state reported');

@@ -1,5 +1,10 @@
 # Development progress log
 
+## 2026-11-11 — Either-or mandatory fields (AST-01)
+**Done**
+- Reconciliation item 4. Migration `20261111104208 asset_either_or_fields` (applied by Claude): vehicles need make, model and a **registration or a VIN** (a registration always needs its state); equipment needs make and model (the asset number identifies it; serial optional). `required_fields` entries like `registration_number|vin` mean "at least one", so HVEMS can still change the rules as data; company classes follow the same rule.
+- Form: the same rule for instant feedback, with "Registration or VIN: at least one" hints; console class list shows "Registration or VIN". Checked on the hosted project as the Owner (rolled back): a truck with only a VIN saves; with neither it is refused. pgTAP `200`; `020` updated (serial no longer required).
+
 ## 2026-11-11 — HVEMS staff accounts kept separate
 **Done**
 - Migration `20261111103641 staff_account_separation` (applied by Claude): a staff login can't join, create or be invited into a customer organisation (`staff_account`), and a member of one can't be made HVEMS staff (`member_account`). The only staff account had no memberships. Checked on the hosted project that ordinary sign-up still creates an organisation (rolled back). pgTAP `190`.

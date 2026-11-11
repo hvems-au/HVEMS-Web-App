@@ -59,7 +59,7 @@ export default async function AdminAssetClassesPage() {
                   <Badge tone={c.category === "vehicle" ? "blue" : "orange"}>{c.category}</Badge>
                 </TD>
                 <TD>{METER_TYPE_LABELS[c.default_meter_type]}</TD>
-                <TD className="text-ink-muted">{c.required_fields.map((f) => FIELD_LABELS[f] ?? f).join(", ") || "—"}</TD>
+                <TD className="text-ink-muted">{c.required_fields.map((f) => f.split("|").map((x) => FIELD_LABELS[x] ?? x).join(" or ")).join(", ") || "—"}</TD>
               </TR>
             ))}
           </tbody>

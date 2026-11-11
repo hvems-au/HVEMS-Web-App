@@ -106,6 +106,8 @@ export const assetFormSchema = z
   });
 export type AssetFormInput = z.input<typeof assetFormSchema>;
 
+const FIELD_NAMES: Partial<Record<string, string>> = { registration_number: "registration", vin: "VIN", serial_number: "serial number" };
+
 /** Asset form schema that also enforces the chosen class's mandatory fields (for instant feedback). */
 export function assetFormSchemaFor(classes: readonly { code: string; name: string; required_fields: readonly string[] }[]) {
   return assetFormSchema.superRefine((v, ctx) => {
@@ -114,8 +116,18 @@ export function assetFormSchemaFor(classes: readonly { code: string; name: strin
       ctx.addIssue({ code: "custom", path: ["asset_class"], message: "Choose an asset class" });
       return;
     }
-    for (const field of cls.required_fields) {
-      if (!v[field as AssetField]) ctx.addIssue({ code: "custom", path: [field], message: `Required for ${cls.name.toLowerCase()}` });
+    // "registration_number|vin" means at least one of them (AST-01); the database applies the same rule.
+    for (const entry of cls.required_fields) {
+      const options = entry.split("|") as AssetField[];
+      if (options.some((f) => v[f])) continue;
+      ctx.addIssue({
+        code: "custom",
+        path: [options[0]!],
+        message: options.length > 1 ? `Enter the ${options.map((f) => FIELD_NAMES[f] ?? f).join(" or the ")}` : `Required for ${cls.name.toLowerCase()}`,
+      });
+    }
+    if (v.registration_number && !v.registration_state) {
+      ctx.addIssue({ code: "custom", path: ["registration_state"], message: "Choose the state the vehicle is registered in" });
     }
   });
 }
