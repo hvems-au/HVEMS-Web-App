@@ -71,6 +71,19 @@ const SQLSTATE_MESSAGES: Record<string, string> = {
   PGRST116: "Record not found.",
 };
 
+/**
+ * Australian terms in database messages (HVEMS style: odometer and hour meter
+ * readings, never "meter"). Applied to every coded database error, so web and
+ * mobile show the same wording.
+ */
+export function australianWording(message: string): string {
+  return message
+    .replace(/\ba meter type\b/g, "an odometer or hour meter")
+    .replace(/(?<!hour )\bmeter types?\b/gi, (m) => (m[0] === "M" ? "Odometer or hour meter" : "odometer or hour meter"))
+    .replace(/\bthis meter\b/gi, "this odometer or hour meter")
+    .replace(/(?<!hour )\bmeter readings?\b/gi, (m) => (m.endsWith("s") ? "odometer and hour meter readings" : "odometer or hour meter reading"));
+}
+
 export function toAppError(error: PostgrestError | Error | null | undefined): AppError {
   if (!error) return new AppError("unknown", "Something went wrong.");
   const pg = error as PostgrestError;
@@ -81,7 +94,7 @@ export function toAppError(error: PostgrestError | Error | null | undefined): Ap
     } catch {
       details = undefined;
     }
-    return new AppError(pg.hint, pg.message, details);
+    return new AppError(pg.hint, australianWording(pg.message), details);
   }
   if (pg.code && SQLSTATE_MESSAGES[pg.code]) return new AppError(pg.code, SQLSTATE_MESSAGES[pg.code] ?? pg.message);
   return new AppError("unknown", error.message || "Something went wrong.");

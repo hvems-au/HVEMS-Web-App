@@ -1,5 +1,10 @@
 # Development progress log
 
+## 2026-11-11 — Housekeeping
+**Done**
+- Australian terms in database messages: `australianWording` in the API client rewrites "meter type", "this meter" and "meter reading(s)" to odometer / hour meter wording for every coded database error (web and mobile alike); unit test.
+- CI: switching to `actions/checkout@v5` (Node 24) is waiting for a GitHub sign-in with the `workflow` permission; the local token can't change workflow files.
+
 ## 2026-11-11 — Equipment count history detail (AST-16)
 **Done**
 - Reconciliation item 7. Migration `20261111104734 asset_count_events_detail` (applied by Claude): every count event records `count_before`, `count_after` and `actor_user_id`, filled by the database (one writer per organisation at a time); `merged` added as a reason (AST-05). Earlier events keep their original fields (append-only).
