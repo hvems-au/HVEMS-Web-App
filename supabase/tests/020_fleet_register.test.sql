@@ -22,8 +22,8 @@ select tests.add_member(:'org', :'finance', 'finance') as finance_m \gset
 -- ------------------------------------------------- register rules (SoW §3.1)
 select tests.authenticate_as(:'admin');
 select is(tests.error_code(format($$insert into public.assets (organisation_id, asset_number, asset_class_id, make, model)
-  values (%L, 'EX-1', %L, 'CAT', '336F')$$, :'org', tests.class_id('excavator'))), 'asset_invalid',
-  'equipment classes require a serial number');
+  values (%L, 'TR-1', %L, 'Isuzu', 'FVZ')$$, :'org', tests.class_id('rigid_truck'))), 'asset_invalid',
+  'vehicle classes require a registration or a VIN (AST-01)');
 select is(tests.error_code(format($$insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, serial_number)
   values (%L, 'PM-1', %L, 'Kenworth', 'T909', 'X')$$, :'org', tests.class_id('prime_mover'))), 'asset_invalid',
   'vehicle classes require registration, state and VIN');
