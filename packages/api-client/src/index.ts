@@ -22,6 +22,7 @@ import type {
   Hold,
   Breakdown,
   RegulatorNotice,
+  DriverCredential,
   DriverProfile,
   EquipmentCode,
   EquipmentPublic,
@@ -800,6 +801,42 @@ export async function generateEquipmentCode(db: HvemsClient, assetId: string, re
 /** Service role only: the scanned machine, or null for an unknown or revoked code. */
 export async function getEquipmentPublic(admin: HvemsClient, code: string): Promise<EquipmentPublic | null> {
   return unwrap<EquipmentPublic | null>(await admin.rpc("equipment_public", { p_code: code }));
+}
+
+export async function listDriverCredentials(db: HvemsClient, organisationId: string): Promise<DriverCredential[]> {
+  return unwrap<DriverCredential[]>(
+    await db
+      .from("driver_credentials")
+      .select("id, organisation_id, driver_id, kind, label, number, issued_by, expires_on, updated_at")
+      .eq("organisation_id", organisationId)
+      .order("kind"),
+  );
+}
+
+export interface DriverCredentialInput {
+  kind: DriverCredential["kind"];
+  label: string | null;
+  number: string;
+  issued_by: string | null;
+  expires_on: string | null;
+}
+
+/** Add a credential, or update one when `id` is given. RLS: drivers.manage. */
+export async function saveDriverCredential(
+  db: HvemsClient,
+  input: DriverCredentialInput & { organisationId: string; driverId: string; id?: string },
+): Promise<void> {
+  const { organisationId, driverId, id, ...values } = input;
+  if (id) {
+    const res = await db.from("driver_credentials").update(values).eq("id", id).eq("organisation_id", organisationId).select("id");
+    if (!unwrap(res)?.length) throw new AppError("not_found", "Credential not found");
+  } else {
+    unwrap(await db.from("driver_credentials").insert({ ...values, organisation_id: organisationId, driver_id: driverId }));
+  }
+}
+
+export async function deleteDriverCredential(db: HvemsClient, organisationId: string, id: string): Promise<void> {
+  unwrap(await db.from("driver_credentials").delete().eq("id", id).eq("organisation_id", organisationId));
 }
 
 export async function listDrivers(db: HvemsClient, organisationId: string): Promise<DriverProfile[]> {

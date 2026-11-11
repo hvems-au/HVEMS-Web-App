@@ -769,6 +769,54 @@ export type Database = {
           },
         ]
       }
+      driver_credentials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          driver_id: string
+          expired_notified_at: string | null
+          expires_on: string | null
+          id: string
+          issued_by: string | null
+          kind: string
+          label: string | null
+          number: string
+          organisation_id: string
+          updated_at: string
+          warned_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          driver_id: string
+          expired_notified_at?: string | null
+          expires_on?: string | null
+          id?: string
+          issued_by?: string | null
+          kind: string
+          label?: string | null
+          number: string
+          organisation_id: string
+          updated_at?: string
+          warned_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string
+          expired_notified_at?: string | null
+          expires_on?: string | null
+          id?: string
+          issued_by?: string | null
+          kind?: string
+          label?: string | null
+          number?: string
+          organisation_id?: string
+          updated_at?: string
+          warned_at?: string | null
+        }
+        Relationships: []
+      }
       driver_profiles: {
         Row: {
           active: boolean

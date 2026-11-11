@@ -399,7 +399,9 @@ export type NotificationKind =
   | "needs_attention_hold"
   | "breakdown"
   | "regulator_notice"
-  | "alert_escalated";
+  | "alert_escalated"
+  | "credential_expiring"
+  | "credential_expired";
 
 export interface CriticalAlert {
   id: UUID;
@@ -480,6 +482,19 @@ export interface EquipmentCode {
   short_code: string;
   created_at: ISODateTime;
   revoked_at: ISODateTime | null;
+}
+
+export interface DriverCredential {
+  id: UUID;
+  organisation_id: UUID;
+  driver_id: UUID;
+  kind: "driver_licence" | "plant_ticket" | "induction_card" | "track_safety" | "other";
+  label: string | null;
+  number: string;
+  issued_by: string | null;
+  /** ISO date; null when the credential doesn't expire. */
+  expires_on: string | null;
+  updated_at: string;
 }
 
 export interface DriverProfile {

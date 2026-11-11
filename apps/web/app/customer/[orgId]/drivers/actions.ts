@@ -1,7 +1,17 @@
 "use server";
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { createDriverProfile, formatDriverId, resetDriverSetup, setDriverActive, setOperatorEquipment, type HvemsClient } from "@hvems/api-client";
+import {
+  createDriverProfile,
+  deleteDriverCredential,
+  formatDriverId,
+  resetDriverSetup,
+  saveDriverCredential,
+  setDriverActive,
+  setOperatorEquipment,
+  type HvemsClient,
+} from "@hvems/api-client";
+import { CREDENTIAL_KINDS } from "@hvems/domain";
 import { z } from "@hvems/validation";
 import { errorState, type ActionState } from "@/lib/actions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -93,6 +103,57 @@ export async function setDriverEquipmentAction(orgId: string, membershipId: stri
     await setOperatorEquipment(db, orgId, z.string().uuid().parse(membershipId), ids);
     revalidatePath(`/customer/${orgId}/drivers`);
     return { status: "success", message: "Equipment access saved" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+// ------------------------------------------------------------- credentials (2B)
+const credentialSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    kind: z.enum(CREDENTIAL_KINDS),
+    label: z.string().trim().max(80).optional(),
+    number: z.string().trim().min(1, "Enter the number").max(60),
+    issued_by: z.string().trim().max(80).optional(),
+    expires_on: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine((v) => v.kind !== "other" || (v.label ?? "").length > 0, { path: ["label"], message: "Name the card or ticket" });
+
+export async function saveDriverCredentialAction(orgId: string, driverId: string, input: unknown): Promise<ActionState> {
+  const v = credentialSchema.safeParse(input);
+  if (!v.success) return { status: "error", code: "invalid", message: v.error.issues[0]?.message ?? "Check the details" };
+  try {
+    const db = await createSupabaseServerClient();
+    await saveDriverCredential(db, {
+      organisationId: orgId,
+      driverId,
+      id: v.data.id,
+      kind: v.data.kind,
+      label: v.data.label || null,
+      number: v.data.number,
+      issued_by: v.data.issued_by || null,
+      expires_on: v.data.expires_on || null,
+    });
+    revalidatePath(`/customer/${orgId}/drivers`);
+    return { status: "success", message: "Credential saved" };
+  } catch (e) {
+    const s = errorState(e);
+    if (s.status === "error" && s.code === "23505") return { ...s, message: "This driver already has that credential. Edit it instead." };
+    return s;
+  }
+}
+
+export async function deleteDriverCredentialAction(orgId: string, credentialId: string): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await deleteDriverCredential(db, orgId, credentialId);
+    revalidatePath(`/customer/${orgId}/drivers`);
+    return { status: "success", message: "Credential removed" };
   } catch (e) {
     return errorState(e);
   }

@@ -1,5 +1,13 @@
 # Development progress log
 
+## 2026-11-11 — Driver credentials (2B)
+**Done**
+- Migration `20261111094848 driver_credentials` (applied by Claude): driver licence, plant ticket (HRWL), induction card, track safety and other credentials on the driver profile (number, class/name, issuer, optional expiry). Managers with `drivers.manage` maintain them; the driver sees their own; one of each kind and class per driver; every change audited.
+- Daily pg_cron job `hvems-credential-expiry` (7 am Brisbane) notifies the Owner and Fleet Managers once when a credential is within 30 days of expiry (setting `drivers.credential_warning_days`) and once when it has expired; a new expiry date starts again. New notification kinds `credential_expiring` / `credential_expired`.
+- Drivers page: Credentials column (expired red, expiring amber, otherwise "N current") and a Credentials dialog (add, edit, remove). Domain helper `credentialStatus` with tests; pgTAP `160`.
+- Browser-checked on D-0001: licence added, amber warning shown, duplicate refused, removed again.
+- Not built: an expired credential does not yet stop a driver from doing a pre-start (needs a decision).
+
 ## 2026-11-11 — O-11: lock after 5 tries, tries-left counter, unlock by Owner / Company Admin / Super Admin, 3-hour idle
 **Done**
 - Decision O-11 (Ahmad). Migration `lockout_five_tries_unlock`: settings 5 tries and 180-minute portal idle timeout, new `security.password_warn_after_attempts` (3); `record_password_sign_in` returns the tries left; `member_sign_in_locks`, `unlock_member_sign_in` (`org.members.manage` + MFA rule) and `admin_unlock_sign_in` (Super Admin with MFA, recorded against each of the person's organisations).

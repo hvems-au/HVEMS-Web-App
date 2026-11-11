@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { formatDriverId, listDrivers } from "@hvems/api-client";
-import { formatDateTimeAU } from "@hvems/domain";
+import { formatDriverId, listDriverCredentials, listDrivers } from "@hvems/api-client";
+import { credentialStatus, credentialTitle, formatDateTimeAU, todayISO } from "@hvems/domain";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { loadOrgContext, requireCapability } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { CredentialsDialog, type CredentialRow } from "./credentials-dialog";
 import { ActiveToggle, AddDriverDialog, EquipmentAccessDialog, FinishAccountButton, ResetPinDialog } from "./driver-controls";
 
 export const metadata: Metadata = { title: "Drivers" };
@@ -22,7 +23,7 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
   const ctx = await loadOrgContext(orgId, ["company"]);
   await requireCapability(ctx, "drivers.manage");
   const db = await createSupabaseServerClient();
-  const [drivers, assets, perms] = await Promise.all([
+  const [drivers, assets, perms, credentials, warnSetting] = await Promise.all([
     listDrivers(db, orgId),
     db
       .from("assets")
@@ -33,12 +34,22 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
       .limit(2000)
       .then((r) => (r.data ?? []) as { id: string; asset_number: string; make: string | null; model: string | null }[]),
     db.from("asset_operator_permissions").select("membership_id, asset_id").eq("organisation_id", orgId).not("asset_id", "is", null),
+    listDriverCredentials(db, orgId),
+    db.from("platform_settings").select("value").eq("key", "drivers.credential_warning_days").maybeSingle(),
   ]);
   const equipment = assets.map((a) => ({ id: a.id, label: `${a.asset_number}${a.make || a.model ? ` · ${[a.make, a.model].filter(Boolean).join(" ")}` : ""}` }));
   const permsByMember = new Map<string, string[]>();
   for (const p of perms.data ?? []) permsByMember.set(p.membership_id as string, [...(permsByMember.get(p.membership_id as string) ?? []), p.asset_id as string]);
   const tz = ctx.timezone;
   const now = nowMs();
+  const today = todayISO(tz);
+  const warningDays = Number(warnSetting.data?.value) || 30;
+  const dmy = (iso: string) => iso.split("-").reverse().join("/");
+  const credsByDriver = new Map<string, CredentialRow[]>();
+  for (const cr of credentials) {
+    const row: CredentialRow = { ...cr, status: credentialStatus(cr.expires_on, today, warningDays), expiresText: cr.expires_on ? dmy(cr.expires_on) : null };
+    credsByDriver.set(cr.driver_id, [...(credsByDriver.get(cr.driver_id) ?? []), row]);
+  }
 
   return (
     <>
@@ -57,6 +68,7 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
                 <TH>Driver ID</TH>
                 <TH>Name</TH>
                 <TH>Status</TH>
+                <TH>Credentials</TH>
                 <TH>Last sign-in</TH>
                 <TH className="text-right">Actions</TH>
               </tr>
@@ -66,6 +78,8 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
                 const locked = d.locked_until && new Date(d.locked_until).getTime() > now;
                 const waiting = !!d.setup_expires_at;
                 const expired = waiting && new Date(d.setup_expires_at!).getTime() < now;
+                const creds = credsByDriver.get(d.id) ?? [];
+                const flagged = creds.filter((cr) => cr.status === "expired" || cr.status === "expiring");
                 return (
                   <TR key={d.id}>
                     <TD className="font-mono font-semibold">{formatDriverId(d.driver_number)}</TD>
@@ -87,6 +101,21 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
                         {!d.user_id ? <Badge tone="red">Login not set up</Badge> : null}
                       </span>
                     </TD>
+                    <TD>
+                      {creds.length === 0 ? (
+                        <span className="text-ink-subtle">None recorded</span>
+                      ) : flagged.length === 0 ? (
+                        <Badge tone="green">{creds.length} current</Badge>
+                      ) : (
+                        <span className="flex flex-col items-start gap-1">
+                          {flagged.map((cr) => (
+                            <Badge key={cr.id} tone={cr.status === "expired" ? "red" : "amber"}>
+                              {credentialTitle(cr)} {cr.status === "expired" ? "expired" : "expires"} {cr.expiresText}
+                            </Badge>
+                          ))}
+                        </span>
+                      )}
+                    </TD>
                     <TD className="whitespace-nowrap">{d.last_sign_in_at ? formatDateTimeAU(new Date(d.last_sign_in_at), tz) : "—"}</TD>
                     <TD>
                       <div className="flex flex-wrap justify-end gap-2">
@@ -106,6 +135,7 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
                             {d.active ? <ResetPinDialog orgId={orgId} driverId={d.id} label={waiting || locked ? "New setup code" : "Reset PIN"} /> : null}
                           </>
                         )}
+                        <CredentialsDialog orgId={orgId} driverId={d.id} name={d.full_name} credentials={creds} />
                         <ActiveToggle orgId={orgId} driverId={d.id} active={d.active} />
                       </div>
                     </TD>
