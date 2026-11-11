@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createInvitation, resetMemberMfa, revokeInvitation, setOrganisationLogo, unlockMemberSignIn } from "@hvems/api-client";
+import { createInvitation, ownerEndSupportAccess, resetMemberMfa, revokeInvitation, setOrganisationLogo, unlockMemberSignIn } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
 import { createOrganisationSchema, inviteMemberSchema, organisationContactSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
@@ -200,6 +200,18 @@ export async function unlockMemberSignInAction(portal: string, orgId: string, me
     await unlockMemberSignIn(db, membershipId);
     revalidatePath(teamPath(portal, orgId));
     return { status: "success", message: "Sign-in unlocked. They can sign in again now." };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** The Owner ends an HVEMS support session (ADM-07). */
+export async function ownerEndSupportAccessAction(portal: string, orgId: string, grantId: string): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await ownerEndSupportAccess(db, grantId);
+    revalidatePath(teamPath(portal, orgId));
+    return { status: "success", message: "HVEMS support access ended" };
   } catch (e) {
     return errorState(e);
   }

@@ -56,7 +56,7 @@ Each item needs a new migration and, where permissions change, an update to `pac
 | 2 | B.1 | ✅ **Done 10 Nov 2026** (`register_corrections`): Fleet Managers create and edit equipment and clients; import and archive need `assets.import_archive` (Owner/Administrator). Was: `assets.manage` and `clients.manage` Owner/Administrator only | Split into `assets.edit` (Own/Adm/FM) and `assets.import_archive` (Own/Adm); give FM `clients.manage` |
 | 3 | EXP-03 | ✅ **Done 10 Nov 2026**. Was: Viewer lacks `assets.costs.view` | Grant it (view only) |
 | 4 | AST-01 | Vehicles: make, model, rego, state, VIN; plant: make, model, serial | Vehicles: rego **or** VIN; equipment: serial **or** asset number (always present). Needs either-or rules, not a flat field list |
-| 5 | ADM-07 | 240-minute limit; no mode | 60 minutes; read-only by default; edit mode only with Owner approval; session shown to the Owner (NOT-01) |
+| 5 | ADM-07 | ✅ **Done 11 Nov 2026** except edit mode (`support_access_owner`): 60 min, read-only, Owner notified and can end. Was: 240-minute limit; no mode | 60 minutes; read-only by default; edit mode only with Owner approval; session shown to the Owner (NOT-01) |
 | 6 | AST-13 | ✅ **Done 10 Nov 2026**: retired → disposed; transferred out and written off added; transfers also need open issues acknowledged. Was: retired / sold / other | Reasons: sold, disposed, transferred out, written off, other |
 | 7 | §4.3, AST-16, §10.2 | Count events hold delta + reason | Add count before/after, actor, and a `merged` reason (AST-05) |
 | 8 | AUD-01–03 | Actor, method, action, entity, changes | Add portal, IP/device, before/after values, **daily hash chain** (AUD-03), **filters + CSV export** on the audit viewers (AUD-02) |

@@ -413,7 +413,8 @@ export type NotificationKind =
   | "regulator_notice"
   | "alert_escalated"
   | "credential_expiring"
-  | "credential_expired";
+  | "credential_expired"
+  | "support_access_started";
 
 export interface CriticalAlert {
   id: UUID;
@@ -536,4 +537,16 @@ export interface EquipmentPublic {
   company: string;
   short_code: string;
   condition: "active" | "needs_attention" | "out_of_service";
+}
+
+/** HVEMS support session for one organisation (ADM-07): read-only, at most 60 minutes. */
+export interface SupportSession {
+  id: UUID;
+  staff_user_id: UUID;
+  organisation_id: UUID;
+  reason: string;
+  starts_at: ISODateTime;
+  expires_at: ISODateTime;
+  ended_at: ISODateTime | null;
+  ended_by: UUID | null;
 }

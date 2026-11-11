@@ -1,5 +1,12 @@
 # Development progress log
 
+## 2026-11-11 — Support access (ADM-07, NOT-01)
+**Done**
+- Reconciliation item 5. Migration `20261111102856 support_access_owner` (applied by Claude): sessions at most **60 minutes** (setting, was 240), reason of at least 10 characters, one active session per staff member and organisation; read-only (support sessions only widen read policies). The Owner (and anyone with `support_access.view`) is notified when a session starts and can end it (`owner_end_support_access`); who ended it is recorded; every step is a security event.
+- Console organisation page: "Start support access" (reason, 15–60 minutes) or the active-session banner with End now; Support Agents see Team, Equipment and Clients only during their session (the Super Admin directly, O-05). Company Team page: "HVEMS support access" card with recent sessions and End now.
+- pgTAP `180`. Browser-checked with a throwaway Support Agent (deleted): fleet hidden → session started → visible; Owner notified, ended it from the Team page → hidden again.
+- **Not built:** edit mode with the Owner's approval. The console has no screens for editing company records, so what support staff could change needs a decision first.
+
 ## 2026-11-11 — Audit upgrade (AUD-01–03)
 **Done**
 - Reconciliation item 8. Migration `20261111102026 audit_upgrade` (applied by Claude):

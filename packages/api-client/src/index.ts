@@ -24,6 +24,7 @@ import type {
   RegulatorNotice,
   DriverCredential,
   SecurityEvent,
+  SupportSession,
   DriverProfile,
   EquipmentCode,
   EquipmentPublic,
@@ -967,4 +968,32 @@ export async function unlockMemberSignIn(db: HvemsClient, membershipId: string):
 /** Super Admin clears anyone's wrong passwords or lock. */
 export async function adminUnlockSignIn(db: HvemsClient, userId: string): Promise<void> {
   unwrap(await db.rpc("admin_unlock_sign_in", { p_user_id: userId }));
+}
+
+// ------------------------------------------------------------- support access (ADM-07)
+const SUPPORT_COLUMNS = "id, staff_user_id, organisation_id, reason, starts_at, expires_at, ended_at, ended_by";
+
+/** Support sessions for an organisation, newest first (Owner, Super Admin, or the staff member's own). */
+export async function listSupportSessions(db: HvemsClient, organisationId: string, limit = 20): Promise<SupportSession[]> {
+  return unwrap(
+    await db.from("support_access_grants").select(SUPPORT_COLUMNS).eq("organisation_id", organisationId).order("starts_at", { ascending: false }).limit(limit),
+  ) as SupportSession[];
+}
+
+/** HVEMS staff with MFA open a read-only session (reason, at most 60 minutes). */
+export async function startSupportAccess(db: HvemsClient, organisationId: string, reason: string, minutes: number): Promise<string> {
+  return unwrap(await db.rpc("start_support_access", { p_organisation_id: organisationId, p_reason: reason, p_minutes: minutes })) as string;
+}
+
+export async function endSupportAccess(db: HvemsClient, grantId: string): Promise<void> {
+  unwrap(await db.rpc("end_support_access", { p_grant_id: grantId }));
+}
+
+/** The Owner ends an HVEMS support session for their organisation. */
+export async function ownerEndSupportAccess(db: HvemsClient, grantId: string): Promise<void> {
+  unwrap(await db.rpc("owner_end_support_access", { p_grant_id: grantId }));
+}
+
+export function isSupportSessionActive(s: Pick<SupportSession, "ended_at" | "expires_at">, now = Date.now()): boolean {
+  return !s.ended_at && new Date(s.expires_at).getTime() > now;
 }

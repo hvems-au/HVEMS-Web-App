@@ -1,11 +1,12 @@
-import { listInvitations, listMemberSignInLocks, listMembers } from "@hvems/api-client";
-import { formatDateAU } from "@hvems/domain";
+import { isSupportSessionActive, listInvitations, listMemberSignInLocks, listMembers, listSupportSessions } from "@hvems/api-client";
+import { formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { GRANT_ELIGIBLE_ROLES, GRANT_LABELS, ROLE_LABELS, ROLES_BY_KIND, OWNER_ROLE_BY_KIND, can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, CardBody, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import type { OrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { InviteDialog, MemberActions, RevokeInvitationButton } from "./team-controls";
+import { EndSupportButton } from "./support-sessions";
 import { MemberSignInLock } from "./unlock-button";
 
 export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "customer" | "provider" }) {
@@ -13,10 +14,11 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
   const kind = ctx.context.kind;
   const db = await createSupabaseServerClient();
   const manage = can(ctx.capabilities, "org.members.manage");
-  const [members, invitations, locks] = await Promise.all([
+  const [members, invitations, locks, support] = await Promise.all([
     listMembers(db, orgId),
     manage ? listInvitations(db, orgId) : Promise.resolve([]),
     manage ? listMemberSignInLocks(db, orgId).catch(() => []) : Promise.resolve([]),
+    can(ctx.capabilities, "support_access.view") ? listSupportSessions(db, orgId, 10).catch(() => []) : Promise.resolve(null),
   ]);
   const lockOf = new Map(locks.map((l) => [l.membership_id, l]));
   const timeText = (iso: string | null) =>
@@ -38,6 +40,42 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
         }
         actions={manage ? <InviteDialog portal={portal} orgId={orgId} roles={invitableRoles.map((r) => ({ value: r, label: ROLE_LABELS[r] }))} /> : null}
       />
+      {support && support.length ? (
+        <Card className="mb-5">
+          <CardHeader title="HVEMS support access" description="HVEMS staff can view your records only in a logged, read-only session of up to 60 minutes. You can end one at any time." />
+          <CardBody className="px-0 pb-1">
+            <Table>
+              <THead>
+                <tr>
+                  <TH>Started</TH>
+                  <TH>Reason</TH>
+                  <TH>Status</TH>
+                  <TH className="text-right">Actions</TH>
+                </tr>
+              </THead>
+              <tbody>
+                {support.map((x) => {
+                  const live = isSupportSessionActive(x);
+                  return (
+                    <TR key={x.id}>
+                      <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(x.starts_at), ctx.timezone)}</TD>
+                      <TD className="text-ink-muted">{x.reason}</TD>
+                      <TD>
+                        {live ? (
+                          <Badge tone="blue">Active until {formatDateTimeAU(new Date(x.expires_at), ctx.timezone).split(", ")[1]}</Badge>
+                        ) : (
+                          <Badge tone="grey">{x.ended_at ? "Ended" : "Expired"}</Badge>
+                        )}
+                      </TD>
+                      <TD className="text-right">{live ? <EndSupportButton portal={portal} orgId={orgId} grantId={x.id} /> : null}</TD>
+                    </TR>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </CardBody>
+        </Card>
+      ) : null}
       <Card>
         <CardHeader title={`Members (${members.length})`} />
         <CardBody className="px-0 pb-1">

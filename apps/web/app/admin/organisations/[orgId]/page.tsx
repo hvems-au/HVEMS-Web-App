@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAssetConditionCounts, getOrganisation, listAssets, listClients, listInvitations, listMemberSignInLocks, listMembers, listSites } from "@hvems/api-client";
+import {
+  getAssetConditionCounts,
+  getOrganisation,
+  isSupportSessionActive,
+  listAssets,
+  listClients,
+  listInvitations,
+  listMemberSignInLocks,
+  listMembers,
+  listSites,
+  listSupportSessions,
+} from "@hvems/api-client";
 import { formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { GRANT_LABELS, KIND_LABELS, ROLE_LABELS } from "@hvems/permissions";
 import type { Organisation } from "@hvems/types";
@@ -12,7 +23,7 @@ import { getSessionUser, getStaffContext } from "@/lib/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
-import { AdminSignInLock, OrganisationDetailsForm, ResetMfaButton, SuspensionForm } from "./forms";
+import { AdminSignInLock, OrganisationDetailsForm, ResetMfaButton, SupportAccessCard, SuspensionForm } from "./forms";
 
 export const metadata: Metadata = { title: "Organisation" };
 
@@ -44,9 +55,18 @@ export default async function AdminOrganisationPage({
   const requested = firstParam(sp.tab);
   const tab: Tab = TABS.some((t) => t.id === requested) ? (requested as Tab) : "details";
   const db = await createSupabaseServerClient();
-  const [org, staff, user] = await Promise.all([getOrganisation(db, orgId).catch(() => null), getStaffContext(), getSessionUser()]);
+  const [org, staff, user, sessions, maxSetting] = await Promise.all([
+    getOrganisation(db, orgId).catch(() => null),
+    getStaffContext(),
+    getSessionUser(),
+    listSupportSessions(db, orgId).catch(() => []),
+    db.from("platform_settings").select("value").eq("key", "support_access.max_minutes").maybeSingle(),
+  ]);
   if (!org) notFound();
   const superAdmin = staff?.role === "platform_administrator";
+  const mySession = sessions.find((x) => x.staff_user_id === user?.id && isSupportSessionActive(x)) ?? null;
+  // Team and fleet records: the Super Admin directly (O-05), Support Agents inside a support session.
+  const canSee = superAdmin || !!mySession;
   const base = `/admin/organisations/${orgId}`;
 
   // Transparency for the customer: record each time HVEMS opens its team or fleet records.
@@ -63,6 +83,20 @@ export default async function AdminOrganisationPage({
         description={`${KIND_LABELS[org.kind]} · joined ${formatDateAU(new Date(org.created_at))}`}
         breadcrumb={{ label: "Organisations", href: "/admin/organisations" }}
         actions={<Badge tone={STATUS_TONE[org.status]}>{STATUS_LABEL[org.status]}</Badge>}
+      />
+      <SupportAccessCard
+        orgId={orgId}
+        directAccess={superAdmin}
+        maxMinutes={Number(maxSetting.data?.value) || 60}
+        active={
+          mySession
+            ? {
+                id: mySession.id,
+                reason: mySession.reason,
+                untilText: new Date(mySession.expires_at).toLocaleTimeString("en-AU", { timeZone: "Australia/Brisbane", hour: "numeric", minute: "2-digit" }),
+              }
+            : null
+        }
       />
       <nav className="mb-5 flex gap-1 border-b border-stroke" aria-label="Organisation sections">
         {TABS.filter((t) => org.kind === "company" || (t.id !== "equipment" && t.id !== "clients")).map((t) => (
@@ -81,8 +115,8 @@ export default async function AdminOrganisationPage({
       </nav>
       {tab === "details" ? <DetailsTab org={org} superAdmin={superAdmin} /> : null}
       {tab === "team" ? <TeamTab orgId={orgId} superAdmin={superAdmin} /> : null}
-      {tab === "equipment" ? <EquipmentTab orgId={orgId} superAdmin={superAdmin} archived={firstParam(sp.archived) === "1"} /> : null}
-      {tab === "clients" ? <ClientsTab orgId={orgId} superAdmin={superAdmin} /> : null}
+      {tab === "equipment" ? <EquipmentTab orgId={orgId} superAdmin={canSee} archived={firstParam(sp.archived) === "1"} /> : null}
+      {tab === "clients" ? <ClientsTab orgId={orgId} superAdmin={canSee} /> : null}
     </>
   );
 }

@@ -2062,6 +2062,7 @@ export type Database = {
       }
       support_access_grants: {
         Row: {
+          ended_by: string | null
           created_at: string
           ended_at: string | null
           expires_at: string
@@ -2072,6 +2073,7 @@ export type Database = {
           starts_at: string
         }
         Insert: {
+          ended_by?: string | null
           created_at?: string
           ended_at?: string | null
           expires_at: string
@@ -2082,6 +2084,7 @@ export type Database = {
           starts_at?: string
         }
         Update: {
+          ended_by?: string | null
           created_at?: string
           ended_at?: string | null
           expires_at?: string
@@ -2293,6 +2296,7 @@ export type Database = {
         }[]
       }
       password_sign_in_status: { Args: { p_email: string }; Returns: Json }
+      owner_end_support_access: { Args: { p_grant_id: string }; Returns: undefined }
       place_hold: {
         Args: { p_asset_id: string; p_kind: string; p_reason: string }
         Returns: string

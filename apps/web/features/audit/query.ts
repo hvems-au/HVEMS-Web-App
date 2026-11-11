@@ -71,6 +71,7 @@ export const SECURITY_LABELS: Record<string, string> = {
   grant_revoked: "Grant revoked",
   support_access_started: "HVEMS support access started",
   support_access_ended: "HVEMS support access ended",
+  support_access_ended_by_owner: "HVEMS support access ended by the Owner",
   hvems_staff_viewed_records: "HVEMS viewed records",
   driver_pin_reset: "Driver PIN reset",
   driver_sign_in_failed: "Wrong driver PIN",

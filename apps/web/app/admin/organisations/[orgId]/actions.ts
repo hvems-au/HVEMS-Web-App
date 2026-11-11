@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { adminResetUserMfa, adminSetOrganisationSuspended, adminUnlockSignIn, adminUpdateOrganisation } from "@hvems/api-client";
+import { adminResetUserMfa, adminSetOrganisationSuspended, adminUnlockSignIn, adminUpdateOrganisation, endSupportAccess, startSupportAccess } from "@hvems/api-client";
 import { adminOrganisationSchema, organisationSuspensionSchema } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { removeAllMfaFactors } from "@/lib/mfa-admin";
@@ -66,6 +66,29 @@ export async function adminUnlockSignInAction(orgId: string, userId: string): Pr
     await adminUnlockSignIn(db, userId);
     revalidatePath(`/admin/organisations/${orgId}`);
     return { status: "success", message: "Sign-in unlocked. They can sign in again now." };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** HVEMS staff open a read-only support session (ADM-07): reason and at most 60 minutes. The Owner is notified. */
+export async function startSupportAccessAction(orgId: string, reason: string, minutes: number): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await startSupportAccess(db, orgId, reason.trim(), minutes);
+    revalidatePath(`/admin/organisations/${orgId}`);
+    return { status: "success", message: "Support access started. The company's Owner has been notified." };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+export async function endSupportAccessAction(orgId: string, grantId: string): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await endSupportAccess(db, grantId);
+    revalidatePath(`/admin/organisations/${orgId}`);
+    return { status: "success", message: "Support access ended" };
   } catch (e) {
     return errorState(e);
   }
