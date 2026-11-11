@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy } from "lucide-react";
+import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX } from "lucide-react";
 import { listCriticalAlerts, listMembers, listMyNotifications } from "@hvems/api-client";
 import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -27,6 +27,7 @@ const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }
   credential_expiring: { icon: IdCard, tone: "text-[#c26a00]" },
   credential_expired: { icon: IdCard, tone: "text-danger" },
   support_access_started: { icon: LifeBuoy, tone: "text-[#1c5fbd]" },
+  prestart_missed: { icon: ClipboardX, tone: "text-[#c26a00]" },
 };
 const ESCALATION = ["", "Escalated: 30 min", "Escalated: 2 hours"] as const;
 

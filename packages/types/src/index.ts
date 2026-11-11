@@ -113,6 +113,8 @@ export interface AssetClass {
   category: AssetCategory;
   default_meter_type: MeterType;
   required_fields: string[];
+  /** Pre-start frequency for this type (2B). */
+  prestart_frequency: "daily" | "weekly" | "not_required";
   sort_order: number;
   /** null = HVEMS standard class; otherwise the company that owns it (O-03). */
   organisation_id: UUID | null;
@@ -171,6 +173,8 @@ export interface Asset {
   responsible_membership_id: UUID | null;
   meter_type: MeterType;
   /** Safety equipment fitted: its pre-start checks appear only when ticked. */
+  /** Overrides the type's pre-start frequency; null = as per type. */
+  prestart_frequency?: "daily" | "weekly" | "not_required" | null;
   rops_fitted: boolean;
   fops_fitted: boolean;
   fire_suppression_fitted: boolean;
@@ -414,7 +418,8 @@ export type NotificationKind =
   | "alert_escalated"
   | "credential_expiring"
   | "credential_expired"
-  | "support_access_started";
+  | "support_access_started"
+  | "prestart_missed";
 
 export interface CriticalAlert {
   id: UUID;
@@ -549,4 +554,19 @@ export interface SupportSession {
   expires_at: ISODateTime;
   ended_at: ISODateTime | null;
   ended_by: UUID | null;
+}
+
+/** A pre-start that was due and not done (2B), for managers to review. */
+export interface MissedPrestart {
+  id: UUID;
+  organisation_id: UUID;
+  asset_id: UUID;
+  frequency: "daily" | "weekly" | "not_required";
+  period_start: string;
+  period_end: string;
+  status: "open" | "not_used" | "missed";
+  review_note: string | null;
+  reviewed_by: UUID | null;
+  reviewed_at: ISODateTime | null;
+  asset?: { asset_number: string; make: string | null; model: string | null } | null;
 }

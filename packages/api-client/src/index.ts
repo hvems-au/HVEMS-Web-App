@@ -23,6 +23,7 @@ import type {
   Breakdown,
   RegulatorNotice,
   DriverCredential,
+  MissedPrestart,
   SecurityEvent,
   SupportSession,
   DriverProfile,
@@ -284,6 +285,7 @@ function assetPayload(organisationId: string, classId: string, v: AssetFormValue
     meter_type: v.meter_type,
     notes: v.notes ?? null,
     duplicate_reason: v.duplicate_reason ?? null,
+    ...(v.prestart_frequency === undefined ? {} : { prestart_frequency: v.prestart_frequency || null }),
     ...(v.rops_fitted === undefined ? {} : { rops_fitted: v.rops_fitted }),
     ...(v.fops_fitted === undefined ? {} : { fops_fitted: v.fops_fitted }),
     ...(v.fire_suppression_fitted === undefined ? {} : { fire_suppression_fitted: v.fire_suppression_fitted }),
@@ -1057,4 +1059,26 @@ export async function listAssetCountEvents(db: HvemsClient, organisationId: stri
       .order("id", { ascending: false })
       .limit(limit),
   ) as unknown as AssetCountEvent[];
+}
+
+// ------------------------------------------------------------- missed pre-starts (2B)
+/** Missed pre-starts, newest first (RLS: inspections.review). */
+export async function listMissedPrestarts(db: HvemsClient, organisationId: string, status: "open" | "reviewed" = "open", limit = 200): Promise<MissedPrestart[]> {
+  let q = db
+    .from("missed_prestarts")
+    .select("id, organisation_id, asset_id, frequency, period_start, period_end, status, review_note, reviewed_by, reviewed_at, asset:assets(asset_number, make, model)")
+    .eq("organisation_id", organisationId);
+  q = status === "open" ? q.eq("status", "open") : q.neq("status", "open");
+  return unwrap(await q.order("period_start", { ascending: false }).limit(limit)) as unknown as MissedPrestart[];
+}
+
+export async function countOpenMissedPrestarts(db: HvemsClient, organisationId: string): Promise<number> {
+  const { count, error } = await db.from("missed_prestarts").select("id", { count: "exact", head: true }).eq("organisation_id", organisationId).eq("status", "open");
+  if (error) throw toAppError(error);
+  return count ?? 0;
+}
+
+/** A manager reviews it: the equipment wasn't used, or the check was missed (note required). */
+export async function reviewMissedPrestart(db: HvemsClient, id: string, outcome: "not_used" | "missed", note?: string): Promise<void> {
+  unwrap(await db.rpc("review_missed_prestart", { p_id: id, p_outcome: outcome, p_note: note ?? undefined }));
 }

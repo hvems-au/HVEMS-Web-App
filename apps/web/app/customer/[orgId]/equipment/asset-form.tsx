@@ -4,7 +4,17 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { AU_STATES, METER_TYPE_LABELS, OWNER_TYPE_LABELS, SAFETY_FITTED_LABELS, isMobilePlantClass, type MeterType, type SafetyFittedField } from "@hvems/domain";
+import {
+  AU_STATES,
+  METER_TYPE_LABELS,
+  OWNER_TYPE_LABELS,
+  PRESTART_FREQUENCY_LABELS,
+  SAFETY_FITTED_LABELS,
+  isMobilePlantClass,
+  type MeterType,
+  type PrestartFrequency,
+  type SafetyFittedField,
+} from "@hvems/domain";
 import type { AssetClass, Client, Site } from "@hvems/types";
 import { assetFormSchemaFor, type AssetFormInput, type AssetFormValues } from "@hvems/validation";
 import { Button } from "@/components/ui/button";
@@ -209,6 +219,24 @@ export function AssetForm({
           </Field>
           <Field label="Notes" htmlFor="notes" error={err("notes")} className="md:col-span-2 xl:col-span-3">
             <Textarea rows={3} {...register("notes")} />
+          </Field>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader title="Pre-start checks" description="How often this equipment needs a pre-start. Missed checks are listed under Inspections → Missed." />
+        <CardBody>
+          <Field label="Pre-start frequency" htmlFor="prestart_frequency">
+            <Select id="prestart_frequency" {...register("prestart_frequency")}>
+              <option value="">
+                As per type{cls ? ` (${PRESTART_FREQUENCY_LABELS[cls.prestart_frequency as PrestartFrequency] ?? cls.prestart_frequency})` : ""}
+              </option>
+              {(Object.keys(PRESTART_FREQUENCY_LABELS) as PrestartFrequency[]).map((f) => (
+                <option key={f} value={f}>
+                  {PRESTART_FREQUENCY_LABELS[f]}
+                </option>
+              ))}
+            </Select>
           </Field>
         </CardBody>
       </Card>

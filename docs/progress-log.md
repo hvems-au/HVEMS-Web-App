@@ -1,5 +1,12 @@
 # Development progress log
 
+## 2026-11-11 — Pre-start frequency and missed pre-starts (2B)
+**Done**
+- Migration `20261111122758 prestart_frequency_missed` (applied by Claude): `prestart_frequency` (daily / weekly / not required) on equipment types (vehicles and mobile plant daily, portable or fixed equipment weekly) with a per-equipment override; `missed_prestarts`; hourly pg_cron job `hvems-missed-prestarts` checks each company in its own timezone after each day (Monday–Sunday for weekly checks) ends: current equipment due a check with no pre-start is recorded, out-of-service / archived / later-added equipment is left out, weekends skipped for daily checks (setting `prestart.skip_weekends`); one alert to the Owner, Fleet Managers and Company Admins. `review_missed_prestart` (inspections.review): "not used" or "missed" (note required), audited.
+- Web: Inspections → **Missed** tab with the open count, Review dialog and a Reviewed list; equipment form "Pre-start checks" (As per type / Daily / Weekly / Not required) and the equipment page shows it. pgTAP `240`.
+- Checked on the hosted project: the first run recorded WC-1 (no pre-start on Tue 10/11; CAT-ESC-0001 had one). Browser: "missed" without a note refused; reviewed as "Not used" (note: "Water cart parked all day (test review)"); the form option shows.
+- Decision (Ahmad): HVEMS support sessions and member sign-in locks stay visible to companies on the Team page.
+
 ## 2026-11-11 — Support PIN, change password, credential alerts to Company Admins
 **Done**
 - Decisions (Ahmad): (1) HVEMS support needs a company's **support PIN** to open a session: 6 digits, shown to the Owner and Company Admins in Settings → Security (Show / New PIN now), changes every 4 hours (setting), derived from a per-company secret nobody can read; 5 wrong PINs lock that staff member out of that company for 15 minutes; every attempt recorded. (2) Expired driver credentials only warn; Company Admins now get the alerts too. (3) **Change password** for every user on Account security (current password checked on a separate session so the MFA session stays; counts towards the lockout; recorded as a security event).

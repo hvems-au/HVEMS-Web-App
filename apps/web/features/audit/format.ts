@@ -19,6 +19,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   driver_profiles: "Driver",
   driver_credentials: "Driver credential",
   inspections: "Pre-start",
+  missed_prestarts: "Missed pre-start",
   defects: "Defect",
   holds: "Hold",
   breakdowns: "Breakdown",

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       asset_classes: {
         Row: {
+          prestart_frequency: Database["public"]["Enums"]["prestart_frequency"]
           active: boolean
           category: Database["public"]["Enums"]["asset_category"]
           code: string
@@ -29,6 +30,7 @@ export type Database = {
           sort_order: number
         }
         Insert: {
+          prestart_frequency?: Database["public"]["Enums"]["prestart_frequency"]
           active?: boolean
           category: Database["public"]["Enums"]["asset_category"]
           code: string
@@ -42,6 +44,7 @@ export type Database = {
           sort_order?: number
         }
         Update: {
+          prestart_frequency?: Database["public"]["Enums"]["prestart_frequency"]
           active?: boolean
           category?: Database["public"]["Enums"]["asset_category"]
           code?: string
@@ -281,6 +284,7 @@ export type Database = {
       }
       assets: {
         Row: {
+          prestart_frequency: Database["public"]["Enums"]["prestart_frequency"] | null
           archive_disposal: Database["public"]["Enums"]["asset_disposal"] | null
           archive_effective_date: string | null
           archive_reason: string | null
@@ -319,6 +323,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          prestart_frequency?: Database["public"]["Enums"]["prestart_frequency"] | null
           archive_disposal?:
             | Database["public"]["Enums"]["asset_disposal"]
             | null
@@ -359,6 +364,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          prestart_frequency?: Database["public"]["Enums"]["prestart_frequency"] | null
           archive_disposal?:
             | Database["public"]["Enums"]["asset_disposal"]
             | null
@@ -1511,6 +1517,12 @@ export type Database = {
           },
         ]
       }
+      missed_prestarts: {
+        Row: { asset_id: string; created_at: string; frequency: Database["public"]["Enums"]["prestart_frequency"]; id: string; organisation_id: string; period_end: string; period_start: string; review_note: string | null; reviewed_at: string | null; reviewed_by: string | null; status: string }
+        Insert: { asset_id: string; created_at?: string; frequency: Database["public"]["Enums"]["prestart_frequency"]; id?: string; organisation_id: string; period_end: string; period_start: string; review_note?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; status?: string }
+        Update: { asset_id?: string; created_at?: string; frequency?: Database["public"]["Enums"]["prestart_frequency"]; id?: string; organisation_id?: string; period_end?: string; period_start?: string; review_note?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; status?: string }
+        Relationships: []
+      }
       notifications: {
         Row: {
           alert_id: string | null
@@ -2297,6 +2309,7 @@ export type Database = {
       }
       my_mfa_recovery_status: { Args: never; Returns: Json }
       my_support_pin: { Args: { p_organisation_id: string }; Returns: Json }
+      review_missed_prestart: { Args: { p_id: string; p_note?: string; p_outcome: string }; Returns: undefined }
       rotate_support_pin: { Args: { p_organisation_id: string }; Returns: Json }
       my_staff_context: {
         Args: never
@@ -2528,6 +2541,7 @@ export type Database = {
         | "closing"
         | "closed"
       platform_authority: "verification_officer" | "billing_approver"
+      prestart_frequency: "daily" | "weekly" | "not_required"
       platform_role: "platform_administrator" | "support_agent"
     }
     CompositeTypes: {

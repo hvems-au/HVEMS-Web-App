@@ -93,6 +93,7 @@ export const assetFormSchema = z
     notes: optionalText(5000),
     duplicate_reason: optionalText(1000),
     // Safety equipment fitted (left out: the class default, plant ticked and vehicles not).
+    prestart_frequency: z.enum(["", "daily", "weekly", "not_required"]).optional(),
     rops_fitted: z.boolean().optional(),
     fops_fitted: z.boolean().optional(),
     fire_suppression_fitted: z.boolean().optional(),

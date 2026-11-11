@@ -37,3 +37,12 @@ export function credentialStatus(expiresOn: string | null | undefined, today: st
 export function credentialTitle(c: { kind: CredentialKind; label: string | null }): string {
   return c.kind === "other" ? (c.label ?? "Other") : `${CREDENTIAL_LABELS[c.kind]}${c.label ? ` · ${c.label}` : ""}`;
 }
+
+/** Pre-start frequency per equipment type, overridable per equipment (2B). */
+export const PRESTART_FREQUENCIES = ["daily", "weekly", "not_required"] as const;
+export type PrestartFrequency = (typeof PRESTART_FREQUENCIES)[number];
+export const PRESTART_FREQUENCY_LABELS: Record<PrestartFrequency, string> = {
+  daily: "Daily (each working day)",
+  weekly: "Weekly",
+  not_required: "Not required",
+};

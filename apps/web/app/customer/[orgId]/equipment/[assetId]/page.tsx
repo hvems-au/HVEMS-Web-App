@@ -14,7 +14,7 @@ import {
   listOpenConditionCauses,
   listReturnToServiceEvents,
 } from "@hvems/api-client";
-import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, formatDateAU, formatDateTimeAU } from "@hvems/domain";
+import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, PRESTART_FREQUENCY_LABELS, formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { ConditionBadge, ConditionBanner } from "@/components/condition";
 import { ResultBadge, SeverityBadge } from "@/components/safety";
@@ -153,6 +153,10 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 { label: "Client", value: asset.client?.name },
                 { label: "Site", value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null },
                 { label: "Odometer / hour meter", value: METER_TYPE_LABELS[asset.meter_type] },
+                {
+                  label: "Pre-start checks",
+                  value: asset.prestart_frequency ? PRESTART_FREQUENCY_LABELS[asset.prestart_frequency] : "As per type",
+                },
                 {
                   label: "Safety equipment fitted",
                   value:
