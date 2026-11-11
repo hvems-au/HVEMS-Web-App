@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, Textarea } from "@/components/ui/form";
 import { idleState, type ClientActionState } from "@/lib/client-state";
 import { TimezoneSelect } from "@/components/timezone-select";
-import { setSuspendedAction, updateOrganisationAction } from "./actions";
+import { adminResetUserMfaAction, setSuspendedAction, updateOrganisationAction } from "./actions";
 
 function useToastAction(action: (prev: ClientActionState, form: FormData) => Promise<ClientActionState>, onSuccess?: () => void) {
   const [state, run, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
@@ -101,5 +101,32 @@ export function SuspensionForm({ org }: { org: Organisation }) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Super Admin: reset someone's MFA after confirming who they are (ACC-15). */
+export function ResetMfaButton({ orgId, userId, name }: { orgId: string; userId: string; name: string }) {
+  const [pending, start] = React.useTransition();
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={pending}
+      onClick={() => {
+        const reason = window.prompt(
+          `Reset multi-factor authentication for ${name}? Their authenticator app and recovery codes stop working, and they set up a new one at their next sign-in.
+
+How did you confirm who they are? (at least 10 characters)`,
+        );
+        if (!reason) return;
+        start(async () => {
+          const res = await adminResetUserMfaAction(orgId, userId, reason);
+          if (res.status === "success") toast.success(res.message ?? "Done");
+          else if (res.status === "error") toast.error(res.message);
+        });
+      }}
+    >
+      Reset MFA
+    </Button>
   );
 }

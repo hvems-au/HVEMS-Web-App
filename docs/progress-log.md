@@ -1,5 +1,17 @@
 # Development progress log
 
+## 2026-11-11 — MFA recovery codes, MFA reset, "MFA for everyone" setting
+**Done**
+- Reconciliation item 9 (ACC-03, ACC-15) and O-06. Migration `20261111060000 mfa_recovery_and_reset`:
+  - 10 single-use recovery codes per person (bcrypt hashes, no direct table access, shown once). Creating them needs an MFA session; a new set cancels the old one. 5 wrong codes lock recovery for 15 minutes (settings `security.mfa_recovery_*`); every attempt is a security event.
+  - Owner / Company Admin reset of a member's MFA (needs their own MFA and a reason; not their own, not the Owner's, not driver PIN profiles). Super Admin console reset for anyone (reason of at least 10 characters, recorded against each of the person's organisations), for an Owner with no codes left.
+  - `security.mfa_required_for_all` (off) read by `app.mfa_required`: when on, every member login needs MFA; Driver ID + PIN profiles stay out (O-10).
+  - The database decides and records; the server then removes the person's authenticators through the Supabase Auth admin API (`lib/mfa-admin.ts`), only for the user id the database returned.
+- Web: recovery codes shown straight after setting up an authenticator (copy, download, "I've saved these"); recovery-code status and "Create new recovery codes" on Account security; "Lost your phone? Use a recovery code" at the sign-in challenge; "Reset MFA…" in the Team member menu; "Reset MFA" on the console's organisation Team tab.
+- Checked on the hosted project as signed-in users (rolled back): codes, wrong / right / reused code, no direct read, reset rules (Fleet Manager refused, own MFA needed, not the Owner, not yourself, reason needed). Browser end to end with a throwaway user (deleted afterwards): enrol → codes → new sign-in → wrong code → recovery code → authenticator removed → enrol again → new codes. pgTAP `130`.
+- Note: the Supabase connector refused this migration three times although the project allows it; it had in fact been applied (running it again in the SQL editor reported that the table already existed). The history entry was added by hand afterwards.
+- Also on 11 Nov: for about 10 minutes (3:10–3:21 pm Brisbane) adding equipment failed with "permission denied for function class_is_mobile_plant"; fixed by `20261111052125 safety_fitted_default_execute`.
+
 ## 2026-11-11 — QR label: driver portal address and company logo
 **Done**
 - The label's "No camera?" box shows the driver portal address. Labels always print the live address (`driver.hvems.com.au`, or the configured `DRIVER_HOST` when it isn't a local host), never a local one.

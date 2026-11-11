@@ -60,7 +60,7 @@ Each item needs a new migration and, where permissions change, an update to `pac
 | 6 | AST-13 | ✅ **Done 10 Nov 2026**: retired → disposed; transferred out and written off added; transfers also need open issues acknowledged. Was: retired / sold / other | Reasons: sold, disposed, transferred out, written off, other |
 | 7 | §4.3, AST-16, §10.2 | Count events hold delta + reason | Add count before/after, actor, and a `merged` reason (AST-05) |
 | 8 | AUD-01–03 | Actor, method, action, entity, changes | Add portal, IP/device, before/after values, **daily hash chain** (AUD-03), **filters + CSV export** on the audit viewers (AUD-02) |
-| 9 | ACC-03 | TOTP only | 10 single-use **recovery codes** (custom table, hashed) plus Owner/Admin MFA reset for members (ACC-15) |
+| 9 | ACC-03 | ✅ **Done 11 Nov 2026** (`mfa_recovery_and_reset`). Was: TOTP only | 10 single-use **recovery codes** (custom table, hashed) plus Owner/Admin MFA reset for members (ACC-15) |
 | 10 | §2.5, CFG-45 | Supabase defaults | Lockout after 10 failed passwords for 15 min; idle timeout: portals 12 h, console 30 min (ADM-01) |
 | 11 | ACC-04 | ✅ **Done 10 Nov 2026** (`organisation_timezone_contact`): timezone chosen at sign-up (Brisbane preselected) and in Settings; every member sees dates and times in it; contact name, email, phone. Was: name, ABN | Add default timezone (Brisbane preselected) and contact details |
 | 12 | §2.5 (IR) | Staff can also hold memberships | Prevent staff accounts holding customer/provider memberships, or record the deviation. The current test accounts already follow this |

@@ -14,6 +14,7 @@ import {
   changeRoleAction,
   inviteMemberAction,
   removeMemberAction,
+  resetMemberMfaAction,
   revokeGrantAction,
   revokeInvitationAction,
 } from "./actions";
@@ -259,6 +260,19 @@ export function MemberActions({
                 Revoke {g.label}
               </DropdownMenu.Item>
             ))}
+            <DropdownMenu.Item
+              className="rounded-md px-2 py-2 outline-none data-[highlighted]:bg-surface-muted"
+              onSelect={() => {
+                const reason = window.prompt(
+                  `Reset multi-factor authentication for ${name}? Their authenticator app and recovery codes stop working, and they set up a new one at their next sign-in.
+
+Reason (for example "lost phone"):`,
+                );
+                if (reason && reason.trim().length >= 3) run(() => resetMemberMfaAction(portal, orgId, membershipId, reason.trim()));
+              }}
+            >
+              Reset MFA…
+            </DropdownMenu.Item>
             <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
             <DropdownMenu.Item
               className="rounded-md px-2 py-2 text-danger outline-none data-[highlighted]:bg-danger-soft"

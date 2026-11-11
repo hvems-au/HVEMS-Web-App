@@ -1,10 +1,11 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createInvitation, revokeInvitation, setOrganisationLogo } from "@hvems/api-client";
+import { createInvitation, resetMemberMfa, revokeInvitation, setOrganisationLogo } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
 import { createOrganisationSchema, inviteMemberSchema, organisationContactSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { currentOrigin } from "@/lib/current-portal";
+import { removeAllMfaFactors } from "@/lib/mfa-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function teamPath(portal: string, orgId: string) {
@@ -168,6 +169,25 @@ export async function setOrganisationLogoAction(portal: string, orgId: string, p
     await setOrganisationLogo(db, orgId, path);
     revalidatePath(`/${portal}/${orgId}`, "layout");
     return { status: "success", message: path ? "Logo saved" : "Logo removed" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/**
+ * Owner or Company Admin resets a member's MFA (lost phone, no recovery codes).
+ * The database decides (capability, own MFA, not the Owner, reason) and records
+ * it; only then are the member's authenticators removed.
+ */
+export async function resetMemberMfaAction(portal: string, orgId: string, membershipId: string, reason: string): Promise<ActionState> {
+  const trimmed = reason.trim();
+  if (trimmed.length < 3) return { status: "error", code: "reason_required", message: "Give a reason for the reset." };
+  try {
+    const db = await createSupabaseServerClient();
+    const userId = await resetMemberMfa(db, membershipId, trimmed.slice(0, 500));
+    await removeAllMfaFactors(userId);
+    revalidatePath(teamPath(portal, orgId));
+    return { status: "success", message: "MFA reset. They'll set up their authenticator app at their next sign-in." };
   } catch (e) {
     return errorState(e);
   }

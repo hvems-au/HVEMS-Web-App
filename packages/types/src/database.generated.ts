@@ -1358,6 +1358,12 @@ export type Database = {
           },
         ]
       }
+      mfa_recovery_codes: {
+        Row: { code_hash: string; created_at: string; id: string; used_at: string | null; user_id: string }
+        Insert: { code_hash: string; created_at?: string; id?: string; used_at?: string | null; user_id: string }
+        Update: { code_hash?: string; created_at?: string; id?: string; used_at?: string | null; user_id?: string }
+        Relationships: []
+      }
       meter_readings: {
         Row: {
           amends_reading_id: string | null
@@ -2039,6 +2045,7 @@ export type Database = {
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
       acknowledge_alert: { Args: { p_alert_id: string }; Returns: undefined }
+      admin_reset_user_mfa: { Args: { p_reason: string; p_user_id: string }; Returns: string }
       admin_set_organisation_suspended: {
         Args: {
           p_organisation_id: string
@@ -2208,6 +2215,7 @@ export type Database = {
           status: Database["public"]["Enums"]["organisation_status"]
         }[]
       }
+      my_mfa_recovery_status: { Args: never; Returns: Json }
       my_staff_context: {
         Args: never
         Returns: {
@@ -2300,6 +2308,9 @@ export type Database = {
         }
         Returns: string
       }
+      generate_mfa_recovery_codes: { Args: never; Returns: string[] }
+      reset_member_mfa: { Args: { p_membership_id: string; p_reason: string }; Returns: string }
+      use_mfa_recovery_code: { Args: { p_code: string }; Returns: Json }
       reset_driver_setup: { Args: { p_driver_id: string }; Returns: Json }
       resolve_breakdown: {
         Args: {

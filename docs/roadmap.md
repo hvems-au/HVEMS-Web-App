@@ -20,4 +20,4 @@ Order follows SoW §9.1 increments. Each increment ends with: migrations + pgTAP
 | P-03 | Supabase Pro, backups (AP-3), leaked-password protection, separate production project | Ahmad | Go-live |
 | P-04 | Production domains for the five portal hosts | Ahmad / HVEMS | Go-live; Supabase redirect URLs |
 | P-05 | A second Super Admin account | Ahmad | Recovery if the only Super Admin loses MFA |
-| P-06 | Switch-on date for MFA for every user (O-06) | HVEMS | Nothing; it's a setting |
+| P-06 | Switch-on date for MFA for every user (O-06) | HVEMS | Nothing: set `security.mfa_required_for_all` to true (built 11 Nov 2026) |

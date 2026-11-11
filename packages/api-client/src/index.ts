@@ -843,3 +843,36 @@ export async function setOperatorEquipment(db: HvemsClient, organisationId: stri
     unwrap(await db.from("asset_operator_permissions").insert(add.map((asset_id) => ({ organisation_id: organisationId, membership_id: membershipId, asset_id }))));
   }
 }
+
+// ------------------------------------------------------------- MFA recovery and reset (ACC-03, ACC-15)
+export interface MfaRecoveryStatus {
+  remaining: number;
+  generated_at: string | null;
+}
+
+export type RecoveryCodeResult = { ok: true; user_id: string } | { ok: false; code: string; message: string };
+
+/** New recovery codes for the signed-in user (needs an MFA session). Shown once; earlier codes stop working. */
+export async function generateMfaRecoveryCodes(db: HvemsClient): Promise<string[]> {
+  return unwrap<string[]>(await db.rpc("generate_mfa_recovery_codes")) ?? [];
+}
+
+export async function getMfaRecoveryStatus(db: HvemsClient): Promise<MfaRecoveryStatus> {
+  const s = unwrap(await db.rpc("my_mfa_recovery_status")) as unknown as MfaRecoveryStatus | null;
+  return { remaining: Number(s?.remaining ?? 0), generated_at: s?.generated_at ?? null };
+}
+
+/** Spend a recovery code. A wrong code is a result, not an error, so the lockout count is kept. */
+export async function redeemMfaRecoveryCode(db: HvemsClient, code: string): Promise<RecoveryCodeResult> {
+  return unwrap(await db.rpc("use_mfa_recovery_code", { p_code: code })) as unknown as RecoveryCodeResult;
+}
+
+/** Owner or Company Admin resets a member's MFA; returns the member's user id. */
+export async function resetMemberMfa(db: HvemsClient, membershipId: string, reason: string): Promise<string> {
+  return unwrap<string>(await db.rpc("reset_member_mfa", { p_membership_id: membershipId, p_reason: reason }));
+}
+
+/** Super Admin resets anyone's MFA; returns the user id. */
+export async function adminResetUserMfa(db: HvemsClient, userId: string, reason: string): Promise<string> {
+  return unwrap<string>(await db.rpc("admin_reset_user_mfa", { p_user_id: userId, p_reason: reason }));
+}

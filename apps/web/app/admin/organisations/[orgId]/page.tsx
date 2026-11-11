@@ -12,7 +12,7 @@ import { getSessionUser, getStaffContext } from "@/lib/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
-import { OrganisationDetailsForm, SuspensionForm } from "./forms";
+import { OrganisationDetailsForm, ResetMfaButton, SuspensionForm } from "./forms";
 
 export const metadata: Metadata = { title: "Organisation" };
 
@@ -80,7 +80,7 @@ export default async function AdminOrganisationPage({
         ))}
       </nav>
       {tab === "details" ? <DetailsTab org={org} superAdmin={superAdmin} /> : null}
-      {tab === "team" ? <TeamTab orgId={orgId} /> : null}
+      {tab === "team" ? <TeamTab orgId={orgId} superAdmin={superAdmin} /> : null}
       {tab === "equipment" ? <EquipmentTab orgId={orgId} superAdmin={superAdmin} archived={firstParam(sp.archived) === "1"} /> : null}
       {tab === "clients" ? <ClientsTab orgId={orgId} superAdmin={superAdmin} /> : null}
     </>
@@ -149,7 +149,7 @@ async function DetailsTab({ org, superAdmin }: { org: Organisation; superAdmin: 
   );
 }
 
-async function TeamTab({ orgId }: { orgId: string }) {
+async function TeamTab({ orgId, superAdmin }: { orgId: string; superAdmin: boolean }) {
   const db = await createSupabaseServerClient();
   const [members, invitations] = await Promise.all([listMembers(db, orgId), listInvitations(db, orgId).catch(() => [])]);
   return (
@@ -168,6 +168,7 @@ async function TeamTab({ orgId }: { orgId: string }) {
                 <TH>Grants</TH>
                 <TH>Status</TH>
                 <TH>Joined</TH>
+                {superAdmin ? <TH className="sr-only">Actions</TH> : null}
               </tr>
             </THead>
             <tbody>
@@ -186,6 +187,11 @@ async function TeamTab({ orgId }: { orgId: string }) {
                     <Badge tone={m.status === "active" ? "green" : "amber"}>{m.status}</Badge>
                   </TD>
                   <TD>{formatDateAU(new Date(m.created_at))}</TD>
+                  {superAdmin ? (
+                    <TD className="text-right">
+                      <ResetMfaButton orgId={orgId} userId={m.user_id} name={m.profile?.full_name || m.profile?.email || "this person"} />
+                    </TD>
+                  ) : null}
                 </TR>
               ))}
             </tbody>
