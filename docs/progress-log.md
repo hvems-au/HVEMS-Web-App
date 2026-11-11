@@ -1,5 +1,14 @@
 # Development progress log
 
+## 2026-11-11 — Audit upgrade (AUD-01–03)
+**Done**
+- Reconciliation item 8. Migration `20261111102026 audit_upgrade` (applied by Claude):
+  - Every audit and security event records the portal, IP address and browser (headers the HVEMS server sends; a trigger copies them into `context`). Before/after values for changes were already recorded.
+  - Daily hash chain: `audit_daily_digests` (append-only), one SHA-256 digest per Brisbane day over that day's audit and security events, chained to the previous day; sealed by pg_cron `hvems-seal-audit-days` at 00:10 Brisbane. `verify_audit_chain` (HVEMS staff with MFA) recomputes it and lists broken days. Days so far sealed on the hosted project.
+- Audit pages (company, provider, console): tabs **Changes** and **Sign-in & security**; filters (dates, record, action, person; event type; organisation in the console); **Export CSV** with the same filters (up to 5,000 rows); "From" column (portal · IP, browser on hover). Console shows the integrity check ("Audit records intact", or the changed days).
+- pgTAP `170` (context, sealing, tamper detection). Browser-checked: a credential added and removed shows portal and IP; record filter; security tab; CSV download.
+- Limit: someone with full database access could rewrite both the events and the digests; copying each day's digest outside Supabase (e.g. emailed to HVEMS) would close that once email is set up (P-02).
+
 ## 2026-11-11 — Driver credentials (2B)
 **Done**
 - Migration `20261111094848 driver_credentials` (applied by Claude): driver licence, plant ticket (HRWL), induction card, track safety and other credentials on the driver profile (number, class/name, issuer, optional expiry). Managers with `drivers.manage` maintain them; the driver sees their own; one of each kind and class per driver; every change audited.

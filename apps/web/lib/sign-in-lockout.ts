@@ -1,4 +1,5 @@
 import "server-only";
+import { auditContextHeaders } from "@/lib/request-context";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -24,7 +25,7 @@ export async function signInLockState(email: string): Promise<LockState> {
 }
 
 export async function recordSignIn(email: string, success: boolean, portal: string): Promise<LockState> {
-  const { data, error } = await createSupabaseAdminClient().rpc("record_password_sign_in", { p_email: email, p_success: success, p_portal: portal });
+  const { data, error } = await createSupabaseAdminClient(await auditContextHeaders()).rpc("record_password_sign_in", { p_email: email, p_success: success, p_portal: portal });
   if (error) throw error;
   return (data ?? { locked: false }) as LockState;
 }

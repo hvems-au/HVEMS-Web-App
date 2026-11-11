@@ -77,3 +77,23 @@ export function timezoneOptions(current?: string | null): { value: string; label
 export function todayISO(timeZone: string = BUSINESS_TIMEZONE, now: Date = new Date()): string {
   return now.toLocaleDateString("en-CA", { timeZone });
 }
+
+/** Offset of a timezone from UTC at an instant, in minutes (e.g. +600 for Brisbane). */
+function zoneOffsetMinutes(instant: Date, timeZone: string): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      .formatToParts(instant)
+      .map((p) => [p.type, p.value]),
+  );
+  const asUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+  return Math.round((asUtc - instant.getTime()) / 60000);
+}
+
+/** The instant a calendar day (YYYY-MM-DD) starts in a timezone, e.g. for "from" filters. */
+export function startOfDayInZone(isoDate: string, timeZone: string = BUSINESS_TIMEZONE): Date {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const guess = Date.UTC(y!, m! - 1, d!);
+  const first = guess - zoneOffsetMinutes(new Date(guess), timeZone) * 60000;
+  // Second pass settles days where daylight saving changes the offset.
+  return new Date(guess - zoneOffsetMinutes(new Date(first), timeZone) * 60000);
+}

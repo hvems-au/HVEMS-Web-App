@@ -232,6 +232,18 @@ export interface AuditEvent {
   entity_type: string;
   entity_id: UUID | null;
   changes: Record<string, unknown>;
+  /** Portal, IP address and browser (AUD-01), when known. */
+  context?: { portal?: string; ip?: string; user_agent?: string };
+}
+
+export interface SecurityEvent {
+  id: number;
+  occurred_at: ISODateTime;
+  user_id: UUID | null;
+  organisation_id: UUID | null;
+  event_type: string;
+  detail: Record<string, unknown>;
+  context?: { portal?: string; ip?: string; user_agent?: string };
 }
 
 export interface ImportRowError {

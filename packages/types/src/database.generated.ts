@@ -427,6 +427,12 @@ export type Database = {
           },
         ]
       }
+      audit_daily_digests: {
+        Row: { audit_count: number; day: string; digest: string; prev_digest: string | null; sealed_at: string; security_count: number }
+        Insert: { audit_count: number; day: string; digest: string; prev_digest?: string | null; sealed_at?: string; security_count: number }
+        Update: { audit_count?: number; day?: string; digest?: string; prev_digest?: string | null; sealed_at?: string; security_count?: number }
+        Relationships: []
+      }
       audit_events: {
         Row: {
           action: string
@@ -1942,6 +1948,7 @@ export type Database = {
       }
       security_events: {
         Row: {
+          context: Json
           detail: Json
           event_type: string
           id: number
@@ -1950,6 +1957,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          context?: Json
           detail?: Json
           event_type: string
           id?: never
@@ -1958,6 +1966,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          context?: Json
           detail?: Json
           event_type?: string
           id?: never
@@ -2371,6 +2380,7 @@ export type Database = {
       }
       generate_mfa_recovery_codes: { Args: never; Returns: string[] }
       reset_member_mfa: { Args: { p_membership_id: string; p_reason: string }; Returns: string }
+      verify_audit_chain: { Args: { p_from?: string; p_to?: string }; Returns: Json }
       use_mfa_recovery_code: { Args: { p_code: string }; Returns: Json }
       reset_driver_setup: { Args: { p_driver_id: string }; Returns: Json }
       resolve_breakdown: {

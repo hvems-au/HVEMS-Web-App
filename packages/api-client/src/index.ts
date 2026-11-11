@@ -23,6 +23,7 @@ import type {
   Breakdown,
   RegulatorNotice,
   DriverCredential,
+  SecurityEvent,
   DriverProfile,
   EquipmentCode,
   EquipmentPublic,
@@ -407,35 +408,66 @@ export async function adminSetOrganisationSuspended(db: HvemsClient, organisatio
 }
 
 // ------------------------------------------------------------- audit & settings
-export async function listAuditEvents(
-  db: HvemsClient,
-  q: { organisationId: string; entityType?: string; entityId?: string; limit?: number },
-): Promise<AuditEvent[]> {
-  let query = db
-    .from("audit_events")
-    .select("id, occurred_at, organisation_id, actor_user_id, actor_method, action, entity_type, entity_id, changes")
-    .eq("organisation_id", q.organisationId);
-  if (q.entityType) query = query.eq("entity_type", q.entityType);
-  if (q.entityId) query = query.eq("entity_id", q.entityId);
-  return unwrap(await query.order("occurred_at", { ascending: false }).limit(Math.min(q.limit ?? 100, 500)));
+export interface AuditFilter {
+  /** An organisation id, "platform" for platform-level events, or undefined for all the caller may see. */
+  organisationId?: string;
+  entityType?: string;
+  entityId?: string;
+  action?: string;
+  actorUserId?: string;
+  /** ISO dates (inclusive), already converted to instants by the caller. */
+  from?: string;
+  to?: string;
+  limit?: number;
 }
 
+const AUDIT_COLUMNS = "id, occurred_at, organisation_id, actor_user_id, actor_method, action, entity_type, entity_id, changes, context";
+
 /**
- * Platform-wide audit history for the HVEMS console. RLS returns rows from every
- * organisation (and platform-level rows, organisation_id null) only to active
- * HVEMS staff with an MFA session; anyone else gets their own orgs' rows at most.
+ * Audit history (AUD-01/02). RLS decides what the caller sees: their own
+ * organisations with audit.view, or everything for HVEMS staff with MFA.
  */
-export async function listPlatformAuditEvents(
-  db: HvemsClient,
-  q: { organisationId?: string | "platform"; entityType?: string; limit?: number } = {},
-): Promise<AuditEvent[]> {
-  let query = db
-    .from("audit_events")
-    .select("id, occurred_at, organisation_id, actor_user_id, actor_method, action, entity_type, entity_id, changes");
+export async function listAuditEvents(db: HvemsClient, q: AuditFilter): Promise<AuditEvent[]> {
+  let query = db.from("audit_events").select(AUDIT_COLUMNS);
   if (q.organisationId === "platform") query = query.is("organisation_id", null);
   else if (q.organisationId) query = query.eq("organisation_id", q.organisationId);
   if (q.entityType) query = query.eq("entity_type", q.entityType);
-  return unwrap(await query.order("occurred_at", { ascending: false }).limit(Math.min(q.limit ?? 200, 500)));
+  if (q.entityId) query = query.eq("entity_id", q.entityId);
+  if (q.action) query = query.eq("action", q.action);
+  if (q.actorUserId) query = query.eq("actor_user_id", q.actorUserId);
+  if (q.from) query = query.gte("occurred_at", q.from);
+  if (q.to) query = query.lt("occurred_at", q.to);
+  return unwrap(await query.order("occurred_at", { ascending: false }).limit(Math.min(q.limit ?? 200, 5000))) as AuditEvent[];
+}
+
+/** Console view: same as listAuditEvents (kept for existing callers). */
+export async function listPlatformAuditEvents(db: HvemsClient, q: AuditFilter = {}): Promise<AuditEvent[]> {
+  return listAuditEvents(db, q);
+}
+
+/** Sign-in and security events (wrong passwords, locks, MFA resets, unlocks, support access). */
+export async function listSecurityEvents(
+  db: HvemsClient,
+  q: { organisationId?: string; eventType?: string; from?: string; to?: string; limit?: number },
+): Promise<SecurityEvent[]> {
+  let query = db.from("security_events").select("id, occurred_at, user_id, organisation_id, event_type, detail, context");
+  if (q.organisationId === "platform") query = query.is("organisation_id", null);
+  else if (q.organisationId) query = query.eq("organisation_id", q.organisationId);
+  if (q.eventType) query = query.eq("event_type", q.eventType);
+  if (q.from) query = query.gte("occurred_at", q.from);
+  if (q.to) query = query.lt("occurred_at", q.to);
+  return unwrap(await query.order("occurred_at", { ascending: false }).limit(Math.min(q.limit ?? 200, 5000))) as SecurityEvent[];
+}
+
+export interface AuditChainCheck {
+  checked_days: number;
+  broken: { day: string; expected_events: number; found_events: number }[];
+  last_sealed: string | null;
+}
+
+/** AUD-03: recompute the daily hash chain (HVEMS staff with MFA). */
+export async function verifyAuditChain(db: HvemsClient): Promise<AuditChainCheck> {
+  return unwrap(await db.rpc("verify_audit_chain", {})) as unknown as AuditChainCheck;
 }
 
 export async function listPlatformSettings(db: HvemsClient): Promise<PlatformSetting[]> {
