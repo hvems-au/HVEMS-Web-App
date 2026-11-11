@@ -41,6 +41,18 @@ export const CONDITION_LABELS = {
   out_of_service: "Broken/Out of service",
 } as const;
 
+/** Mobile plant (equipment classes except portable or fixed) starts with ROPS, FOPS and fire suppression ticked. Mirrors app.class_is_mobile_plant. */
+export function isMobilePlantClass(cls: { category: string; code: string | null } | null | undefined): boolean {
+  return !!cls && cls.category === "equipment" && cls.code !== "portable_fixed_equipment";
+}
+
+export const SAFETY_FITTED_LABELS = {
+  rops_fitted: { title: "ROPS fitted", body: "Roll-over protective structure" },
+  fops_fitted: { title: "FOPS fitted", body: "Falling object protective structure" },
+  fire_suppression_fitted: { title: "Fire suppression fitted", body: "Automatic or manual fire suppression system" },
+} as const;
+export type SafetyFittedField = keyof typeof SAFETY_FITTED_LABELS;
+
 export const METER_TYPE_LABELS: Record<MeterType, string> = {
   none: "None",
   kilometres: "Odometer (km)",

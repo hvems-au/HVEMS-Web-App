@@ -6,6 +6,13 @@
 - Company logo (Settings → Company logo; Owners and Administrators): any image is converted to a PNG of at most 1000 px in the browser and uploaded to the private `organisation-logos` bucket (`<org>/logo-<id>.png`). Replacing or removing the logo deletes the old file. The label shows the logo in place of the company name. Migration `20261111045315 organisation_logo` (column, folder rule `invalid_logo`, bucket and storage policies); pgTAP `110`.
 - Browser-checked: SVG logo uploaded, shown in Settings and on the label (one page); replace and remove leave no files behind. The test logo was removed afterwards.
 
+## 2026-11-11 — Company logo everywhere; ROPS / FOPS / fire suppression "fitted" tick-boxes
+**Done**
+- Company logo also on the sidebar organisation badge (customer and provider portals), the pre-start PDF letterhead (beside the company details) and the driver's scanned-equipment screen. PDFs take the logo as raw bytes (react-pdf doesn't render data-URI images in repeating headers).
+- Decision (11 Nov 2026, Ahmad): ROPS, FOPS and fire suppression checks follow "fitted" tick-boxes on each piece of equipment rather than its type, so mine-spec vehicles can carry them. Mobile plant starts ticked (no machine loses a check without someone deciding), vehicles unticked; existing equipment set the same way. Migrations `20261111050947 safety_equipment_fitted` (asset columns, class default, `requires_fitted` on template items, `app.prestart_items` filter, safety template version +1) and `20261111051527 safety_equipment_fitted_grants` (the assets table grants writes column by column). pgTAP `120`.
+- Equipment form: "Safety equipment fitted" card; equipment page lists what is fitted.
+- Browser-checked: ROPS ticked on the trailer → its pre-start shows ROPS but not FOPS; pre-start PDF and driver screen show the logo. Test changes reverted afterwards (trailer unticked, logo removed).
+
 ## 2026-11-10 — Session 2 (continued): QR codes, driver profiles and PIN sign-in; checklist v2
 **Done**
 - Decision O-10 (QR → sign-in → pre-start; codes generated on demand; no anonymous reports).

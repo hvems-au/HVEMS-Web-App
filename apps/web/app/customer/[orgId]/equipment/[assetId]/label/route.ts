@@ -1,7 +1,8 @@
 import QRCode from "qrcode";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { downloadOrganisationLogo, formatShortCode, getAsset, getEquipmentCode, getOrganisation } from "@hvems/api-client";
+import { formatShortCode, getAsset, getEquipmentCode, getOrganisation } from "@hvems/api-client";
 import { EquipmentLabelPdf } from "@/lib/pdf/label-document";
+import { orgLogoForPdf } from "@/lib/org-logo";
 import { printedDriverUrl } from "@/lib/portals";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,7 +17,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
   const db = await createSupabaseServerClient();
   const [asset, code, org] = await Promise.all([getAsset(db, assetId).catch(() => null), getEquipmentCode(db, assetId), getOrganisation(db, orgId)]);
   if (!asset || asset.organisation_id !== orgId || !code) return new Response("Not found", { status: 404 });
-  const logo = await downloadOrganisationLogo(db, org.logo_path);
   const qrPng = await QRCode.toDataURL(equipmentCodeUrl(code.token), { width: 800, margin: 1, errorCorrectionLevel: "M", color: { dark: "#2b2b2b", light: "#ffffff" } });
   const pdf = await renderToBuffer(
     EquipmentLabelPdf({
@@ -26,7 +26,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
       shortCode: formatShortCode(code.short_code),
       qrPng,
       portalUrl: printedDriverUrl(),
-      companyLogo: logo ? `data:${logo.type};base64,${Buffer.from(logo.bytes).toString("base64")}` : null,
+      companyLogo: await orgLogoForPdf(db, org.logo_path),
     }),
   );
   return new Response(new Uint8Array(pdf), {

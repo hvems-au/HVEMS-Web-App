@@ -170,6 +170,10 @@ export interface Asset {
   site_id: UUID | null;
   responsible_membership_id: UUID | null;
   meter_type: MeterType;
+  /** Safety equipment fitted: its pre-start checks appear only when ticked. */
+  rops_fitted: boolean;
+  fops_fitted: boolean;
+  fire_suppression_fitted: boolean;
   current_odometer_km: number | null;
   odometer_read_at: ISODateTime | null;
   current_engine_hours: number | null;

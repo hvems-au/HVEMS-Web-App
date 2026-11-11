@@ -268,6 +268,9 @@ function assetPayload(organisationId: string, classId: string, v: AssetFormValue
     meter_type: v.meter_type,
     notes: v.notes ?? null,
     duplicate_reason: v.duplicate_reason ?? null,
+    ...(v.rops_fitted === undefined ? {} : { rops_fitted: v.rops_fitted }),
+    ...(v.fops_fitted === undefined ? {} : { fops_fitted: v.fops_fitted }),
+    ...(v.fire_suppression_fitted === undefined ? {} : { fire_suppression_fitted: v.fire_suppression_fitted }),
   };
 }
 

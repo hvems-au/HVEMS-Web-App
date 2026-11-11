@@ -1,5 +1,6 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getInspection, getOrganisation, signInspectionPhotos } from "@hvems/api-client";
+import { orgLogoForPdf } from "@/lib/org-logo";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PrestartPdf } from "@/lib/pdf/prestart-document";
@@ -39,6 +40,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
   const pdf = await renderToBuffer(
     PrestartPdf({
       company: org.name,
+      companyLogo: await orgLogoForPdf(db, org.logo_path),
       timezone: ctx.timezone,
       inspection: data.inspection,
       answers: data.answers,

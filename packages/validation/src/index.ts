@@ -92,6 +92,10 @@ export const assetFormSchema = z
     meter_type: z.enum(["none", "kilometres", "hours", "both"]),
     notes: optionalText(5000),
     duplicate_reason: optionalText(1000),
+    // Safety equipment fitted (left out: the class default, plant ticked and vehicles not).
+    rops_fitted: z.boolean().optional(),
+    fops_fitted: z.boolean().optional(),
+    fire_suppression_fitted: z.boolean().optional(),
   })
   .superRefine((v, ctx) => {
     // Class-specific mandatory fields are checked by the database for every

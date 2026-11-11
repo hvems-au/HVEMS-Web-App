@@ -46,6 +46,9 @@ export default async function EditEquipmentPage({ params }: { params: Promise<{ 
           site_id: asset.site_id ?? "",
           meter_type: asset.meter_type,
           notes: asset.notes ?? "",
+          rops_fitted: asset.rops_fitted,
+          fops_fitted: asset.fops_fitted,
+          fire_suppression_fitted: asset.fire_suppression_fitted,
         }}
       />
     </>

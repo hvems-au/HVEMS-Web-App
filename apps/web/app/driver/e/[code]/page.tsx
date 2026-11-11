@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
-import { getAsset, getEquipmentPublic, getMyContexts, getPrestartChecklist, listDefects, type HvemsClient } from "@hvems/api-client";
+import { getAsset, getEquipmentPublic, getMyContexts, getPrestartChecklist, listDefects, signOrganisationLogo, type HvemsClient } from "@hvems/api-client";
 import { DEFECT_SEVERITY_LABELS } from "@hvems/domain";
 import { ConditionBadge } from "@/components/condition";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,19 @@ export default async function ScannedEquipmentPage({ params }: { params: Promise
     );
   }
 
+  // The company's logo (private storage), read with the service role like the code lookup.
+  const admin = createSupabaseAdminClient() as unknown as HvemsClient;
+  const { data: orgRow } = await admin.from("organisations").select("logo_path").eq("id", eq.organisation_id).maybeSingle();
+  const logoUrl = await signOrganisationLogo(admin, orgRow?.logo_path, 600).catch(() => null);
+
   const machine = (
     <Card className="mb-4">
       <CardBody className="flex items-start justify-between gap-3">
         <div className="min-w-0">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- short-lived signed link from private storage
+            <img src={logoUrl} alt={eq.company} className="mb-1.5 h-9 max-w-[180px] object-contain object-left" />
+          ) : null}
           <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">{eq.company}</p>
           <p className="text-h4 font-bold text-ink">{eq.asset_number}</p>
           <p className="text-[14px] text-ink-muted">{[eq.class, eq.make, eq.model].filter(Boolean).join(" · ")}</p>

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { AU_STATES, METER_TYPE_LABELS, OWNER_TYPE_LABELS, type MeterType } from "@hvems/domain";
+import { AU_STATES, METER_TYPE_LABELS, OWNER_TYPE_LABELS, SAFETY_FITTED_LABELS, isMobilePlantClass, type MeterType, type SafetyFittedField } from "@hvems/domain";
 import type { AssetClass, Client, Site } from "@hvems/types";
 import { assetFormSchemaFor, type AssetFormInput, type AssetFormValues } from "@hvems/validation";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,12 @@ export function AssetForm({
   const err = (k: keyof AssetFormInput) => formState.errors[k]?.message as string | undefined;
 
   React.useEffect(() => {
-    if (cls && !assetId) setValue("meter_type", cls.default_meter_type as MeterType);
+    if (cls && !assetId) {
+      setValue("meter_type", cls.default_meter_type as MeterType);
+      // New plant starts with ROPS, FOPS and fire suppression ticked; vehicles unticked.
+      const plant = isMobilePlantClass(cls);
+      for (const f of Object.keys(SAFETY_FITTED_LABELS) as SafetyFittedField[]) setValue(f, plant);
+    }
   }, [cls, assetId, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -202,6 +207,24 @@ export function AssetForm({
           <Field label="Notes" htmlFor="notes" error={err("notes")} className="md:col-span-2 xl:col-span-3">
             <Textarea rows={3} {...register("notes")} />
           </Field>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Safety equipment fitted"
+          description="Tick what this machine has. Its pre-start then includes a check for each ticked item: mine-spec vehicles can have them too."
+        />
+        <CardBody className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {(Object.entries(SAFETY_FITTED_LABELS) as [SafetyFittedField, { title: string; body: string }][]).map(([f, l]) => (
+            <label key={f} className="flex items-start gap-3 rounded-[10px] border border-stroke p-3">
+              <input type="checkbox" {...register(f)} className="mt-0.5 size-5 accent-[var(--brand)]" />
+              <span>
+                <span className="block text-[14px] font-semibold text-ink">{l.title}</span>
+                <span className="block text-[13px] text-ink-muted">{l.body}</span>
+              </span>
+            </label>
+          ))}
         </CardBody>
       </Card>
 

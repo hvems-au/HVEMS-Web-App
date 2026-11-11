@@ -1,3 +1,4 @@
+import type { PdfImage } from "@/lib/org-logo";
 import "server-only";
 import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
 import { DEFECT_SEVERITY_LABELS, DEFECT_STATUS_LABELS, INSPECTION_RESULT_LABELS, RECORDS_ONLY_NOTICE, formatDateTimeAU } from "@hvems/domain";
@@ -6,6 +7,8 @@ import { C, Chip, Field, Footer, Letterhead, registerBrandFonts, s } from "./bra
 
 export interface PrestartPdfData {
   company: string;
+  /** Company logo (data URI) shown on the letterhead. */
+  companyLogo?: PdfImage | null;
   timezone: string;
   inspection: Inspection;
   answers: InspectionAnswer[];
@@ -26,7 +29,7 @@ const ANSWER_STYLE = { ok: { t: "OK", fg: C.green, bg: C.greenSoft }, fault: { t
 const num = (n: number | null, d = 1) => (n === null ? null : new Intl.NumberFormat("en-AU", { maximumFractionDigits: d }).format(n));
 
 /** A submitted pre-start on HVEMS letterhead. */
-export function PrestartPdf({ company, timezone, inspection: i, answers, defects, photos, generatedAt }: PrestartPdfData) {
+export function PrestartPdf({ company, companyLogo, timezone, inspection: i, answers, defects, photos, generatedAt }: PrestartPdfData) {
   registerBrandFonts();
   const h = i.header;
   const ref = `PS-${i.id.slice(0, 8).toUpperCase()}`;
@@ -46,7 +49,7 @@ export function PrestartPdf({ company, timezone, inspection: i, answers, defects
   return (
     <Document title={`Pre-start ${h.asset_number} ${when}`} author="HVEMS" subject="Pre-start inspection record" creator="HVEMS">
       <Page size="A4" style={s.page}>
-        <Letterhead company={company} docType="Pre-start inspection record" reference={ref} />
+        <Letterhead company={company} companyLogo={companyLogo} docType="Pre-start inspection record" reference={ref} />
         <Footer generated={`Generated ${formatDateTimeAU(generatedAt, timezone)}`} notice={RECORDS_ONLY_NOTICE} />
 
         {/* Title */}

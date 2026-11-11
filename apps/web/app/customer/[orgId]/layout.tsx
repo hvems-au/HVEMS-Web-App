@@ -2,6 +2,7 @@ import { countUnreadNotifications } from "@hvems/api-client";
 import { AppShell } from "@/components/shell/app-shell";
 import { customerNav } from "@/lib/navigation";
 import { getCurrentPortal } from "@/lib/current-portal";
+import { signOrganisationLogo } from "@hvems/api-client";
 import { loadOrgContext } from "@/lib/session";
 import { filterNav, toShellContext } from "@/lib/shell-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -9,6 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export default async function CustomerLayout({ children, params }: { children: React.ReactNode; params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const [ctx, portal] = await Promise.all([loadOrgContext(orgId), getCurrentPortal()]);
+  const logoUrl = ctx.logoPath ? await signOrganisationLogo(await createSupabaseServerClient(), ctx.logoPath, 3600).catch(() => null) : null;
   const restricted = ctx.context.status === "restricted";
   const isCompany = ctx.context.kind === "company";
   const unread = isCompany ? await countUnreadNotifications(await createSupabaseServerClient(), orgId).catch(() => 0) : 0;
@@ -16,7 +18,7 @@ export default async function CustomerLayout({ children, params }: { children: R
     <AppShell
       nav={filterNav(customerNav(orgId, ctx.context.kind), ctx)}
       user={{ fullName: ctx.user.fullName, email: ctx.user.email }}
-      current={toShellContext(ctx.context, portal)}
+      current={{ ...toShellContext(ctx.context, portal), logoUrl }}
       contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
       alerts={isCompany ? { href: `/customer/${orgId}/alerts`, unread } : undefined}
       banner={

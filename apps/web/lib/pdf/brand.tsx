@@ -1,3 +1,4 @@
+import type { PdfImage } from "@/lib/org-logo";
 import "server-only";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -77,16 +78,25 @@ export const s = StyleSheet.create({
   chip: { fontSize: 7, fontWeight: 700, paddingVertical: 1.5, paddingHorizontal: 5, borderRadius: 3 },
 });
 
-export function Letterhead({ company, docType, reference }: { company: string; docType: string; reference: string }) {
+export function Letterhead({ company, companyLogo, docType, reference }: { company: string; companyLogo?: PdfImage | null; docType: string; reference: string }) {
   return (
     <View style={s.header} fixed>
       <View style={s.headerRow}>
         {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
         <Image src={LOGO} style={s.logo} />
-        <View style={s.headerRight}>
-          <Text style={s.company}>{company}</Text>
-          <Text style={s.docType}>{docType.toUpperCase()}</Text>
-          <Text style={s.ref}>{reference}</Text>
+        {/* The company's logo sits beside its details, so the header keeps its height. */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {companyLogo ? (
+            <View style={{ paddingRight: 10, marginRight: 10, borderRightWidth: 1, borderRightColor: C.line }}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
+              <Image src={companyLogo} style={{ width: 110, height: 38, objectFit: "contain", objectPosition: "right center" }} />
+            </View>
+          ) : null}
+          <View style={s.headerRight}>
+            <Text style={s.company}>{company}</Text>
+            <Text style={s.docType}>{docType.toUpperCase()}</Text>
+            <Text style={s.ref}>{reference}</Text>
+          </View>
         </View>
       </View>
       <View style={s.rule}>

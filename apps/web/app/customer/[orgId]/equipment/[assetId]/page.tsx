@@ -153,6 +153,11 @@ export default async function AssetPage({ params }: { params: Promise<{ orgId: s
                 { label: "Client", value: asset.client?.name },
                 { label: "Site", value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null },
                 { label: "Odometer / hour meter", value: METER_TYPE_LABELS[asset.meter_type] },
+                {
+                  label: "Safety equipment fitted",
+                  value:
+                    [asset.rops_fitted && "ROPS", asset.fops_fitted && "FOPS", asset.fire_suppression_fitted && "Fire suppression"].filter(Boolean).join(", ") || "None",
+                },
               ]}
             />
             {asset.notes ? <p className="mt-5 rounded-[8px] bg-surface-muted p-3 text-[14px] whitespace-pre-wrap text-ink-muted">{asset.notes}</p> : null}

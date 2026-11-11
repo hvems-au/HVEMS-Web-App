@@ -16,6 +16,8 @@ export interface ShellContext {
   portal: "customer" | "provider" | "admin";
   roleLabel: string;
   href: string;
+  /** Short-lived link to the organisation's logo, when it has one. */
+  logoUrl?: string | null;
 }
 
 export interface AppShellProps {
@@ -79,9 +81,16 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
         className="flex w-full items-center gap-2.5 rounded-[10px] border border-white/25 px-2.5 py-2.5 text-left text-white hover:border-white/50"
         aria-label="Switch organisation or portal"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-bold text-shade">
-          {initials(current.name)}
-        </span>
+        {current.logoUrl ? (
+          <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-[6px] bg-white p-0.5">
+            {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed link from private storage */}
+            <img src={current.logoUrl} alt="" className="max-h-full max-w-full object-contain" />
+          </span>
+        ) : (
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-bold text-shade">
+            {initials(current.name)}
+          </span>
+        )}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[12.5px] font-semibold">{current.name}</span>
           <span className="block truncate text-[11px] text-white/60">{current.roleLabel}</span>

@@ -50,6 +50,8 @@ export interface OrgContext {
   capabilities: ReadonlySet<Capability>;
   /** The organisation's timezone: every member sees its dates and times in it. */
   timezone: string;
+  /** Company logo in private storage (Settings → Company logo), if any. */
+  logoPath: string | null;
 }
 
 /**
@@ -71,10 +73,10 @@ export const loadOrgContext = cache(async (organisationId: string, onlyKinds?: r
   const db = await createSupabaseServerClient();
   const [caps, org] = await Promise.all([
     getMyCapabilities(db, organisationId),
-    db.from("organisations").select("timezone").eq("id", organisationId).maybeSingle(),
+    db.from("organisations").select("timezone, logo_path").eq("id", organisationId).maybeSingle(),
   ]);
   const timezone = org.data?.timezone ?? BUSINESS_TIMEZONE;
-  return { user, context, contexts, capabilities: new Set(caps as Capability[]), timezone };
+  return { user, context, contexts, capabilities: new Set(caps as Capability[]), timezone, logoPath: org.data?.logo_path ?? null };
 });
 
 export async function requireCapability(ctx: OrgContext, capability: Capability) {

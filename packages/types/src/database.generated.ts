@@ -278,6 +278,9 @@ export type Database = {
           archived_at: string | null
           asset_class_id: string
           asset_number: string
+          fire_suppression_fitted: boolean | null
+          fops_fitted: boolean | null
+          rops_fitted: boolean | null
           became_current_at: string
           client_id: string | null
           condition: Database["public"]["Enums"]["asset_condition"]
@@ -315,6 +318,9 @@ export type Database = {
           archived_at?: string | null
           asset_class_id: string
           asset_number: string
+          fire_suppression_fitted?: boolean | null
+          fops_fitted?: boolean | null
+          rops_fitted?: boolean | null
           became_current_at?: string
           client_id?: string | null
           condition?: Database["public"]["Enums"]["asset_condition"]
@@ -352,6 +358,9 @@ export type Database = {
           archived_at?: string | null
           asset_class_id?: string
           asset_number?: string
+          fire_suppression_fitted?: boolean | null
+          fops_fitted?: boolean | null
+          rops_fitted?: boolean | null
           became_current_at?: string
           client_id?: string | null
           condition?: Database["public"]["Enums"]["asset_condition"]
@@ -1091,6 +1100,7 @@ export type Database = {
           na_allowed: boolean
           operator_item: boolean
           prompt: string
+          requires_fitted: string | null
           severity: Database["public"]["Enums"]["defect_severity"]
           sort_order: number
           template_id: string
@@ -1102,6 +1112,7 @@ export type Database = {
           na_allowed?: boolean
           operator_item?: boolean
           prompt: string
+          requires_fitted?: string | null
           severity: Database["public"]["Enums"]["defect_severity"]
           sort_order: number
           template_id: string
@@ -1113,6 +1124,7 @@ export type Database = {
           na_allowed?: boolean
           operator_item?: boolean
           prompt?: string
+          requires_fitted?: string | null
           severity?: Database["public"]["Enums"]["defect_severity"]
           sort_order?: number
           template_id?: string

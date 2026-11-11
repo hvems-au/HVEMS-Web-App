@@ -1,3 +1,4 @@
+import type { PdfImage } from "@/lib/org-logo";
 import "server-only";
 import { Document, Image, Link, Page, Text, View } from "@react-pdf/renderer";
 import { C, LOGO, registerBrandFonts } from "./brand";
@@ -11,7 +12,7 @@ export interface LabelData {
   /** Driver portal address, e.g. https://driver.hvems.com.au (for phones without a camera). */
   portalUrl: string;
   /** The company’s own logo as a data URI (PNG or JPEG); the company name is shown when absent. */
-  companyLogo?: string | null;
+  companyLogo?: PdfImage | null;
 }
 
 /** 100 × 150 mm equipment label (O-10): scan, sign in, pre-start. */
