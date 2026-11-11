@@ -10,10 +10,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export default async function CustomerLayout({ children, params }: { children: React.ReactNode; params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const [ctx, portal] = await Promise.all([loadOrgContext(orgId), getCurrentPortal()]);
-  const logoUrl = ctx.logoPath ? await signOrganisationLogo(await createSupabaseServerClient(), ctx.logoPath, 3600).catch(() => null) : null;
   const restricted = ctx.context.status === "restricted";
   const isCompany = ctx.context.kind === "company";
-  const unread = isCompany ? await countUnreadNotifications(await createSupabaseServerClient(), orgId).catch(() => 0) : 0;
+  // Fetched together: each trip to the database adds noticeable time.
+  const db = await createSupabaseServerClient();
+  const [logoUrl, unread] = await Promise.all([
+    ctx.logoPath ? signOrganisationLogo(db, ctx.logoPath, 3600).catch(() => null) : Promise.resolve(null),
+    isCompany ? countUnreadNotifications(db, orgId).catch(() => 0) : Promise.resolve(0),
+  ]);
   return (
     <AppShell
       nav={filterNav(customerNav(orgId, ctx.context.kind), ctx)}

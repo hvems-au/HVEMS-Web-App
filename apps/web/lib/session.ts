@@ -60,8 +60,18 @@ export interface OrgContext {
  * editing the organisation id in the URL grants nothing (critical test 3).
  */
 export const loadOrgContext = cache(async (organisationId: string, onlyKinds?: readonly OrganisationKind[]): Promise<OrgContext> => {
-  const user = await requireUser();
-  const [contexts, portal] = await Promise.all([getContexts(), getCurrentPortal()]);
+  // One round trip: everything is fetched together. Capabilities and the
+  // organisation row come back empty for non-members (RLS), and the checks
+  // below refuse them before anything is used.
+  const db = await createSupabaseServerClient();
+  const [user, contexts, portal, caps, org] = await Promise.all([
+    requireUser(),
+    getContexts(),
+    getCurrentPortal(),
+    // A refusal here must not hide the not-found or sign-in checks below.
+    getMyCapabilities(db, organisationId).catch(() => [] as string[]),
+    db.from("organisations").select("timezone, logo_path").eq("id", organisationId).maybeSingle(),
+  ]);
   const context = contexts.find((c) => c.organisation_id === organisationId);
   // An organisation opens only in the portal that serves its kind (ADR-009).
   if (!context || !portalServesContext(portal, context)) notFound();
@@ -70,11 +80,6 @@ export const loadOrgContext = cache(async (organisationId: string, onlyKinds?: r
   if (context.mfa_required && user.aal !== "aal2") {
     redirect(`/account/security?required=1&next=${encodeURIComponent(portalPath(context))}`);
   }
-  const db = await createSupabaseServerClient();
-  const [caps, org] = await Promise.all([
-    getMyCapabilities(db, organisationId),
-    db.from("organisations").select("timezone, logo_path").eq("id", organisationId).maybeSingle(),
-  ]);
   const timezone = org.data?.timezone ?? BUSINESS_TIMEZONE;
   return { user, context, contexts, capabilities: new Set(caps as Capability[]), timezone, logoPath: org.data?.logo_path ?? null };
 });

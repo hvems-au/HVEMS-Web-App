@@ -76,7 +76,7 @@ export function SafetyPanel(p: SafetyPanelProps) {
     <Card className="mt-5">
       <CardHeader
         title={`Holds, breakdowns and defect notices${active ? ` (${active})` : ""}`}
-        description="Each one keeps the equipment Out of service or Needs attention until it's removed or cleared"
+        description="Each one keeps the equipment flagged until it's cleared"
         action={
           <div className="flex flex-wrap justify-end gap-2">
             {p.can.report ? <BreakdownDialog {...p} /> : null}

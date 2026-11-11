@@ -21,27 +21,22 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
   const columns = React.useMemo(
     () => [
       col.accessor("asset_number", {
-        header: "Equipment ID",
-        cell: (c) => (
-          <Link href={`${base}/${c.row.original.id}`} className="font-semibold text-brand underline underline-offset-[3px]">
-            {c.getValue()}
-          </Link>
-        ),
-      }),
-      col.accessor((a) => [a.make, a.model].filter(Boolean).join(" "), {
-        id: "equipment",
         header: "Equipment",
-        cell: (c) => (
-          <div>
-            <p className="font-semibold text-ink">{c.getValue() || "—"}</p>
-            <p className="text-[12px] text-ink-subtle">{c.row.original.year ?? ""}</p>
-          </div>
-        ),
+        cell: (c) => {
+          const a = c.row.original;
+          const name = [a.year, a.make, a.model].filter(Boolean).join(" ");
+          return (
+            <Link href={`${base}/${a.id}`} className="group block">
+              <span className="font-semibold text-brand group-hover:underline">{c.getValue()}</span>
+              {name ? <span className="block text-[12.5px] text-ink-muted">{name}</span> : null}
+            </Link>
+          );
+        },
       }),
       col.accessor((a) => a.asset_class?.name ?? "", { id: "class", header: "Class" }),
       col.accessor((a) => a.registration_number ?? a.serial_number ?? a.vin ?? "", {
         id: "identifier",
-        header: "Rego / Serial",
+        header: "Rego / serial",
         cell: (c) => {
           const a = c.row.original;
           return a.registration_number ? (
@@ -55,7 +50,7 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
       }),
       col.accessor((a) => a.site?.name ?? "", {
         id: "site",
-        header: "Location",
+        header: "Site",
         cell: (c) => {
           const s = c.row.original.site;
           return s ? (
@@ -73,7 +68,7 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
         header: "Operator",
         cell: (c) => <span className={c.getValue() ? "font-medium" : "text-ink-subtle"}>{c.getValue() || "—"}</span>,
       }),
-      col.display({ id: "meter", header: "Odometer / hours", cell: (c) => <span className="whitespace-nowrap">{meter(c.row.original)}</span> }),
+      col.display({ id: "meter", header: "Reading", cell: (c) => <span className="whitespace-nowrap">{meter(c.row.original)}</span> }),
       col.accessor("condition", {
         header: "Condition",
         cell: (c) => (c.row.original.archived_at ? <span className="text-[12px] font-semibold text-ink-subtle">Archived</span> : <ConditionBadge condition={c.getValue()} />),

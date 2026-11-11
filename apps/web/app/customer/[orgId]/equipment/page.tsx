@@ -60,7 +60,7 @@ export default async function EquipmentPage({
     <>
       <PageHeader
         title="Equipment"
-        description="Manage and track all heavy vehicles and equipment"
+        description="All your vehicles and equipment"
         actions={
           manage ? (
             <>
@@ -73,7 +73,7 @@ export default async function EquipmentPage({
               ) : null}
               <Button asChild>
                 <Link href={`${base}/new`}>
-                  <Plus /> New Equipment
+                  <Plus /> Add equipment
                 </Link>
               </Button>
             </>
@@ -106,7 +106,7 @@ export default async function EquipmentPage({
             {tab.condition ? <input type="hidden" name="condition" value={tab.condition} /> : null}
             {tab.archived ? <input type="hidden" name="status" value="archived" /> : null}
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden />
-            <Input name="q" defaultValue={q} placeholder="Search number, make, model, rego, VIN, serial" className="h-9 pl-9 text-[13px]" aria-label="Search equipment" />
+            <Input name="q" defaultValue={q} placeholder="Search ID, make, model, rego or VIN" className="h-9 pl-9 text-[13px]" aria-label="Search equipment" />
           </form>
         </div>
         {rows.length === 0 ? (

@@ -59,7 +59,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
               ) : null}
               <Button asChild>
                 <Link href={`${base}/equipment/new`}>
-                  <Plus /> New Equipment
+                  <Plus /> Add equipment
                 </Link>
               </Button>
             </>
