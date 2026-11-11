@@ -8,6 +8,7 @@ select tests.create_user('admin.m@example.test', 'Max Admin') as admin \gset
 select tests.create_user('fm.m@example.test', 'Fay Fleet') as fm \gset
 select tests.create_user('drv.m@example.test', 'Dom Driver') as drv \gset
 
+reset role;
 select tests.authenticate_as(:'owner');
 select public.create_organisation('company', 'Mike Haulage') as org \gset
 reset role;
@@ -19,8 +20,10 @@ values (:'org', 1, 'Dom Driver', :'drv', :'drv_m');
 select id as owner_m from public.org_memberships where organisation_id = :'org' and user_id = :'owner' \gset
 
 -- Recovery codes ---------------------------------------------------------------
+reset role;
 select tests.authenticate_as(:'owner');
 select is(tests.error_code($$select public.generate_mfa_recovery_codes()$$), 'mfa_required', 'creating codes needs an MFA session');
+reset role;
 select tests.authenticate_as(:'owner', 'aal2');
 select public.generate_mfa_recovery_codes() as codes \gset
 select is(cardinality(:'codes'::text[]), 10, 'ten codes are issued');
@@ -29,6 +32,7 @@ select ok((select bool_and(c ~ '^[A-HJKMNP-Z2-9]{5}-[A-HJKMNP-Z2-9]{5}$') from u
 select is((public.my_mfa_recovery_status() ->> 'remaining')::int, 10, 'ten codes remain');
 select is(tests.error_code($$select count(*) from public.mfa_recovery_codes$$), '42501', 'the hashes cannot be read directly');
 
+reset role;
 select tests.authenticate_as(:'owner');
 select is((public.use_mfa_recovery_code('AAAAA-AAAAA') ->> 'code'), 'invalid_recovery_code', 'a wrong code is refused');
 select is((public.use_mfa_recovery_code(lower(replace((:'codes'::text[])[1], '-', ' '))) ->> 'ok')::boolean, true,
@@ -43,8 +47,10 @@ select is((select count(*) from public.security_events where user_id = :'owner' 
   'each wrong code is recorded');
 
 -- A new set replaces the old one.
+reset role;
 select tests.authenticate_as(:'owner', 'aal2');
 select public.generate_mfa_recovery_codes() as codes2 \gset
+reset role;
 reset role;
 select tests.authenticate_as(:'admin');
 select is((public.my_mfa_recovery_status() ->> 'remaining')::int, 0, 'someone else''s codes are not counted as yours');
@@ -52,12 +58,15 @@ reset role;
 select is((select count(*) from public.mfa_recovery_codes where user_id = :'owner')::int, 10, 'creating a new set replaces the old one');
 
 -- Resets -----------------------------------------------------------------------
+reset role;
 select tests.authenticate_as(:'fm', 'aal2');
 select public.generate_mfa_recovery_codes() is not null as fm_codes \gset
 select is(tests.error_code(format($$select public.reset_member_mfa(%L, 'Lost phone')$$, :'admin_m')), 'forbidden', 'a Fleet Manager cannot reset MFA');
 
+reset role;
 select tests.authenticate_as(:'admin');
 select is(tests.error_code(format($$select public.reset_member_mfa(%L, 'Lost phone')$$, :'fm_m')), 'mfa_required', 'resetting needs your own MFA session');
+reset role;
 select tests.authenticate_as(:'admin', 'aal2');
 select is(tests.error_code(format($$select public.reset_member_mfa(%L, '')$$, :'fm_m')), 'reason_required', 'a reason is required');
 select is(tests.error_code(format($$select public.reset_member_mfa(%L, 'Lost phone')$$, :'admin_m')), 'cannot_reset_own_mfa', 'you cannot reset your own');
@@ -68,6 +77,7 @@ reset role;
 select is((select count(*) from public.mfa_recovery_codes where user_id = :'fm')::int, 0, 'the member''s old recovery codes are cancelled');
 select is((select count(*) from public.security_events where organisation_id = :'org' and event_type = 'member_mfa_reset')::int, 1, 'the reset is recorded');
 
+reset role;
 select tests.authenticate_as(:'owner', 'aal2');
 select is(public.reset_member_mfa(:'admin_m', 'New phone'), :'admin'::uuid, 'the Owner can reset a Company Admin');
 select is(tests.error_code(format($$select public.admin_reset_user_mfa(%L, 'Called them back on file number')$$, :'fm')), 'forbidden',
