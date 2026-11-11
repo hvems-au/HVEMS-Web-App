@@ -154,7 +154,7 @@ reset role;
 insert into public.platform_staff (user_id, role) values (:'staff', 'support_agent');
 select tests.authenticate_as(:'staff', 'aal1');
 select is((select count(*)::int from public.organisations), 0, 'HVEMS staff without MFA see nothing');
-select is(tests.error_code(format($$select public.start_support_access(%L, 'Customer asked for help with import', 30, '000000')$, :'org_a')),
+select is(tests.error_code(format($$select public.start_support_access(%L, 'Customer asked for help with import', 30, '000000')$$, :'org_a')),
   'forbidden', 'support access cannot start without MFA');
 reset role;
 select tests.authenticate_as(:'owner_a');
@@ -165,7 +165,7 @@ select is((select count(*)::int from public.assets), 0, 'staff with MFA still ca
 select public.start_support_access(:'org_a', 'Customer asked for help with import', 30, :'pin_a') ->> 'grant_id' as support_grant \gset
 select is((select count(*)::int from public.assets where organisation_id = :'org_a'), 1, 'time-limited support access allows reading that customer''s records');
 select is((select count(*)::int from public.assets where organisation_id = :'org_b'), 0, 'support access is limited to the named organisation');
-select is(tests.error_code(format($$select public.start_support_access(%L, 'Too long session requested', 600, '000000')$, :'org_b')),
+select is(tests.error_code(format($$select public.start_support_access(%L, 'Too long session requested', 600, '000000')$$, :'org_b')),
   'invalid_duration', 'support access duration is capped by the platform setting');
 select public.end_support_access(:'support_grant');
 select is((select count(*)::int from public.assets where organisation_id = :'org_a'), 0, 'ending support access removes visibility immediately');
