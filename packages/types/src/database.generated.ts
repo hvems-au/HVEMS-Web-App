@@ -2296,6 +2296,8 @@ export type Database = {
         }[]
       }
       my_mfa_recovery_status: { Args: never; Returns: Json }
+      my_support_pin: { Args: { p_organisation_id: string }; Returns: Json }
+      rotate_support_pin: { Args: { p_organisation_id: string }; Returns: Json }
       my_staff_context: {
         Args: never
         Returns: {
@@ -2421,8 +2423,8 @@ export type Database = {
         Returns: undefined
       }
       start_support_access: {
-        Args: { p_minutes: number; p_organisation_id: string; p_reason: string }
-        Returns: string
+        Args: { p_minutes: number; p_organisation_id: string; p_pin: string; p_reason: string }
+        Returns: Json
       }
       submit_prestart: {
         Args: {

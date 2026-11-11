@@ -1,5 +1,11 @@
 # Development progress log
 
+## 2026-11-11 — Support PIN, change password, credential alerts to Company Admins
+**Done**
+- Decisions (Ahmad): (1) HVEMS support needs a company's **support PIN** to open a session: 6 digits, shown to the Owner and Company Admins in Settings → Security (Show / New PIN now), changes every 4 hours (setting), derived from a per-company secret nobody can read; 5 wrong PINs lock that staff member out of that company for 15 minutes; every attempt recorded. (2) Expired driver credentials only warn; Company Admins now get the alerts too. (3) **Change password** for every user on Account security (current password checked on a separate session so the MFA session stays; counts towards the lockout; recorded as a security event).
+- Migration `20261111190000 support_pin` (`start_support_access` now takes the PIN and returns a result); pgTAP `230`; `010` and `180` updated. **Waiting to be applied:** the connector refused it (`drop function`).
+- Console: PIN field on "Start support access". Browser-checked: change password (wrong current refused, new one signs in, old one refused; throwaway user deleted).
+
 ## 2026-11-11 — Sign-in & security events: Super Admin only
 **Done**
 - Decision (Ahmad): sign-in and security events are for the platform's Super Admin only. Company and provider audit pages show changes only (the tab, the URL and the CSV export all fall back to changes); in the console the tab shows only for the Super Admin. Companies still see HVEMS support sessions and member sign-in locks on the Team page.

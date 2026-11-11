@@ -15,13 +15,16 @@ select tests.add_member(:'org', :'fm', 'fleet_manager');
 insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, serial_number)
 values (:'org', 'S-001', tests.class_id('excavator'), 'CAT', '320', 'SER-S-1') returning id as asset \gset
 
+select tests.authenticate_as(:'owner');
+select public.my_support_pin(:'org') ->> 'pin' as pin \gset
+reset role;
 select tests.authenticate_as(:'agent', 'aal2');
 select is((select count(*) from public.assets where organisation_id = :'org')::int, 0, 'no support session: no fleet records');
-select is(tests.error_code(format($$select public.start_support_access(%L, 'Help with the import file', 61)$$, :'org')), 'invalid_duration',
+select is(tests.error_code(format($$select public.start_support_access(%L, 'Help with the import file', 61, '000000')$, :'org')), 'invalid_duration',
   'sessions are limited to 60 minutes');
-select is(tests.error_code(format($$select public.start_support_access(%L, 'short', 30)$$, :'org')), 'reason_required', 'a reason is needed');
-select public.start_support_access(:'org', 'Help with the import file', 30) as grant_id \gset
-select is(tests.error_code(format($$select public.start_support_access(%L, 'Help with the import file', 30)$$, :'org')), 'already_active',
+select is(tests.error_code(format($$select public.start_support_access(%L, 'short', 30, '000000')$, :'org')), 'reason_required', 'a reason is needed');
+select public.start_support_access(:'org', 'Help with the import file', 30, :'pin') ->> 'grant_id' as grant_id \gset
+select is(tests.error_code(format($$select public.start_support_access(%L, 'Help with the import file', 30, %L)$, :'org', :'pin')), 'already_active',
   'one session at a time');
 select is((select count(*) from public.assets where organisation_id = :'org')::int, 1, 'during the session the fleet is visible');
 select tests.error_code(format($$update public.assets set make = 'Changed by support' where id = %L$$, :'asset'));

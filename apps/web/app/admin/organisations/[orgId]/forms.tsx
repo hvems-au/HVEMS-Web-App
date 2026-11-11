@@ -156,6 +156,7 @@ export function SupportAccessCard({
 }) {
   const [reason, setReason] = React.useState("");
   const [minutes, setMinutes] = React.useState(Math.min(30, maxMinutes));
+  const [pin, setPin] = React.useState("");
   const [pending, start] = React.useTransition();
   const run = (fn: () => Promise<ClientActionState>) =>
     start(async () => {
@@ -179,7 +180,7 @@ export function SupportAccessCard({
       className="mb-5 flex flex-wrap items-end gap-3 rounded-[10px] border border-stroke bg-white px-4 py-3"
       onSubmit={(e) => {
         e.preventDefault();
-        run(() => startSupportAccessAction(orgId, reason, minutes));
+        run(() => startSupportAccessAction(orgId, reason, minutes, pin));
       }}
     >
       <div className="min-w-[260px] flex-1">
@@ -201,7 +202,18 @@ export function SupportAccessCard({
           ))}
         </select>
       </Field>
-      <Button type="submit" disabled={pending || reason.trim().length < 10}>
+      <Field label="Company's support PIN" htmlFor="sa-pin" hint="The Owner or Company Admin reads it from Settings → Security">
+        <Input
+          id="sa-pin"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={6}
+          className="w-32 text-center font-mono tracking-[0.3em]"
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+        />
+      </Field>
+      <Button type="submit" disabled={pending || reason.trim().length < 10 || pin.length !== 6}>
         {pending ? "Starting…" : "Start support access"}
       </Button>
     </form>

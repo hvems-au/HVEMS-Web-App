@@ -77,6 +77,9 @@ export const SECURITY_LABELS: Record<string, string> = {
   driver_sign_in_failed: "Wrong driver PIN",
   driver_signed_in: "Driver signed in",
   driver_pin_set: "Driver PIN set",
+  password_changed: "Password changed",
+  support_pin_changed: "Support PIN changed",
+  support_pin_failed: "Wrong support PIN",
 };
 
 export function securityDetail(e: SecurityEvent, nameOf: (id: string | null | undefined) => string | null): string {

@@ -993,9 +993,31 @@ export async function listSupportSessions(db: HvemsClient, organisationId: strin
   ) as SupportSession[];
 }
 
-/** HVEMS staff with MFA open a read-only session (reason, at most 60 minutes). */
-export async function startSupportAccess(db: HvemsClient, organisationId: string, reason: string, minutes: number): Promise<string> {
-  return unwrap(await db.rpc("start_support_access", { p_organisation_id: organisationId, p_reason: reason, p_minutes: minutes })) as string;
+export type StartSupportResult = { ok: true; grant_id: string } | { ok: false; code: string; message: string };
+
+/**
+ * HVEMS staff with MFA open a read-only session (reason, at most 60 minutes)
+ * with the company's current support PIN. A wrong PIN is a result, not an
+ * error, so the attempt (5 wrong = locked) is kept.
+ */
+export async function startSupportAccess(db: HvemsClient, organisationId: string, reason: string, minutes: number, pin: string): Promise<StartSupportResult> {
+  return unwrap(await db.rpc("start_support_access", { p_organisation_id: organisationId, p_reason: reason, p_minutes: minutes, p_pin: pin })) as unknown as StartSupportResult;
+}
+
+export interface SupportPin {
+  pin: string;
+  valid_until: string;
+  rotation_hours: number;
+}
+
+/** Owner / Company Admin: the company's current support PIN. */
+export async function getSupportPin(db: HvemsClient, organisationId: string): Promise<SupportPin> {
+  return unwrap(await db.rpc("my_support_pin", { p_organisation_id: organisationId })) as unknown as SupportPin;
+}
+
+/** Owner / Company Admin: replace the support PIN now. */
+export async function rotateSupportPin(db: HvemsClient, organisationId: string): Promise<SupportPin> {
+  return unwrap(await db.rpc("rotate_support_pin", { p_organisation_id: organisationId })) as unknown as SupportPin;
 }
 
 export async function endSupportAccess(db: HvemsClient, grantId: string): Promise<void> {

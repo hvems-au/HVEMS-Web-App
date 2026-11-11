@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { requireUser } from "@/lib/session";
 import { firstParam } from "@/lib/utils";
+import { ChangePasswordCard } from "./change-password";
 import { MfaPanel } from "./mfa-panel";
 
 export const metadata: Metadata = { title: "Account security" };
@@ -25,6 +26,8 @@ export default async function SecurityPage({ searchParams }: { searchParams: Pro
           <div className="mt-6">
             <MfaPanel next={safeNext} />
           </div>
+          {/* Not while MFA is still required: the person must finish that step first. */}
+          {required ? null : <ChangePasswordCard />}
         </div>
         <p className="mt-4 text-center">
           <Link href={safeNext} className="text-[14px] text-link hover:underline">

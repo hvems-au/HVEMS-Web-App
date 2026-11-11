@@ -72,10 +72,11 @@ export async function adminUnlockSignInAction(orgId: string, userId: string): Pr
 }
 
 /** HVEMS staff open a read-only support session (ADM-07): reason and at most 60 minutes. The Owner is notified. */
-export async function startSupportAccessAction(orgId: string, reason: string, minutes: number): Promise<ActionState> {
+export async function startSupportAccessAction(orgId: string, reason: string, minutes: number, pin: string): Promise<ActionState> {
   try {
     const db = await createSupabaseServerClient();
-    await startSupportAccess(db, orgId, reason.trim(), minutes);
+    const res = await startSupportAccess(db, orgId, reason.trim(), minutes, pin.trim());
+    if (!res.ok) return { status: "error", code: res.code, message: res.message };
     revalidatePath(`/admin/organisations/${orgId}`);
     return { status: "success", message: "Support access started. The company's Owner has been notified." };
   } catch (e) {

@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createInvitation, ownerEndSupportAccess, resetMemberMfa, revokeInvitation, setOrganisationLogo, unlockMemberSignIn } from "@hvems/api-client";
+import { createInvitation, ownerEndSupportAccess, resetMemberMfa, revokeInvitation, rotateSupportPin, setOrganisationLogo, unlockMemberSignIn } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
 import { createOrganisationSchema, inviteMemberSchema, organisationContactSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
@@ -212,6 +212,18 @@ export async function ownerEndSupportAccessAction(portal: string, orgId: string,
     await ownerEndSupportAccess(db, grantId);
     revalidatePath(teamPath(portal, orgId));
     return { status: "success", message: "HVEMS support access ended" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** Owner / Company Admin: replace the support PIN now (old PIN stops working). */
+export async function rotateSupportPinAction(portal: string, orgId: string): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await rotateSupportPin(db, orgId);
+    revalidatePath(`/${portal}/${orgId}/settings`);
+    return { status: "success", message: "New support PIN created. The old one no longer works." };
   } catch (e) {
     return errorState(e);
   }
