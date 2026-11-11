@@ -1,5 +1,16 @@
 # Development progress log
 
+## 2026-11-11 — Password lockout and idle timeouts
+**Done**
+- Reconciliation item 10 (SoW §2.5, CFG-45, ADM-01). Migration `20261111084221 password_lockout_idle_timeout` (applied by Claude):
+  - 10 wrong passwords in a row lock the email address for 15 minutes; failures older than 24 hours are forgotten; a successful sign-in or a password reset clears the count. Unknown addresses are counted the same way (no account enumeration). Every failure and lock is a security event.
+  - `password_sign_in_status` / `record_password_sign_in` are callable only by the server (service role); the lock table has no direct access.
+  - Settings: `security.password_max_attempts`, `security.password_lockout_minutes`, `security.password_failure_window_minutes`, `security.idle_timeout_minutes_portal` (720), `security.idle_timeout_minutes_console` (30).
+- Web: one `passwordSignIn` wrapper (`lib/sign-in-lockout.ts`) used by the portal login and the driver portal's email sign-in; a locked account is refused before the password is checked, with the unlock time in Brisbane time.
+- Idle timeout: the proxy keeps the last request time in an httpOnly cookie tied to the session id (a new sign-in starts fresh) and signs out a session idle past the limit (`/login?reason=idle`, driver portal back to `/driver`). The shell also signs out an open, unattended screen at the limit, with a one-minute warning; activity in any tab of the portal counts.
+- Checked on the hosted project and in the browser with a throwaway user (deleted): 10th wrong password locks, the right password is refused while locked, sign-in works once unlocked; a 13-hour-old activity cookie signs the session out; the screen timer warns and signs out. pgTAP `140`; unit tests for the activity cookie.
+- **Limit:** the count covers sign-ins through HVEMS. Someone calling Supabase Auth's API directly with the public key isn't counted (Supabase's own rate limits still apply). Closing that needs Supabase's password-verification Auth hook, which the Free plan doesn't offer; revisit with P-03.
+
 ## 2026-11-11 — MFA recovery codes, MFA reset, "MFA for everyone" setting
 **Done**
 - Reconciliation item 9 (ACC-03, ACC-15) and O-06. Migration `20261111060000 mfa_recovery_and_reset`:

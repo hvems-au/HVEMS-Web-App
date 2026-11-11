@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { parseDriverId, toAppError, type HvemsClient } from "@hvems/api-client";
 import { z } from "@hvems/validation";
 import { errorState, type ActionState } from "@/lib/actions";
+import { lockedMessage, passwordSignIn } from "@/lib/sign-in-lockout";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -52,8 +53,12 @@ export async function memberSignInAction(input: { email: string; password: strin
   const v = z.object({ email: z.string().trim().email("Enter your email"), password: z.string().min(1, "Enter your password") }).safeParse(input);
   if (!v.success) return { status: "error", code: "invalid", message: v.error.issues[0]?.message ?? "Check the details" };
   const db = await createSupabaseServerClient();
-  const { error } = await db.auth.signInWithPassword({ email: v.data.email, password: v.data.password });
-  if (error) return { status: "error", code: "invalid_credentials", message: "Email or password is not right" };
+  const res = await passwordSignIn(db, v.data.email, v.data.password, "driver");
+  if (!res.ok) {
+    return res.locked
+      ? { status: "error", code: "account_locked", message: lockedMessage(res.lockedUntil) }
+      : { status: "error", code: "invalid_credentials", message: "Email or password is not right" };
+  }
   return { status: "success" };
 }
 

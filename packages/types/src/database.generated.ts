@@ -1622,6 +1622,12 @@ export type Database = {
         }
         Relationships: []
       }
+      password_lockouts: {
+        Row: { email: string; failed_count: number; last_failed_at: string | null; locked_until: string | null }
+        Insert: { email: string; failed_count?: number; last_failed_at?: string | null; locked_until?: string | null }
+        Update: { email?: string; failed_count?: number; last_failed_at?: string | null; locked_until?: string | null }
+        Relationships: []
+      }
       payment_methods: {
         Row: {
           brand: string | null
@@ -2224,11 +2230,13 @@ export type Database = {
           role: Database["public"]["Enums"]["platform_role"]
         }[]
       }
+      password_sign_in_status: { Args: { p_email: string }; Returns: Json }
       place_hold: {
         Args: { p_asset_id: string; p_kind: string; p_reason: string }
         Returns: string
       }
       prestart_checklist: { Args: { p_asset_id: string }; Returns: Json }
+      record_password_sign_in: { Args: { p_email: string; p_portal?: string; p_success: boolean }; Returns: Json }
       record_fleet_subscription_consent: {
         Args: {
           p_free_assets: number

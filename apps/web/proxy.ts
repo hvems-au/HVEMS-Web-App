@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_PREFIXES, PORTAL_INFO, portalForHost, portalOrigin, startsWithAny } from "./lib/portals";
+import { ACTIVITY_COOKIE, encodeActivity, IDLE_DEFAULT_MINUTES, IDLE_LIMIT_COOKIE, isIdleExpired, parseActivity } from "./lib/idle";
+import { AUTH_PREFIXES, PORTAL_INFO, portalForHost, portalOrigin, startsWithAny, type PortalId } from "./lib/portals";
 
 /**
  * Runs before every page request (ADR-009):
@@ -10,7 +11,9 @@ import { AUTH_PREFIXES, PORTAL_INFO, portalForHost, portalOrigin, startsWithAny 
  *     localhost is sent to the company portal).
  *  2. Refreshes that portal's Supabase session cookie. Cookies are host-only,
  *     so a session on one portal is never sent to another.
- *  3. Sends signed-out visitors of protected areas to the portal's /login.
+ *  3. Signs out a session idle for longer than the portal's limit (settings:
+ *     portals 12 h, console 30 min).
+ *  4. Sends signed-out visitors of protected areas to the portal's /login.
  * Authorisation itself is enforced by the database (RLS) and server layouts.
  */
 function redirectTo(request: NextRequest, pathname: string, keepQuery = false) {
@@ -18,6 +21,28 @@ function redirectTo(request: NextRequest, pathname: string, keepQuery = false) {
   url.pathname = pathname;
   if (!keepQuery) url.search = "";
   return NextResponse.redirect(url);
+}
+
+// Idle limits are platform settings; read at most once a minute per server instance.
+let idleCache: { at: number; portal: number; console: number } | null = null;
+type SettingsReader = { from(t: "platform_settings"): { select(c: string): { in(k: string, v: string[]): PromiseLike<{ data: { key: string; value: unknown }[] | null }> } } };
+async function idleLimitMinutes(db: SettingsReader, portal: PortalId): Promise<number> {
+  if (!idleCache || Date.now() - idleCache.at > 60_000) {
+    const { data } = await db
+      .from("platform_settings")
+      .select("key, value")
+      .in("key", ["security.idle_timeout_minutes_portal", "security.idle_timeout_minutes_console"]);
+    const get = (k: string, d: number) => {
+      const v = Number(data?.find((r) => r.key === k)?.value);
+      return Number.isFinite(v) && v > 0 ? v : d;
+    };
+    idleCache = {
+      at: Date.now(),
+      portal: get("security.idle_timeout_minutes_portal", IDLE_DEFAULT_MINUTES.portal),
+      console: get("security.idle_timeout_minutes_console", IDLE_DEFAULT_MINUTES.console),
+    };
+  }
+  return portal === "admin" ? idleCache.console : idleCache.portal;
 }
 
 export async function proxy(request: NextRequest) {
@@ -65,6 +90,25 @@ export async function proxy(request: NextRequest) {
   // Validates the JWT signature/claims; do not trust getSession() on the server.
   const { data } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims?.sub;
+
+  if (signedIn) {
+    const sessionId = String(data?.claims?.session_id ?? data?.claims?.sub);
+    const now = Math.floor(Date.now() / 1000);
+    const limit = await idleLimitMinutes(supabase as unknown as SettingsReader, portal);
+    if (isIdleExpired(parseActivity(request.cookies.get(ACTIVITY_COOKIE)?.value), sessionId, now, limit)) {
+      await supabase.auth.signOut({ scope: "local" });
+      const url = request.nextUrl.clone();
+      url.pathname = portal === "driver" ? info.home : "/login";
+      url.search = portal === "driver" ? "" : "?reason=idle";
+      const out = NextResponse.redirect(url);
+      for (const cookie of response.cookies.getAll()) out.cookies.set(cookie);
+      out.cookies.delete(ACTIVITY_COOKIE);
+      return out;
+    }
+    const secure = request.nextUrl.protocol === "https:";
+    response.cookies.set(ACTIVITY_COOKIE, encodeActivity(sessionId, now), { httpOnly: true, sameSite: "lax", secure, path: "/", maxAge: 30 * 86400 });
+    response.cookies.set(IDLE_LIMIT_COOKIE, String(limit), { sameSite: "lax", secure, path: "/", maxAge: 30 * 86400 });
+  }
 
   // The driver portal keeps the session fresh but never sends people to /login.
   if (portal === "driver") return response;

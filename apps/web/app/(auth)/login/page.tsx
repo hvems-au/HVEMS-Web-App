@@ -16,12 +16,18 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const next = firstParam(sp.next);
   const error = firstParam(sp.error);
+  const idle = firstParam(sp.reason) === "idle";
   const info = PORTAL_INFO[await getCurrentPortal()];
   return (
     <AuthCard title={info.loginTitle} subtitle={info.loginSubtitle}>
       {error ? (
         <div className="mb-5">
           <FormAlert>That link is invalid or has expired. Please sign in or request a new link.</FormAlert>
+        </div>
+      ) : null}
+      {idle && !error ? (
+        <div className="mb-5">
+          <FormAlert tone="info">You were signed out because there was no activity for a while. Sign in again to continue.</FormAlert>
         </div>
       ) : null}
       {/* Self sign-up only where the portal offers it (never the Super Admin console, SoW §2.3). */}

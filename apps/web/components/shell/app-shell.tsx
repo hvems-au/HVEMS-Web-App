@@ -6,6 +6,7 @@ import { DropdownMenu } from "radix-ui";
 import { ArrowUpRight, Bell, Check, ChevronsUpDown, LogOut, Menu, ShieldCheck, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ICONS } from "@/components/shell/icons";
+import { IdleTimer } from "@/components/shell/idle-timer";
 import type { NavSection } from "@/lib/navigation";
 import { cn, initials } from "@/lib/utils";
 
@@ -197,6 +198,7 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
   const [open, setOpen] = React.useState(false);
   return (
     <div className="min-h-dvh bg-canvas">
+      <IdleTimer />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded focus:bg-white focus:px-3 focus:py-2">
         Skip to content
       </a>

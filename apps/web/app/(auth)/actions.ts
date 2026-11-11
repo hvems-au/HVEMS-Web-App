@@ -4,6 +4,7 @@ import { forgotPasswordSchema, resetPasswordSchema, signInSchema, signUpSchema }
 import { fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { currentOrigin, getCurrentPortal } from "@/lib/current-portal";
 import { PORTAL_INFO } from "@/lib/portals";
+import { lockedMessage, passwordSignIn, recordSignIn } from "@/lib/sign-in-lockout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Only allow same-site relative redirects after sign-in (prevents open redirects). */
@@ -17,20 +18,22 @@ export async function signInAction(_prev: ActionState<{ redirectTo: string }>, f
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };
 
   const db = await createSupabaseServerClient();
-  const { error } = await db.auth.signInWithPassword(parsed.data);
-  if (error) {
+  const portal = await getCurrentPortal();
+  const res = await passwordSignIn(db, parsed.data.email, parsed.data.password, portal);
+  if (!res.ok) {
     // Same message for unknown email and wrong password (no account enumeration).
-    const message =
-      error.code === "email_not_confirmed"
+    const message = res.locked
+      ? lockedMessage(res.lockedUntil)
+      : res.code === "email_not_confirmed"
         ? "Please confirm your email address first. Check your inbox for the verification link."
-        : error.status === 429
+        : res.code === "rate_limited"
           ? "Too many attempts. Wait a few minutes and try again."
           : "Email or password is incorrect.";
-    return { status: "error", code: error.code ?? "sign_in_failed", message };
+    return { status: "error", code: res.code, message };
   }
   // The client does a full navigation: an in-action redirect renders the target
   // before the new session cookie is visible to it, which shows the login page again.
-  return { status: "success", data: { redirectTo: safeNext(form.get("next"), PORTAL_INFO[await getCurrentPortal()].home) } };
+  return { status: "success", data: { redirectTo: safeNext(form.get("next"), PORTAL_INFO[portal].home) } };
 }
 
 export async function signUpAction(_prev: ActionState, form: FormData): Promise<ActionState> {
@@ -80,7 +83,7 @@ export async function resetPasswordAction(_prev: ActionState, form: FormData): P
   const parsed = resetPasswordSchema.safeParse({ password: form.get("password"), confirmPassword: form.get("confirmPassword") });
   if (!parsed.success) return { status: "error", code: "invalid", message: "Check the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };
   const db = await createSupabaseServerClient();
-  const { error } = await db.auth.updateUser({ password: parsed.data.password });
+  const { data: updated, error } = await db.auth.updateUser({ password: parsed.data.password });
   if (error) {
     return {
       status: "error",
@@ -88,6 +91,8 @@ export async function resetPasswordAction(_prev: ActionState, form: FormData): P
       message: error.code === "same_password" ? "Choose a password you haven't used here before." : "Your reset link has expired. Request a new one.",
     };
   }
+  // A new password unlocks an account locked by wrong passwords.
+  if (updated.user?.email) await recordSignIn(updated.user.email, true, await getCurrentPortal()).catch(() => undefined);
   const home = PORTAL_INFO[await getCurrentPortal()].home;
   redirect(home === "/select-context" ? "/select-context?reset=1" : home);
 }
