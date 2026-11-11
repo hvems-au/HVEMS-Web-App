@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { PORTAL_FOR_ORG_KIND, portalForHost, portalHost, portalOrigin, startsWithAny } from "./portals";
+import { PORTAL_FOR_ORG_KIND, portalForHost, portalHost, portalOrigin, printedDriverUrl, startsWithAny } from "./portals";
 
 describe("portal hosts", () => {
   afterEach(() => {
     delete process.env.COMPANY_HOST;
+    delete process.env.DRIVER_HOST;
   });
 
   it("maps the default local hosts to their portals", () => {
@@ -27,6 +28,13 @@ describe("portal hosts", () => {
     expect(portalForHost("company.localhost:3000")).toBeNull();
     expect(portalOrigin("company")).toBe("https://company.hvems.com.au");
     expect(portalOrigin("provider")).toBe("http://provider.localhost:3000");
+  });
+
+  it("prints the live driver address on labels, never a local one", () => {
+    process.env.DRIVER_HOST = "driver.localhost:3000";
+    expect(printedDriverUrl()).toBe("https://driver.hvems.com.au");
+    process.env.DRIVER_HOST = "drivers.example.com.au";
+    expect(printedDriverUrl()).toBe("https://drivers.example.com.au");
   });
 
   it("keeps companies (with their marketplace) separate from marketplace-only customers", () => {

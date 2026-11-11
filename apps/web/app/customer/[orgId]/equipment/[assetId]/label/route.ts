@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { formatShortCode, getAsset, getEquipmentCode, getOrganisation } from "@hvems/api-client";
 import { EquipmentLabelPdf } from "@/lib/pdf/label-document";
-import { portalOrigin } from "@/lib/portals";
+import { printedDriverUrl } from "@/lib/portals";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { equipmentCodeUrl } from "../qr-card";
@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
       description: [asset.make, asset.model].filter(Boolean).join(" "),
       shortCode: formatShortCode(code.short_code),
       qrPng,
-      portalUrl: portalOrigin("driver"),
+      portalUrl: printedDriverUrl(),
     }),
   );
   return new Response(new Uint8Array(pdf), {
