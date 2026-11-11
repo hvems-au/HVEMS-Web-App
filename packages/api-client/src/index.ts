@@ -1082,3 +1082,167 @@ export async function countOpenMissedPrestarts(db: HvemsClient, organisationId: 
 export async function reviewMissedPrestart(db: HvemsClient, id: string, outcome: "not_used" | "missed", note?: string): Promise<void> {
   unwrap(await db.rpc("review_missed_prestart", { p_id: id, p_outcome: outcome, p_note: note ?? undefined }));
 }
+
+// ------------------------------------------------------------- maintenance (2C: CS-17, CS-18)
+export type ServiceStatus = "overdue" | "due_soon" | "ok";
+
+export interface ServiceScheduleRow {
+  id: string;
+  organisation_id: string;
+  asset_id: string;
+  name: string;
+  interval_days: number | null;
+  interval_km: number | null;
+  interval_hours: number | null;
+  last_done_on: string | null;
+  last_done_km: number | null;
+  last_done_hours: number | null;
+  notes: string | null;
+  next_due_on: string | null;
+  next_due_km: number | null;
+  next_due_hours: number | null;
+  current_km: number | null;
+  current_hours: number | null;
+  status: ServiceStatus;
+}
+
+export interface WorkOrder {
+  id: string;
+  organisation_id: string;
+  number: number;
+  asset_id: string;
+  service_plan_id: string | null;
+  defect_id: string | null;
+  title: string;
+  description: string | null;
+  kind: "internal" | "vendor";
+  vendor_name: string | null;
+  priority: "low" | "normal" | "high" | "urgent";
+  assigned_to: string | null;
+  due_on: string | null;
+  status: "open" | "in_progress" | "completed" | "closed" | "cancelled";
+  started_at: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  completion_notes: string | null;
+  odometer_km: number | null;
+  engine_hours: number | null;
+  labour_hours: number | null;
+  cost_cents: number | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  close_note: string | null;
+  reopen_count: number;
+  last_reopen_reason: string | null;
+  cancel_reason: string | null;
+  created_at: string;
+  asset?: { asset_number: string; make: string | null; model: string | null } | null;
+}
+
+/** "WO-0007" */
+export function formatWorkOrderNumber(n: number): string {
+  return `WO-${String(n).padStart(4, "0")}`;
+}
+
+const raw = (db: HvemsClient) => db as unknown as SupabaseClient;
+
+/** Active service plans with next due and status (RLS: work_orders.manage / work_orders.work). */
+export async function listServiceSchedule(db: HvemsClient, organisationId: string, assetId?: string): Promise<(ServiceScheduleRow & { asset?: { asset_number: string } | null })[]> {
+  let q = raw(db).from("service_schedule").select("*").eq("organisation_id", organisationId);
+  if (assetId) q = q.eq("asset_id", assetId);
+  const rows = unwrap(await q) as ServiceScheduleRow[];
+  const ids = [...new Set(rows.map((r) => r.asset_id))];
+  const assets = ids.length ? (unwrap(await db.from("assets").select("id, asset_number").in("id", ids)) as { id: string; asset_number: string }[]) : [];
+  const num = new Map(assets.map((a) => [a.id, a.asset_number]));
+  const order: Record<ServiceStatus, number> = { overdue: 0, due_soon: 1, ok: 2 };
+  return rows
+    .map((r) => ({ ...r, asset: { asset_number: num.get(r.asset_id) ?? "—" } }))
+    .sort((a, b) => order[a.status] - order[b.status] || (a.next_due_on ?? "9999").localeCompare(b.next_due_on ?? "9999"));
+}
+
+export interface ServicePlanInput {
+  asset_id: string;
+  name: string;
+  interval_days: number | null;
+  interval_km: number | null;
+  interval_hours: number | null;
+  last_done_on: string | null;
+  last_done_km: number | null;
+  last_done_hours: number | null;
+  notes: string | null;
+}
+
+export async function createServicePlan(db: HvemsClient, organisationId: string, input: ServicePlanInput): Promise<void> {
+  unwrap(await raw(db).from("service_plans").insert({ ...input, organisation_id: organisationId }));
+}
+
+export async function setServicePlanActive(db: HvemsClient, organisationId: string, id: string, active: boolean): Promise<void> {
+  unwrap(await raw(db).from("service_plans").update({ active }).eq("id", id).eq("organisation_id", organisationId));
+}
+
+const WO_COLUMNS = "*, asset:assets(asset_number, make, model)";
+
+export async function listWorkOrders(db: HvemsClient, organisationId: string, filter: { open?: boolean; assetId?: string; limit?: number } = {}): Promise<WorkOrder[]> {
+  let q = raw(db).from("work_orders").select(WO_COLUMNS).eq("organisation_id", organisationId);
+  if (filter.open === true) q = q.in("status", ["open", "in_progress", "completed"]);
+  if (filter.open === false) q = q.in("status", ["closed", "cancelled"]);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  return unwrap(await q.order("number", { ascending: false }).limit(filter.limit ?? 200)) as WorkOrder[];
+}
+
+export async function getWorkOrder(db: HvemsClient, organisationId: string, id: string): Promise<WorkOrder | null> {
+  return (unwrap(await raw(db).from("work_orders").select(WO_COLUMNS).eq("organisation_id", organisationId).eq("id", id).maybeSingle()) as WorkOrder | null) ?? null;
+}
+
+export interface WorkOrderInput {
+  asset_id: string;
+  title: string;
+  description?: string | null;
+  kind: "internal" | "vendor";
+  vendor_name?: string | null;
+  priority: WorkOrder["priority"];
+  assigned_to?: string | null;
+  due_on?: string | null;
+  service_plan_id?: string | null;
+  defect_id?: string | null;
+}
+
+export async function createWorkOrder(db: HvemsClient, organisationId: string, w: WorkOrderInput): Promise<{ id: string; number: number }> {
+  return unwrap(
+    await raw(db).rpc("create_work_order", {
+      p_organisation_id: organisationId,
+      p_asset_id: w.asset_id,
+      p_title: w.title,
+      p_description: w.description ?? null,
+      p_kind: w.kind,
+      p_vendor_name: w.vendor_name ?? null,
+      p_priority: w.priority,
+      p_assigned_to: w.assigned_to ?? null,
+      p_due_on: w.due_on ?? null,
+      p_service_plan_id: w.service_plan_id ?? null,
+      p_defect_id: w.defect_id ?? null,
+    }),
+  ) as { id: string; number: number };
+}
+
+export type WorkOrderAction = "start" | "complete" | "close" | "reopen" | "cancel";
+
+/** Technicians start and complete; managers close, reopen and cancel (the database checks). */
+export async function updateWorkOrderStatus(
+  db: HvemsClient,
+  id: string,
+  action: WorkOrderAction,
+  extra: { notes?: string; odometer_km?: number | null; engine_hours?: number | null; labour_hours?: number | null; cost_cents?: number | null } = {},
+): Promise<void> {
+  unwrap(
+    await raw(db).rpc("update_work_order_status", {
+      p_id: id,
+      p_action: action,
+      p_notes: extra.notes ?? null,
+      p_odometer_km: extra.odometer_km ?? null,
+      p_engine_hours: extra.engine_hours ?? null,
+      p_labour_hours: extra.labour_hours ?? null,
+      p_cost_cents: extra.cost_cents ?? null,
+    }),
+  );
+}

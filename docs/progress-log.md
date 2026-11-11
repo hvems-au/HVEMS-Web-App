@@ -1,5 +1,12 @@
 # Development progress log
 
+## 2026-11-11 — 2C slice 1: service plans, schedule, work orders (CS-17, CS-18)
+**Done**
+- Migration `20261111124944 maintenance_work_orders` (applied by Claude): `service_plans` (every N days / km / hours, last done), view `service_schedule` (security invoker: next due from the last service and the latest accepted readings; Overdue / Due soon / OK with thresholds in settings `maintenance.due_soon_*`); overdue plans open an `overdue_service` condition cause (Needs attention only where the company rule is on), resolved automatically when serviced (pg_cron `hvems-overdue-services` hourly and on plan changes); `work_orders` (WO-0001…, in-house or named vendor, assignee, priority, due) with `create_work_order`, `update_work_order_status` (technicians start / complete with notes, readings, labour, cost in cents; managers close, reopen with a reason, cancel with a reason) and `update_work_order`. Closing a service work order records the service as done. Work orders never clear safety causes. Everything audited. pgTAP `250`.
+- Web: **Maintenance** page (schedule, Add service plan, Work order from a plan, Remove) and **Work Orders** (Open / Closed and cancelled, New work order, detail page with actions). Navigation now opens the real pages.
+- Checked: on the hosted project as the Owner (rolled back) and in the browser: plan Due soon → WO-0001 started, completed ($245.50, 1.5 h), closed → plan OK with next due 11/12/2026; the test plan was removed afterwards (WO-0001 stays as an example).
+- Note: the new tables are queried through an untyped client in the API client until `database.generated.ts` is regenerated.
+
 ## 2026-11-11 — Pre-start frequency and missed pre-starts (2B)
 **Done**
 - Migration `20261111122758 prestart_frequency_missed` (applied by Claude): `prestart_frequency` (daily / weekly / not required) on equipment types (vehicles and mobile plant daily, portable or fixed equipment weekly) with a per-equipment override; `missed_prestarts`; hourly pg_cron job `hvems-missed-prestarts` checks each company in its own timezone after each day (Monday–Sunday for weekly checks) ends: current equipment due a check with no pre-start is recorded, out-of-service / archived / later-added equipment is left out, weekends skipped for daily checks (setting `prestart.skip_weekends`); one alert to the Owner, Fleet Managers and Company Admins. `review_missed_prestart` (inspections.review): "not used" or "missed" (note required), audited.
