@@ -997,3 +997,29 @@ export async function ownerEndSupportAccess(db: HvemsClient, grantId: string): P
 export function isSupportSessionActive(s: Pick<SupportSession, "ended_at" | "expires_at">, now = Date.now()): boolean {
   return !s.ended_at && new Date(s.expires_at).getTime() > now;
 }
+
+// ------------------------------------------------------------- equipment count history (AST-16)
+export interface AssetCountEvent {
+  id: number;
+  occurred_at: string;
+  asset_id: string;
+  delta: number;
+  reason: "created" | "imported" | "archived" | "restored" | "converted" | "merged";
+  /** Recorded from 11 Nov 2026; earlier events have none. */
+  count_before: number | null;
+  count_after: number | null;
+  actor_user_id: string | null;
+  asset?: { asset_number: string } | null;
+}
+
+/** Count history for billing (RLS: org.billing.view or HVEMS staff). */
+export async function listAssetCountEvents(db: HvemsClient, organisationId: string, limit = 50): Promise<AssetCountEvent[]> {
+  return unwrap(
+    await db
+      .from("asset_count_events")
+      .select("id, occurred_at, asset_id, delta, reason, count_before, count_after, actor_user_id, asset:assets(asset_number)")
+      .eq("organisation_id", organisationId)
+      .order("id", { ascending: false })
+      .limit(limit),
+  ) as unknown as AssetCountEvent[];
+}

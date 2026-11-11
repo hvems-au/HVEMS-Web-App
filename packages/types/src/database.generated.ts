@@ -171,6 +171,9 @@ export type Database = {
       }
       asset_count_events: {
         Row: {
+          actor_user_id: string | null
+          count_after: number | null
+          count_before: number | null
           asset_id: string
           delta: number
           id: number
@@ -179,6 +182,9 @@ export type Database = {
           reason: string
         }
         Insert: {
+          actor_user_id?: string | null
+          count_after?: number | null
+          count_before?: number | null
           asset_id: string
           delta: number
           id?: never
@@ -187,6 +193,9 @@ export type Database = {
           reason: string
         }
         Update: {
+          actor_user_id?: string | null
+          count_after?: number | null
+          count_before?: number | null
           asset_id?: string
           delta?: number
           id?: never

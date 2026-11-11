@@ -1,5 +1,10 @@
 # Development progress log
 
+## 2026-11-11 — Equipment count history detail (AST-16)
+**Done**
+- Reconciliation item 7. Migration `20261111104734 asset_count_events_detail` (applied by Claude): every count event records `count_before`, `count_after` and `actor_user_id`, filled by the database (one writer per organisation at a time); `merged` added as a reason (AST-05). Earlier events keep their original fields (append-only).
+- Console organisation Details tab: "Equipment count history" (latest 20). Checked on the hosted project as the Owner (rolled back): adding equipment records 2 → 3 with the right person; console card checked with a throwaway Super Admin (deleted). pgTAP `210`.
+
 ## 2026-11-11 — Either-or mandatory fields (AST-01)
 **Done**
 - Reconciliation item 4. Migration `20261111104208 asset_either_or_fields` (applied by Claude): vehicles need make, model and a **registration or a VIN** (a registration always needs its state); equipment needs make and model (the asset number identifies it; serial optional). `required_fields` entries like `registration_number|vin` mean "at least one", so HVEMS can still change the rules as data; company classes follow the same rule.
