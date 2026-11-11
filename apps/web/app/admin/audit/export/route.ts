@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const staff = await getStaffContext();
   if (!staff || user.aal !== "aal2") notFound();
   const sp = Object.fromEntries(new URL(request.url).searchParams);
-  const q = parseAuditQuery(sp);
+  const parsed = parseAuditQuery(sp);
+  const q = staff.role === "platform_administrator" ? parsed : { ...parsed, tab: "changes" as const };
   const { events, security, nameOf, orgOf } = await loadPlatformAudit(q, parseOrgFilter(sp.org), 5000);
   const tz = "Australia/Brisbane";
   const csv = q.tab === "security" ? securityCsv(security, nameOf, tz, orgOf) : auditCsv(events, nameOf, tz, orgOf);

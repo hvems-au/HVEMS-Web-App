@@ -16,6 +16,7 @@ export function AuditFilterBar({
   people,
   organisations,
   organisation,
+  showSecurity = false,
 }: {
   basePath: string;
   q: AuditQuery;
@@ -23,6 +24,8 @@ export function AuditFilterBar({
   /** Console only: organisation filter. */
   organisations?: Opt[];
   organisation?: string;
+  /** Sign-in and security events: Super Admin only. */
+  showSecurity?: boolean;
 }) {
   const tab = (t: AuditQuery["tab"], label: string) => (
     <Link
@@ -39,8 +42,12 @@ export function AuditFilterBar({
   return (
     <Card className="mb-4">
       <div className="flex flex-wrap items-center gap-2 border-b border-stroke px-4 py-3">
-        {tab("changes", "Changes")}
-        {tab("security", "Sign-in & security")}
+        {showSecurity ? (
+          <>
+            {tab("changes", "Changes")}
+            {tab("security", "Sign-in & security")}
+          </>
+        ) : null}
         <a href={`${basePath}/export${exportQuery}`} className="ml-auto">
           <Button variant="secondary" size="sm" type="button">
             <Download /> Export CSV

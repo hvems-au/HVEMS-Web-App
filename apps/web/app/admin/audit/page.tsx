@@ -8,6 +8,7 @@ import { AuditFilterBar } from "@/features/audit/filter-bar";
 import { ENTITY_LABELS, methodTone, summarise } from "@/features/audit/format";
 import { loadPlatformAudit, parseOrgFilter } from "@/features/audit/platform-audit";
 import { ACTION_LABELS, contextText, parseAuditQuery, SECURITY_LABELS, securityDetail } from "@/features/audit/query";
+import { getStaffContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Audit History" };
@@ -21,7 +22,11 @@ const dmy = (iso: string) => iso.split("-").reverse().join("/");
  */
 export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
-  const q = parseAuditQuery(sp);
+  const staff = await getStaffContext();
+  // Sign-in and security events: the Super Admin only (database rule too).
+  const superAdmin = staff?.role === "platform_administrator";
+  const parsed = parseAuditQuery(sp);
+  const q = superAdmin ? parsed : { ...parsed, tab: "changes" as const };
   const organisation = parseOrgFilter(sp.org);
   const db = await createSupabaseServerClient();
   const [{ events, security, nameOf, orgOf, organisations }, chain] = await Promise.all([
@@ -56,7 +61,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
           </div>
         </Card>
       ) : null}
-      <AuditFilterBar basePath="/admin/audit" q={q} people={[]} organisations={organisations} organisation={organisation} />
+      <AuditFilterBar basePath="/admin/audit" q={q} people={[]} organisations={organisations} organisation={organisation} showSecurity={superAdmin} />
       <Card>
         {q.tab === "changes" ? (
           events.length === 0 ? (

@@ -1,9 +1,14 @@
 # Development progress log
 
+## 2026-11-11 — Sign-in & security events: Super Admin only
+**Done**
+- Decision (Ahmad): sign-in and security events are for the platform's Super Admin only. Company and provider audit pages show changes only (the tab, the URL and the CSV export all fall back to changes); in the console the tab shows only for the Super Admin. Companies still see HVEMS support sessions and member sign-in locks on the Team page.
+- Migration `20261111180000 security_events_super_admin_only` (read policy: Super Admin with MFA only); pgTAP `220`. **Waiting to be applied:** the Supabase connector refused it (`drop policy`); run it in the SQL editor.
+
 ## 2026-11-11 — Housekeeping
 **Done**
 - Australian terms in database messages: `australianWording` in the API client rewrites "meter type", "this meter" and "meter reading(s)" to odometer / hour meter wording for every coded database error (web and mobile alike); unit test.
-- CI: switching to `actions/checkout@v5` (Node 24) is waiting for a GitHub sign-in with the `workflow` permission; the local token can't change workflow files.
+- CI: `actions/checkout@v5` (runs on Node 24; v4 raised the Node 20 deprecation warning).
 
 ## 2026-11-11 — Equipment count history detail (AST-16)
 **Done**
