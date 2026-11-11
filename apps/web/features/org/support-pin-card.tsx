@@ -17,7 +17,7 @@ export function SupportPinCard({ portal, orgId, pin, validUntilText, rotationHou
   const [shown, setShown] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
-    <Card className="mt-5">
+    <Card className="mt-5 max-w-3xl">
       <CardHeader
         title="Security"
         description="HVEMS support can only open a read-only support session for your company with this PIN. Give it to them only when you ask for help."
