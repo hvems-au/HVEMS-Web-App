@@ -12,7 +12,7 @@ import { AUTH_PREFIXES, PORTAL_INFO, portalForHost, portalOrigin, startsWithAny,
  *  2. Refreshes that portal's Supabase session cookie. Cookies are host-only,
  *     so a session on one portal is never sent to another.
  *  3. Signs out a session idle for longer than the portal's limit (settings:
- *     portals 12 h, console 30 min).
+ *     portals 3 h, console 30 min).
  *  4. Sends signed-out visitors of protected areas to the portal's /login.
  * Authorisation itself is enforced by the database (RLS) and server layouts.
  */

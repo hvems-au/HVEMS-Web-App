@@ -1,5 +1,11 @@
 # Development progress log
 
+## 2026-11-11 — O-11: lock after 5 tries, tries-left counter, unlock by Owner / Company Admin / Super Admin, 3-hour idle
+**Done**
+- Decision O-11 (Ahmad). Migration `lockout_five_tries_unlock`: settings 5 tries and 180-minute portal idle timeout, new `security.password_warn_after_attempts` (3); `record_password_sign_in` returns the tries left; `member_sign_in_locks`, `unlock_member_sign_in` (`org.members.manage` + MFA rule) and `admin_unlock_sign_in` (Super Admin with MFA, recorded against each of the person's organisations).
+- Sign-in page: from the 3rd wrong password, "N tries left before this account is locked for 15 minutes". Team page: "N wrong passwords" or "Locked until 3:42 pm" badge with Unlock; same on the console's organisation Team tab for the Super Admin.
+- pgTAP `140` updated for 5 tries; new `150` (unlock rules).
+
 ## 2026-11-11 — Password lockout and idle timeouts
 **Done**
 - Reconciliation item 10 (SoW §2.5, CFG-45, ADM-01). Migration `20261111084221 password_lockout_idle_timeout` (applied by Claude):

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, Textarea } from "@/components/ui/form";
 import { idleState, type ClientActionState } from "@/lib/client-state";
 import { TimezoneSelect } from "@/components/timezone-select";
-import { adminResetUserMfaAction, setSuspendedAction, updateOrganisationAction } from "./actions";
+import { SignInLock } from "@/components/sign-in-lock";
+import { adminResetUserMfaAction, adminUnlockSignInAction, setSuspendedAction, updateOrganisationAction } from "./actions";
 
 function useToastAction(action: (prev: ClientActionState, form: FormData) => Promise<ClientActionState>, onSuccess?: () => void) {
   const [state, run, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
@@ -129,4 +130,10 @@ How did you confirm who they are? (at least 10 characters)`,
       Reset MFA
     </Button>
   );
+}
+
+/** Super Admin: clear someone's wrong passwords or sign-in lock (O-11). */
+export function AdminSignInLock(props: { orgId: string; userId: string; name: string; failedCount: number; lockedUntilText: string | null }) {
+  const { orgId, userId, ...rest } = props;
+  return <SignInLock {...rest} unlock={() => adminUnlockSignInAction(orgId, userId)} />;
 }

@@ -13,7 +13,7 @@ function limitMinutes(): number {
 }
 
 /**
- * Signs an unattended screen out after the portal's idle limit (12 h portals,
+ * Signs an unattended screen out after the portal's idle limit (3 h portals,
  * 30 min console), with a one-minute warning. Activity in any tab of the same
  * portal counts. The server enforces the same limit on the next request.
  */

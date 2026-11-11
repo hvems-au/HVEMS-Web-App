@@ -1,4 +1,4 @@
-import { listInvitations, listMembers } from "@hvems/api-client";
+import { listInvitations, listMemberSignInLocks, listMembers } from "@hvems/api-client";
 import { formatDateAU } from "@hvems/domain";
 import { GRANT_ELIGIBLE_ROLES, GRANT_LABELS, ROLE_LABELS, ROLES_BY_KIND, OWNER_ROLE_BY_KIND, can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
@@ -6,13 +6,21 @@ import { Badge, Card, CardBody, CardHeader, EmptyState, Table, TD, TH, THead, TR
 import type { OrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { InviteDialog, MemberActions, RevokeInvitationButton } from "./team-controls";
+import { MemberSignInLock } from "./unlock-button";
 
 export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "customer" | "provider" }) {
   const orgId = ctx.context.organisation_id;
   const kind = ctx.context.kind;
   const db = await createSupabaseServerClient();
   const manage = can(ctx.capabilities, "org.members.manage");
-  const [members, invitations] = await Promise.all([listMembers(db, orgId), manage ? listInvitations(db, orgId) : Promise.resolve([])]);
+  const [members, invitations, locks] = await Promise.all([
+    listMembers(db, orgId),
+    manage ? listInvitations(db, orgId) : Promise.resolve([]),
+    manage ? listMemberSignInLocks(db, orgId).catch(() => []) : Promise.resolve([]),
+  ]);
+  const lockOf = new Map(locks.map((l) => [l.membership_id, l]));
+  const timeText = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleTimeString("en-AU", { timeZone: ctx.timezone, hour: "numeric", minute: "2-digit" }) : null;
   const owner = OWNER_ROLE_BY_KIND[kind];
   const invitableRoles = ROLES_BY_KIND[kind].filter((r) => r !== owner);
   const canGrant = can(ctx.capabilities, "org.grants.assign") && kind === "company";
@@ -48,6 +56,7 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                 const grants = (m.grants ?? []).filter((g) => !g.revoked_at);
                 const isOwner = m.role === owner;
                 const self = m.user_id === ctx.user.id;
+                const lock = lockOf.get(m.id);
                 return (
                   <TR key={m.id}>
                     <TD>
@@ -55,6 +64,16 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                         {m.profile?.full_name || m.profile?.email} {self ? <span className="font-normal text-ink-subtle">(you)</span> : null}
                       </p>
                       <p className="text-[12px] text-ink-subtle">{m.profile?.email}</p>
+                      {lock && !self ? (
+                        <MemberSignInLock
+                          portal={portal}
+                          orgId={orgId}
+                          membershipId={m.id}
+                          name={m.profile?.full_name || m.profile?.email || "this member"}
+                          failedCount={lock.failed_count}
+                          lockedUntilText={timeText(lock.locked_until)}
+                        />
+                      ) : null}
                     </TD>
                     <TD>{ROLE_LABELS[m.role]}</TD>
                     {kind === "company" ? (

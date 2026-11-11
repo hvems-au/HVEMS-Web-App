@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { parseDriverId, toAppError, type HvemsClient } from "@hvems/api-client";
 import { z } from "@hvems/validation";
 import { errorState, type ActionState } from "@/lib/actions";
-import { lockedMessage, passwordSignIn } from "@/lib/sign-in-lockout";
+import { lockedMessage, passwordSignIn, wrongPasswordMessage } from "@/lib/sign-in-lockout";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -57,7 +57,7 @@ export async function memberSignInAction(input: { email: string; password: strin
   if (!res.ok) {
     return res.locked
       ? { status: "error", code: "account_locked", message: lockedMessage(res.lockedUntil) }
-      : { status: "error", code: "invalid_credentials", message: "Email or password is not right" };
+      : { status: "error", code: "invalid_credentials", message: wrongPasswordMessage("Email or password is not right.", res) };
   }
   return { status: "success" };
 }

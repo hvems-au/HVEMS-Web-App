@@ -4,7 +4,7 @@ import { forgotPasswordSchema, resetPasswordSchema, signInSchema, signUpSchema }
 import { fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { currentOrigin, getCurrentPortal } from "@/lib/current-portal";
 import { PORTAL_INFO } from "@/lib/portals";
-import { lockedMessage, passwordSignIn, recordSignIn } from "@/lib/sign-in-lockout";
+import { lockedMessage, passwordSignIn, recordSignIn, wrongPasswordMessage } from "@/lib/sign-in-lockout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Only allow same-site relative redirects after sign-in (prevents open redirects). */
@@ -28,7 +28,7 @@ export async function signInAction(_prev: ActionState<{ redirectTo: string }>, f
         ? "Please confirm your email address first. Check your inbox for the verification link."
         : res.code === "rate_limited"
           ? "Too many attempts. Wait a few minutes and try again."
-          : "Email or password is incorrect.";
+          : wrongPasswordMessage("Email or password is incorrect.", res);
     return { status: "error", code: res.code, message };
   }
   // The client does a full navigation: an in-action redirect renders the target

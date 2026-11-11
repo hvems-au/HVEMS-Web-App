@@ -1,6 +1,6 @@
 /**
  * Idle timeouts (SoW §2.5, CFG-45, ADM-01): a session with no activity for the
- * limit is signed out. Portals 12 hours, Super Admin console 30 minutes; the
+ * limit is signed out. Portals 3 hours (O-11), Super Admin console 30 minutes; the
  * values are platform settings (`security.idle_timeout_minutes_*`).
  *
  * The proxy keeps the time of the last request in an httpOnly cookie, tied to
@@ -10,7 +10,7 @@
  */
 export const ACTIVITY_COOKIE = "hvems_last_active";
 export const IDLE_LIMIT_COOKIE = "hvems_idle_minutes";
-export const IDLE_DEFAULT_MINUTES = { portal: 720, console: 30 } as const;
+export const IDLE_DEFAULT_MINUTES = { portal: 180, console: 30 } as const;
 
 export function encodeActivity(sessionId: string, atSeconds: number): string {
   return `${sessionId}.${atSeconds}`;

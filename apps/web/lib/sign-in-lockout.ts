@@ -2,7 +2,7 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Password lockout (SoW §2.5, CFG-45): 10 wrong passwords in a row lock the
+ * Password lockout (SoW §2.5, CFG-45, O-11): 5 wrong passwords in a row lock the
  * address for 15 minutes (settings `security.password_*`). The counting and
  * the lock live in the database; these functions are server-only (service
  * role), so a browser can neither read nor clear a lock.
@@ -11,6 +11,10 @@ export interface LockState {
   locked: boolean;
   locked_until?: string | null;
   remaining?: number;
+  failed_count?: number;
+  /** True from the 3rd wrong password (setting security.password_warn_after_attempts). */
+  show_remaining?: boolean;
+  lockout_minutes?: number;
 }
 
 export async function signInLockState(email: string): Promise<LockState> {
@@ -35,7 +39,9 @@ export function lockedMessage(until: string | null | undefined): string {
 
 type AuthClient = { auth: { signInWithPassword(c: { email: string; password: string }): Promise<{ error: { code?: string; status?: number } | null }> } };
 
-export type PasswordSignInResult = { ok: true } | { ok: false; code: string; locked?: boolean; lockedUntil?: string | null };
+export type PasswordSignInResult =
+  | { ok: true }
+  | { ok: false; code: string; locked?: boolean; lockedUntil?: string | null; remaining?: number; lockoutMinutes?: number };
 
 /**
  * Password sign-in with the lockout around it. A locked address is refused
@@ -56,9 +62,17 @@ export async function passwordSignIn(db: AuthClient, email: string, password: st
     if (error.code === "invalid_credentials") {
       const after = await recordSignIn(email, false, portal).catch(() => null);
       if (after?.locked) return { ok: false, code: "account_locked", locked: true, lockedUntil: after.locked_until };
+      if (after?.show_remaining) return { ok: false, code: "invalid_credentials", remaining: after.remaining, lockoutMinutes: after.lockout_minutes };
     }
     return { ok: false, code: error.status === 429 ? "rate_limited" : (error.code ?? "sign_in_failed") };
   }
   await recordSignIn(email, true, portal).catch((e) => console.error("lockout clear failed", e));
   return { ok: true };
+}
+
+/** "Email or password is incorrect." plus, from the 3rd wrong password, the tries left. */
+export function wrongPasswordMessage(base: string, res: { remaining?: number; lockoutMinutes?: number }): string {
+  if (res.remaining === undefined) return base;
+  const tries = res.remaining === 1 ? "1 try" : `${res.remaining} tries`;
+  return `${base} ${tries} left before this account is locked for ${res.lockoutMinutes ?? 15} minutes.`;
 }

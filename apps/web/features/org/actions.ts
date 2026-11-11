@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createInvitation, resetMemberMfa, revokeInvitation, setOrganisationLogo } from "@hvems/api-client";
+import { createInvitation, resetMemberMfa, revokeInvitation, setOrganisationLogo, unlockMemberSignIn } from "@hvems/api-client";
 import { GRANT_LABELS, MEMBER_GRANTS, type MemberGrant, type MemberRole } from "@hvems/permissions";
 import { createOrganisationSchema, inviteMemberSchema, organisationContactSchema, z } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
@@ -188,6 +188,18 @@ export async function resetMemberMfaAction(portal: string, orgId: string, member
     await removeAllMfaFactors(userId);
     revalidatePath(teamPath(portal, orgId));
     return { status: "success", message: "MFA reset. They'll set up their authenticator app at their next sign-in." };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** Owner or Company Admin clears a member's wrong passwords or sign-in lock (O-11). */
+export async function unlockMemberSignInAction(portal: string, orgId: string, membershipId: string): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await unlockMemberSignIn(db, membershipId);
+    revalidatePath(teamPath(portal, orgId));
+    return { status: "success", message: "Sign-in unlocked. They can sign in again now." };
   } catch (e) {
     return errorState(e);
   }

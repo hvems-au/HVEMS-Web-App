@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAssetConditionCounts, getOrganisation, listAssets, listClients, listInvitations, listMembers, listSites } from "@hvems/api-client";
+import { getAssetConditionCounts, getOrganisation, listAssets, listClients, listInvitations, listMemberSignInLocks, listMembers, listSites } from "@hvems/api-client";
 import { formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { GRANT_LABELS, KIND_LABELS, ROLE_LABELS } from "@hvems/permissions";
 import type { Organisation } from "@hvems/types";
@@ -12,7 +12,7 @@ import { getSessionUser, getStaffContext } from "@/lib/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
-import { OrganisationDetailsForm, ResetMfaButton, SuspensionForm } from "./forms";
+import { AdminSignInLock, OrganisationDetailsForm, ResetMfaButton, SuspensionForm } from "./forms";
 
 export const metadata: Metadata = { title: "Organisation" };
 
@@ -151,7 +151,14 @@ async function DetailsTab({ org, superAdmin }: { org: Organisation; superAdmin: 
 
 async function TeamTab({ orgId, superAdmin }: { orgId: string; superAdmin: boolean }) {
   const db = await createSupabaseServerClient();
-  const [members, invitations] = await Promise.all([listMembers(db, orgId), listInvitations(db, orgId).catch(() => [])]);
+  const [members, invitations, locks] = await Promise.all([
+    listMembers(db, orgId),
+    listInvitations(db, orgId).catch(() => []),
+    superAdmin ? listMemberSignInLocks(db, orgId).catch(() => []) : Promise.resolve([]),
+  ]);
+  const lockOf = new Map(locks.map((l) => [l.membership_id, l]));
+  const timeText = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleTimeString("en-AU", { timeZone: "Australia/Brisbane", hour: "numeric", minute: "2-digit" }) : null;
   return (
     <div className="flex flex-col gap-5">
       <Card>
@@ -175,7 +182,18 @@ async function TeamTab({ orgId, superAdmin }: { orgId: string; superAdmin: boole
               {members.map((m) => (
                 <TR key={m.id}>
                   <TD className="font-semibold">{m.profile?.full_name || "—"}</TD>
-                  <TD>{m.profile?.email ?? "—"}</TD>
+                  <TD>
+                    {m.profile?.email ?? "—"}
+                    {superAdmin && lockOf.get(m.id) ? (
+                      <AdminSignInLock
+                        orgId={orgId}
+                        userId={m.user_id}
+                        name={m.profile?.full_name || m.profile?.email || "this person"}
+                        failedCount={lockOf.get(m.id)!.failed_count}
+                        lockedUntilText={timeText(lockOf.get(m.id)!.locked_until)}
+                      />
+                    ) : null}
+                  </TD>
                   <TD>{ROLE_LABELS[m.role]}</TD>
                   <TD className="text-ink-muted">
                     {(m.grants ?? [])

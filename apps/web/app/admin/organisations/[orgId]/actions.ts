@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { adminResetUserMfa, adminSetOrganisationSuspended, adminUpdateOrganisation } from "@hvems/api-client";
+import { adminResetUserMfa, adminSetOrganisationSuspended, adminUnlockSignIn, adminUpdateOrganisation } from "@hvems/api-client";
 import { adminOrganisationSchema, organisationSuspensionSchema } from "@hvems/validation";
 import { errorState, fieldErrorsFrom, type ActionState } from "@/lib/actions";
 import { removeAllMfaFactors } from "@/lib/mfa-admin";
@@ -54,6 +54,18 @@ export async function adminResetUserMfaAction(orgId: string, userId: string, rea
     await removeAllMfaFactors(id);
     revalidatePath(`/admin/organisations/${orgId}`);
     return { status: "success", message: "MFA reset. They'll set up their authenticator app at their next sign-in." };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** Super Admin clears a person's wrong passwords or sign-in lock (O-11). */
+export async function adminUnlockSignInAction(orgId: string, userId: string): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    await adminUnlockSignIn(db, userId);
+    revalidatePath(`/admin/organisations/${orgId}`);
+    return { status: "success", message: "Sign-in unlocked. They can sign in again now." };
   } catch (e) {
     return errorState(e);
   }

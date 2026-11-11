@@ -2052,6 +2052,7 @@ export type Database = {
       accept_invitation: { Args: { p_token: string }; Returns: string }
       acknowledge_alert: { Args: { p_alert_id: string }; Returns: undefined }
       admin_reset_user_mfa: { Args: { p_reason: string; p_user_id: string }; Returns: string }
+      admin_unlock_sign_in: { Args: { p_user_id: string }; Returns: undefined }
       admin_set_organisation_suspended: {
         Args: {
           p_organisation_id: string
@@ -2202,6 +2203,10 @@ export type Database = {
         Returns: undefined
       }
       mark_notifications_read: { Args: { p_ids?: string[] }; Returns: number }
+      member_sign_in_locks: {
+        Args: { p_organisation_id: string }
+        Returns: { failed_count: number; locked_until: string | null; membership_id: string }[]
+      }
       merge_defect: {
         Args: { p_defect_id: string; p_into_id: string; p_reason?: string }
         Returns: undefined
@@ -2372,6 +2377,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      unlock_member_sign_in: { Args: { p_membership_id: string }; Returns: undefined }
       update_member_role: {
         Args: {
           p_membership_id: string

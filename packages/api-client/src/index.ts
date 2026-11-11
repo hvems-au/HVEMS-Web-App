@@ -876,3 +876,26 @@ export async function resetMemberMfa(db: HvemsClient, membershipId: string, reas
 export async function adminResetUserMfa(db: HvemsClient, userId: string, reason: string): Promise<string> {
   return unwrap<string>(await db.rpc("admin_reset_user_mfa", { p_user_id: userId, p_reason: reason }));
 }
+
+// ------------------------------------------------------------- sign-in locks (O-11)
+export interface MemberSignInLock {
+  membership_id: string;
+  failed_count: number;
+  /** Set while the member is locked out. */
+  locked_until: string | null;
+}
+
+/** Members with recent wrong passwords or a lock (Owner, Company Admin, Super Admin). */
+export async function listMemberSignInLocks(db: HvemsClient, organisationId: string): Promise<MemberSignInLock[]> {
+  return unwrap<MemberSignInLock[]>(await db.rpc("member_sign_in_locks", { p_organisation_id: organisationId })) ?? [];
+}
+
+/** Owner or Company Admin clears a member's wrong passwords or lock. */
+export async function unlockMemberSignIn(db: HvemsClient, membershipId: string): Promise<void> {
+  unwrap(await db.rpc("unlock_member_sign_in", { p_membership_id: membershipId }));
+}
+
+/** Super Admin clears anyone's wrong passwords or lock. */
+export async function adminUnlockSignIn(db: HvemsClient, userId: string): Promise<void> {
+  unwrap(await db.rpc("admin_unlock_sign_in", { p_user_id: userId }));
+}
