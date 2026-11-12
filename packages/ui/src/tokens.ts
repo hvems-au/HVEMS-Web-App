@@ -7,29 +7,61 @@
  * checks the two stay in sync.
  */
 export const colors = {
-  charcoal: "#444444", // Brand: HVEMS Charcoal — sidebar, dark panels, primary text
-  shade: "#444444", // = charcoal
-  textDark: "#444444", // = charcoal
-  darkGrey: "#6B6B6B", // secondary text (AA on white)
-  textGrey: "#A7A6AB",
-  stroke: "#D9D9D9",
-  lightGrey: "#F5F5F7",
-  background: "#F8F8F8",
+  charcoal: "#444444", // Brand: HVEMS Charcoal
+  brand: "#CE5502", // Brand: HVEMS Orange (fills: buttons, active navigation)
+  brandHover: "#B84B02",
+  brandInk: "#B84B02", // orange used as text
+  brandSoft: "#FDEEE3",
+  brandProgress: "#F8781F",
+  nav: "#3A3A3A", // sidebar
+  textDark: "#2B2B2E", // primary text
+  darkGrey: "#55555B", // secondary text, 7.3:1 on white
+  textGrey: "#6C6C73", // tertiary text, 5.3:1 on white
+  stroke: "#DDDDE1",
+  strokeStrong: "#C4C4CA",
+  surface: "#FFFFFF",
+  lightGrey: "#F2F2F4", // surface-muted
+  background: "#F5F5F6", // page canvas
   white: "#FFFFFF",
-  brand: "#CE5502", // Brand: HVEMS Orange
-  brandProgress: "#F8781F", // "Progress"
-  blue: "#2071DD",
-  green: "#0EA400",
-  red: "#F11617",
-  redBox: "#FFE2E2",
-  lightYellow: "#FFF5E0",
+  blue: "#1C5FBD",
+  green: "#0D8A1F",
+  okSoft: "#E7F5E8",
+  okInk: "#0A6B18",
+  amber: "#C26A00",
+  lightYellow: "#FFF4DD",
+  warnInk: "#7A3D00",
+  red: "#D71A1B",
+  redBox: "#FDE8E8",
+  dangerInk: "#A10D0E",
+  infoSoft: "#E8F0FC",
 } as const;
 
-/** Asset condition colours (SoW §3.4: red warning, amber warning, none). */
+/** Dark theme (opaque values; the web uses translucent tints for some soft backgrounds). */
+export const darkColors = {
+  brand: "#D35C0C",
+  brandInk: "#F39A57",
+  nav: "#101114",
+  background: "#141518",
+  surface: "#1C1E22",
+  surfaceRaised: "#24272C",
+  textDark: "#ECECEE",
+  darkGrey: "#B9B9C0",
+  textGrey: "#9A9AA2",
+  link: "#85B4F5",
+  stroke: "#32353B",
+  green: "#4FBF63",
+  okInk: "#8AD898",
+  amber: "#E2A03F",
+  warnInk: "#F0C47F",
+  red: "#E5484D",
+  dangerInk: "#FF9A9C",
+} as const;
+
+/** Asset condition colours (SoW §3.4: red warning, amber warning, none), light theme. */
 export const conditionColors = {
-  active: { fg: "#0A7A00", bg: "#E6F6E5" },
-  needs_attention: { fg: "#9A4A00", bg: "#FFF5E0" },
-  out_of_service: { fg: "#C40F10", bg: "#FFE2E2" },
+  active: { fg: "#0A6B18", bg: "#E7F5E8" },
+  needs_attention: { fg: "#7A3D00", bg: "#FFF4DD" },
+  out_of_service: { fg: "#A10D0E", bg: "#FDE8E8" },
 } as const;
 
 export const radii = { input: 6, button: 6, card: 12, authCard: 18, pill: 999 } as const;
@@ -50,4 +82,4 @@ export const typography = {
   bullets: { size: 13, weight: 400 }, // 12–14px
 } as const;
 
-export const layout = { sidebarWidth: 180, contentPadding: 22, minMobileWidth: 360 } as const;
+export const layout = { sidebarWidth: 232, contentPadding: 22, minMobileWidth: 360 } as const;

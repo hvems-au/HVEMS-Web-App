@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { colors } from "./tokens";
+import { colors, darkColors } from "./tokens";
 
 describe("design tokens match the web CSS variables", () => {
   const css = readFileSync(join(__dirname, "../../../apps/web/app/globals.css"), "utf8").toLowerCase();
