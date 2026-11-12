@@ -48,7 +48,8 @@ select is((public.set_work_order_requirement(:'wo_id', 'licence') -> 1 ->> 'mess
   'a required qualification that has expired is flagged');
 select is((public.set_work_order_requirement(:'wo_id', 'first_aid') -> 1 ->> 'message'), 'No first aid recorded',
   'a missing one too');
-select ok(public.update_work_order(:'wo_id', 'Replace hydraulic hose', null, 'internal', null, 'normal', :'tech', '2026-12-08') is null or true, 'move the due date');
+select lives_ok(format($$select public.update_work_order(%L, 'Replace hydraulic hose', null, 'internal', null, 'normal', %L, '2026-12-08')$$, :'wo_id', :'tech'),
+  'move the due date after the leave');
 select is((select jsonb_path_query_array(assignment_warnings, '$[*].code') from public.work_orders where id = :'wo_id'), '["no_qualification"]'::jsonb,
   'after the leave, only the qualification warning is left');
 select lives_ok(format($$select public.cancel_leave(id) from public.workforce_leave where user_id = %L$$, :'tech'), 'leave can be cancelled');
