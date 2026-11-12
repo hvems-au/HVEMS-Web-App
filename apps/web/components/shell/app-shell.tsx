@@ -146,7 +146,12 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
 }
 
 function UserMenu({ user }: { user: AppShellProps["user"] }) {
+  // The sign-out form lives outside the menu: the menu closes (and leaves the page)
+  // as soon as an item is chosen, which would cancel a form inside it.
+  const signOutForm = React.useRef<HTMLFormElement>(null);
   return (
+    <>
+    <form ref={signOutForm} action="/auth/sign-out" method="post" className="hidden" />
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
         className="flex size-10 items-center justify-center rounded-full bg-shade text-[13px] font-semibold text-white ring-offset-2 hover:ring-2 hover:ring-brand/40"
@@ -166,16 +171,16 @@ function UserMenu({ user }: { user: AppShellProps["user"] }) {
               <ShieldCheck className="size-4 text-ink-muted" /> Account security
             </Link>
           </DropdownMenu.Item>
-          <form action="/auth/sign-out" method="post">
-            <DropdownMenu.Item asChild>
-              <button type="submit" className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted">
-                <LogOut className="size-4 text-ink-muted" /> Sign out
-              </button>
-            </DropdownMenu.Item>
-          </form>
+          <DropdownMenu.Item
+            onSelect={() => signOutForm.current?.requestSubmit()}
+            className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
+          >
+            <LogOut className="size-4 text-ink-muted" /> Sign out
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+    </>
   );
 }
 
