@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { AutoFilterForm } from "@/components/auto-filter-form";
+import { Input, SEARCH_FIELD } from "@/components/ui/form";
+import { cn, firstParam } from "@/lib/utils";
 import { formatDriverId, listDriverCredentials, listDrivers } from "@hvems/api-client";
 import { credentialStatus, credentialTitle, formatDateTimeAU, todayISO } from "@hvems/domain";
 import { PageHeader } from "@/components/shell/page";
@@ -20,8 +25,15 @@ function nowMs() {
  * Operator profiles (O-10): Operator ID + PIN sign-in on the equipment, no email.
  * Operator profiles are unlimited and don't count towards member logins.
  */
-export default async function DriversPage({ params }: { params: Promise<{ orgId: string }> }) {
+export default async function DriversPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orgId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { orgId } = await params;
+  const q = (firstParam((await searchParams).q) ?? "").trim().slice(0, 60);
   const ctx = await loadOrgContext(orgId, ["company"]);
   await requireCapability(ctx, "drivers.manage");
   const db = await createSupabaseServerClient();
@@ -49,6 +61,18 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
   const today = todayISO(tz);
   const warningDays = Number(warnSetting.data?.value) || 30;
   const dmy = (iso: string) => iso.split("-").reverse().join("/");
+  // Search (as you type): name, Operator ID (OP-0001 or just 1), or phone.
+  const needle = q.toLowerCase().replace(/\s+/g, "");
+  const shown = drivers.filter((d) => {
+    if (!needle) return true;
+    const id = formatDriverId(d.driver_number).toLowerCase();
+    return (
+      d.full_name.toLowerCase().replace(/\s+/g, "").includes(needle) ||
+      id.includes(needle) ||
+      String(d.driver_number) === needle.replace(/^(op|d)-?0*/, "") ||
+      (d.phone ?? "").replace(/\s+/g, "").includes(needle)
+    );
+  });
   const credsByDriver = new Map<string, CredentialRow[]>();
   for (const cr of credentials) {
     const row: CredentialRow = { ...cr, status: credentialStatus(cr.expires_on, today, warningDays), expiresText: cr.expires_on ? dmy(cr.expires_on) : null };
@@ -69,8 +93,34 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
         signInUrl={portalOrigin("driver").replace(/^https?:\/\//, "")}
       />
       <Card>
+        {drivers.length ? (
+          <AutoFilterForm className="flex flex-wrap items-center gap-3 border-b border-stroke p-4">
+            <span className="relative w-full sm:w-80">
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden />
+              <Input
+                name="q"
+                defaultValue={q}
+                placeholder="Name, Operator ID or phone"
+                aria-label="Search operators"
+                autoComplete="off"
+                enterKeyHint="search"
+                className={cn("h-10 pl-9 text-[13.5px]", SEARCH_FIELD)}
+              />
+            </span>
+            {q ? (
+              <p className="text-[13px] text-ink-muted" aria-live="polite">
+                {shown.length} of {drivers.length} match ·{" "}
+                <Link href={`/customer/${orgId}/drivers`} className="font-medium text-link hover:underline">
+                  Clear
+                </Link>
+              </p>
+            ) : null}
+          </AutoFilterForm>
+        ) : null}
         {drivers.length === 0 ? (
           <EmptyState title="No operators yet">Add an operator to get an Operator ID and a one-time setup code. Then choose the equipment they may operate.</EmptyState>
+        ) : shown.length === 0 ? (
+          <EmptyState title="No operators match">Try part of the name, the Operator ID (e.g. OP-0002) or a phone number.</EmptyState>
         ) : (
           <Table>
             <THead>
@@ -84,7 +134,7 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
               </tr>
             </THead>
             <tbody>
-              {drivers.map((d) => {
+              {shown.map((d) => {
                 const locked = d.locked_until && new Date(d.locked_until).getTime() > now;
                 const waiting = !!d.setup_expires_at;
                 const expired = waiting && new Date(d.setup_expires_at!).getTime() < now;

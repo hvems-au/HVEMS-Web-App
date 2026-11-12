@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertOctagon, AlertTriangle, Building2, CheckCircle2, ChevronRight, MapPin, Plus, Truck, Upload, Users } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Building2, CheckCircle2, ChevronRight, MapPin, Plus, Truck, Upload, Users, Wrench } from "lucide-react";
 import { getAssetConditionCounts, getDashboardTodo, listAssets, listClients, listMembers, listSites } from "@hvems/api-client";
 import { fleetSubscriptionCents, formatAud, monthlyWaiverAllowance } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -67,11 +67,19 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Registered assets" value={counts.total} sub="Current vehicles and equipment" icon={<Truck />} href={`${base}/equipment`} />
         <StatCard label="Active" value={counts.active} sub="No open defects or holds" icon={<CheckCircle2 />} tone="green" href={`${base}/equipment?condition=active`} />
         <StatCard label="Needs attention" value={counts.needs_attention} sub="Minor defects or holds" icon={<AlertTriangle />} tone="amber" href={`${base}/equipment?condition=needs_attention`} />
         <StatCard label="Broken/Out of service" value={counts.out_of_service} sub="Do not operate" icon={<AlertOctagon />} tone="red" href={`${base}/equipment?condition=out_of_service`} />
+        <StatCard
+          label="Open defects"
+          value={todo.criticalDefects + todo.otherDefects}
+          sub={todo.criticalDefects ? `${todo.criticalDefects} critical · ${todo.otherDefects} other` : "Includes advisory defects"}
+          icon={<Wrench />}
+          tone={todo.criticalDefects ? "red" : todo.otherDefects ? "amber" : "green"}
+          href={`${base}/defects`}
+        />
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-3">

@@ -60,7 +60,7 @@ export default async function InspectionsPage({
         .limit(500)
         .then((r) => ((r.data ?? []) as { id: string }[]).map((a) => a.id))
     : null;
-  const missedFilter = { assetId: f.asset || undefined, frequency: f.check || undefined, assetIds: searchAssetIds ?? undefined };
+  const missedFilter = { assetId: f.asset || undefined, frequency: f.check || undefined, assetIds: searchAssetIds ?? undefined, from: f.from || undefined, to: f.to || undefined };
   const [rows, openCount, open, reviewed, assets, operatorIds] = await Promise.all([
     tab === "submitted"
       ? listInspections(db, {
@@ -278,6 +278,8 @@ export default async function InspectionsPage({
                     { value: "custom", label: "Custom" },
                   ],
                 },
+                { kind: "date", name: "from", label: "Due from", value: f.from },
+                { kind: "date", name: "to", label: "Due to", value: f.to },
               ]}
             />
             {open.length === 0 ? (

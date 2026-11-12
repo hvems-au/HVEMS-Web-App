@@ -1118,7 +1118,7 @@ export async function listMissedPrestarts(
   organisationId: string,
   status: "open" | "reviewed" = "open",
   limit = 200,
-  filter: { assetId?: string; frequency?: MissedPrestart["frequency"]; /** Only these equipment (from a search). */ assetIds?: string[] } = {},
+  filter: { assetId?: string; frequency?: MissedPrestart["frequency"]; /** Only these equipment (from a search). */ assetIds?: string[]; /** Due on or after / on or before (yyyy-mm-dd). */ from?: string; to?: string } = {},
 ): Promise<MissedPrestart[]> {
   let q = db
     .from("missed_prestarts")
@@ -1127,6 +1127,8 @@ export async function listMissedPrestarts(
   q = status === "open" ? q.eq("status", "open") : q.neq("status", "open");
   if (filter.assetId) q = q.eq("asset_id", filter.assetId);
   if (filter.frequency) q = q.eq("frequency", filter.frequency);
+  if (filter.from) q = q.gte("period_end", filter.from);
+  if (filter.to) q = q.lte("period_start", filter.to);
   if (filter.assetIds) q = q.in("asset_id", filter.assetIds.length ? filter.assetIds : ["00000000-0000-0000-0000-000000000000"]);
   return unwrap(await q.order("period_start", { ascending: false }).limit(limit)) as unknown as MissedPrestart[];
 }
