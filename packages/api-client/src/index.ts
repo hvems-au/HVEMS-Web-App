@@ -241,6 +241,32 @@ export async function listAssets(db: HvemsClient, q: AssetListQuery): Promise<{ 
   return { rows: (res.data ?? []) as AssetListItem[], total: res.count ?? 0 };
 }
 
+/**
+ * Every asset matching the register's filters, for CSV export. Fetched in
+ * chunks of 1,000 (the API's row limit), up to `max` rows.
+ */
+export async function listAssetsForExport(db: HvemsClient, q: Omit<AssetListQuery, "page" | "pageSize">, max = 20000): Promise<AssetListItem[]> {
+  const rows: AssetListItem[] = [];
+  for (let from = 0; from < max; from += 1000) {
+    let query = db
+      .from("assets")
+      .select("*, asset_class:asset_classes(code, name, category), site:sites(id, name, suburb, state), client:clients(id, name)")
+      .eq("organisation_id", q.organisationId);
+    query = q.status === "archived" ? query.not("archived_at", "is", null) : query.is("archived_at", null);
+    if (q.condition) query = query.eq("condition", q.condition);
+    if (q.search?.trim()) {
+      const s = q.search.trim().replace(/[%_,()]/g, " ");
+      query = query.or(["asset_number", "make", "model", "registration_number", "vin", "serial_number"].map((c) => `${c}.ilike.%${s}%`).join(","));
+    }
+    const res = await query.order("asset_number").range(from, from + 999);
+    if (res.error) throw toAppError(res.error);
+    const chunk = (res.data ?? []) as AssetListItem[];
+    rows.push(...chunk);
+    if (chunk.length < 1000) break;
+  }
+  return rows;
+}
+
 export async function getAssetConditionCounts(db: HvemsClient, organisationId: string): Promise<Record<AssetCondition | "total", number>> {
   const counts = { total: 0, active: 0, needs_attention: 0, out_of_service: 0 };
   const conditions: AssetCondition[] = ["active", "needs_attention", "out_of_service"];

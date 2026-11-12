@@ -68,27 +68,45 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
       },
     ];
   }
+  // Grouped so the menu reads at a glance; empty groups are hidden (filterNav).
   return [
+    { items: [{ label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" }] },
     {
+      title: "Fleet",
       items: [
-        { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
         { label: "Equipment", href: `${base}/equipment`, icon: "equipment" },
+        { label: "Operators", href: `${base}/drivers`, icon: "drivers", capability: "drivers.manage" },
         { label: "Clients & Sites", href: `${base}/clients`, icon: "clients", capability: "clients.view" },
+      ],
+    },
+    {
+      title: "Safety",
+      items: [
         { label: "Inspections", href: `${base}/inspections`, icon: "inspections" },
         { label: "Defects & Safety", href: `${base}/defects`, icon: "defects" },
         { label: "Alerts", href: `${base}/alerts`, icon: "alerts" },
-        { label: "Operators", href: `${base}/drivers`, icon: "drivers", capability: "drivers.manage" },
+      ],
+    },
+    {
+      title: "Maintenance",
+      items: [
         { label: "Maintenance", href: `${base}/maintenance`, icon: "maintenance" },
         { label: "Work Orders", href: `${base}/work-orders`, icon: "workorders" },
         { label: "Technicians", href: `${base}/technicians`, icon: "technicians", capability: "workforce.manage" },
         { label: "Parts", href: `${base}/module/parts`, icon: "parts", increment: "2C" },
-        { label: "Fuel & Usage", href: `${base}/module/fuel`, icon: "fuel", increment: "2C" },
-        { label: "Documents", href: `${base}/module/documents`, icon: "documents", increment: "2C" },
-        { label: "Reports", href: `${base}/module/reports`, icon: "reports", capability: "reports.view", increment: "2C" },
         { label: "Marketplace", href: `${base}/module/marketplace`, icon: "marketplace", capability: "marketplace.post", increment: "2D" },
       ],
     },
     {
+      title: "Records",
+      items: [
+        { label: "Fuel & Usage", href: `${base}/module/fuel`, icon: "fuel", increment: "2C" },
+        { label: "Documents", href: `${base}/module/documents`, icon: "documents", increment: "2C" },
+        { label: "Reports", href: `${base}/module/reports`, icon: "reports", capability: "reports.view", increment: "2C" },
+      ],
+    },
+    {
+      title: "Organisation",
       items: [
         { label: "Team", href: `${base}/team`, icon: "team" },
         { label: "Audit History", href: `${base}/audit`, icon: "audit", capability: "audit.view" },

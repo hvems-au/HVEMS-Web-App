@@ -35,11 +35,11 @@ export interface AppShellProps {
 function NavLinks({ nav, onNavigate }: { nav: NavSection[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-4">
+    <nav aria-label="Main" className="flex flex-col gap-2.5">
       {nav.map((section, i) => (
-        <div key={i} className={cn(i > 0 && "border-t border-white/10 pt-4")}>
+        <div key={i} className={cn(i > 0 && !section.title && "border-t border-white/10 pt-3")}>
           {section.title ? (
-            <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-brand">{section.title}</p>
+            <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">{section.title}</p>
           ) : null}
           <ul className="flex flex-col gap-0.5">
             {section.items.map((item) => {
@@ -53,7 +53,7 @@ function NavLinks({ nav, onNavigate }: { nav: NavSection[]; onNavigate?: () => v
                     aria-current={active ? "page" : undefined}
                     title={item.increment ? `${item.label} — delivered in increment ${item.increment}` : undefined}
                     className={cn(
-                      "group flex items-center gap-2.5 rounded-[7px] px-3 py-2 text-[13px] font-medium transition-colors",
+                      "group flex items-center gap-2.5 rounded-[7px] px-3 py-[7px] text-[13px] font-medium transition-colors",
                       active
                         ? "bg-brand text-white shadow-sm"
                         : item.increment
@@ -186,9 +186,9 @@ function UserMenu({ user }: { user: AppShellProps["user"] }) {
 
 function SidebarBody({ nav, current, contexts, onNavigate }: Pick<AppShellProps, "nav" | "current" | "contexts"> & { onNavigate?: () => void }) {
   return (
-    <div className="flex h-full flex-col gap-5 px-2.5 pt-5 pb-4">
-      <Link href={current.href} className="mx-auto block w-[118px]" aria-label="HVEMS home">
-        <Logo onDark priority />
+    <div className="flex h-full flex-col gap-4 px-2.5 pt-5 pb-4">
+      <Link href={current.href} className="block px-3 pt-1" aria-label="HVEMS home">
+        <Logo variant="horizontal" onDark priority className="w-[124px]" />
       </Link>
       <div className="-mx-1 flex-1 overflow-y-auto px-1">
         <NavLinks nav={nav} onNavigate={onNavigate} />

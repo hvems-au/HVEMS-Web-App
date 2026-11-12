@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus, Search, Upload } from "lucide-react";
+import { Plus, Search, Upload, Download } from "lucide-react";
 import { getAssetConditionCounts, getPersonNames, listAssets } from "@hvems/api-client";
 import type { AssetCondition } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -44,7 +44,12 @@ export default async function EquipmentPage({
     getAssetConditionCounts(db, orgId),
     listAssets(db, { organisationId: orgId, search: q, condition: tab.condition, status: tab.archived ? "archived" : "current", page, pageSize: PAGE_SIZE }),
   ]);
-  const operators = Object.fromEntries(await getPersonNames(db, rows.map((r) => r.current_operator_id)));
+  const operators = Object.fromEntries(
+    await getPersonNames(
+      db,
+      rows.map((r) => r.current_operator_id),
+    ),
+  );
   const base = `/customer/${orgId}/equipment`;
   const pages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
   const href = (over: Record<string, string | number | undefined>) => {
@@ -55,6 +60,12 @@ export default async function EquipmentPage({
     return s ? `${base}?${s}` : base;
   };
   const manage = can(ctx.capabilities, "assets.manage");
+  // Export what's on screen: the current tab and search.
+  const exportQuery = new URLSearchParams();
+  if (tab.condition) exportQuery.set("condition", tab.condition);
+  if (tab.archived) exportQuery.set("status", "archived");
+  if (q) exportQuery.set("q", q);
+  const exportHref = `${base}/export${exportQuery.size ? `?${exportQuery}` : ""}`;
 
   return (
     <>
@@ -62,22 +73,29 @@ export default async function EquipmentPage({
         title="Equipment"
         description="All your vehicles and equipment"
         actions={
-          manage ? (
-            <>
-              {can(ctx.capabilities, "assets.import_archive") ? (
-                <Button asChild variant="secondary">
-                  <Link href={`${base}/import`}>
-                    <Upload /> Import CSV
+          <>
+            <Button asChild variant="secondary">
+              <a href={exportHref} download>
+                <Download /> Export CSV
+              </a>
+            </Button>
+            {manage ? (
+              <>
+                {can(ctx.capabilities, "assets.import_archive") ? (
+                  <Button asChild variant="secondary">
+                    <Link href={`${base}/import`}>
+                      <Upload /> Import CSV
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button asChild>
+                  <Link href={`${base}/new`}>
+                    <Plus /> Add equipment
                   </Link>
                 </Button>
-              ) : null}
-              <Button asChild>
-                <Link href={`${base}/new`}>
-                  <Plus /> Add equipment
-                </Link>
-              </Button>
-            </>
-          ) : null
+              </>
+            ) : null}
+          </>
         }
       />
       <Card>
@@ -135,9 +153,7 @@ export default async function EquipmentPage({
           <AssetTable rows={rows} base={base} operators={operators} />
         )}
         <div className="flex items-center justify-between gap-3 px-4 py-3 text-[13px] text-ink-subtle">
-          <span>
-            {total === 0 ? "No results" : `Showing ${(page - 1) * PAGE_SIZE + 1} to ${Math.min(page * PAGE_SIZE, total)} of ${total} results`}
-          </span>
+          <span>{total === 0 ? "No results" : `Showing ${(page - 1) * PAGE_SIZE + 1} to ${Math.min(page * PAGE_SIZE, total)} of ${total} results`}</span>
           {pages > 1 ? (
             <div className="flex items-center gap-1">
               <Button asChild variant="secondary" size="sm" aria-disabled={page <= 1} className={cn(page <= 1 && "pointer-events-none opacity-50")}>
