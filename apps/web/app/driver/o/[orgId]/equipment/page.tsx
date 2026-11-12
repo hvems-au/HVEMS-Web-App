@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ChevronRight, Search } from "lucide-react";
 import { ConditionBadge } from "@/components/condition";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form";
 import { Card, EmptyState } from "@/components/ui/primitives";
 import { loadOperatorContext } from "@/features/operator/context";
+import { QrScanButton } from "@/features/operator/qr-scan";
+import { equipmentCodeFromText } from "@/lib/equipment-code";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { firstParam } from "@/lib/utils";
 
@@ -37,10 +40,21 @@ export default async function OperatorEquipment({
   const [{ orgId }, sp] = await Promise.all([params, searchParams]);
   const base = `/driver/o/${orgId}`;
   const purpose = firstParam(sp.for) === "prestart" ? "prestart" : firstParam(sp.for) === "issue" ? "issue" : null;
-  const q = (firstParam(sp.q) ?? "").trim().slice(0, 60);
+  const rawQ = (firstParam(sp.q) ?? "").trim().slice(0, 200);
+  const code = equipmentCodeFromText(rawQ);
+  const q = rawQ.slice(0, 60);
   const cls = firstParam(sp.class) ?? "";
   await loadOperatorContext(orgId, `${base}/equipment${purpose ? `?for=${purpose}` : ""}`);
   const db = await createSupabaseServerClient();
+  const target = (id: string) => (purpose === "prestart" ? `${base}/equipment/${id}/prestart` : purpose === "issue" ? `${base}/equipment/${id}/report` : `${base}/equipment/${id}`);
+
+  // A QR label code (typed, with or without dashes, or scanned): straight to that
+  // equipment. RLS only returns codes for equipment this operator may use.
+  if (code) {
+    const match = [code.shortCode ? `short_code.eq.${code.shortCode}` : null, code.token ? `token.eq.${code.token}` : null].filter(Boolean).join(",");
+    const { data: hit } = await db.from("equipment_codes").select("asset_id, asset:assets!inner(archived_at)").eq("organisation_id", orgId).is("revoked_at", null).is("asset.archived_at", null).or(match).limit(1).maybeSingle();
+    if (hit?.asset_id) redirect(target(hit.asset_id as string));
+  }
 
   let query = db
     .from("assets")
@@ -75,8 +89,6 @@ export default async function OperatorEquipment({
   ]);
   // Exact equipment ID or registration matches first.
   const rows = ((data ?? []) as unknown as Row[]).sort((a, b) => rank(b, q) - rank(a, q));
-  const target = (id: string) => (purpose === "prestart" ? `${base}/equipment/${id}/prestart` : purpose === "issue" ? `${base}/equipment/${id}/report` : `${base}/equipment/${id}`);
-
   return (
     <>
       <h1 className="text-[22px] font-bold text-ink">
@@ -92,7 +104,7 @@ export default async function OperatorEquipment({
           <Input
             name="q"
             defaultValue={q}
-            placeholder="Search by rego, equipment ID, make or model"
+            placeholder="Rego, equipment ID, make, model or QR code"
             aria-label="Search vehicles and equipment"
             className="h-12 pl-10 text-[16px]"
             autoComplete="off"
@@ -112,11 +124,16 @@ export default async function OperatorEquipment({
         <Button type="submit" size="lg" className="h-12">
           Search
         </Button>
+        <QrScanButton searchPath={`${base}/equipment${purpose ? `?for=${purpose}` : ""}`} />
       </form>
       <Card>
         {rows.length === 0 ? (
           q || cls ? (
-            <EmptyState title="No equipment matches">Check the spelling, or search by rego or equipment ID.</EmptyState>
+            code ? (
+              <EmptyState title="No equipment for that code">The QR code may have been replaced, or the equipment isn&apos;t one you can use. Search by rego or equipment ID, or ask your manager.</EmptyState>
+            ) : (
+              <EmptyState title="No equipment matches">Check the spelling, or search by rego, equipment ID or the code under the QR label.</EmptyState>
+            )
           ) : (
             <EmptyState title="No equipment yet">Your company hasn&apos;t added any equipment you can use. Ask your manager.</EmptyState>
           )
