@@ -128,10 +128,10 @@ export function MfaPanel({ next }: { next: string }) {
   if (phase.kind === "verified") {
     return (
       <div className="flex flex-col gap-5">
-        <div className="flex items-start gap-3 rounded-[10px] border border-ok/30 bg-[#e8f7e7] p-4">
-          <ShieldCheck className="mt-0.5 size-5 text-[#0a7a00]" aria-hidden />
+        <div className="flex items-start gap-3 rounded-[10px] border border-ok/30 bg-ok-soft p-4">
+          <ShieldCheck className="mt-0.5 size-5 text-ok-ink" aria-hidden />
           <div>
-            <p className="font-semibold text-[#0a6b00]">Multi-factor authentication is on</p>
+            <p className="font-semibold text-ok-ink">Multi-factor authentication is on</p>
             <p className="text-[13px] text-ink-muted">This session is verified with your authenticator app.</p>
             <Button className="mt-3" size="sm" onClick={() => router.push(next)}>
               Continue
@@ -278,13 +278,13 @@ function RecoveryCodesStatus({ onCreated }: { onCreated: (codes: string[]) => vo
   return (
     <section className="rounded-[10px] border border-stroke p-4">
       <div className="flex items-start gap-3">
-        {low ? <TriangleAlert className="mt-0.5 size-5 text-[#9a4a00]" aria-hidden /> : <KeyRound className="mt-0.5 size-5 text-ink-muted" aria-hidden />}
+        {low ? <TriangleAlert className="mt-0.5 size-5 text-warn-ink" aria-hidden /> : <KeyRound className="mt-0.5 size-5 text-ink-muted" aria-hidden />}
         <div className="flex-1">
           <h2 className="font-semibold text-ink">Recovery codes</h2>
           {status === null ? (
             <p className="text-[13px] text-ink-subtle">Checking…</p>
           ) : status.remaining === 0 ? (
-            <p className="text-[13px] text-[#8a4300]">
+            <p className="text-[13px] text-warn-ink">
               You have no recovery codes. If you lose your phone you won&apos;t be able to sign in on your own. Create them now and keep them somewhere safe.
             </p>
           ) : (
@@ -351,7 +351,7 @@ function RecoveryCodesList({ codes, afterEnrol, onDone }: { codes: string[]; aft
         </Button>
       </div>
       <label className="flex items-center gap-2 text-[14px] text-ink">
-        <input type="checkbox" className="size-4 accent-[#CE5502]" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
+        <input type="checkbox" className="size-4 accent-brand" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
         I&apos;ve saved these codes somewhere safe
       </label>
       <Button disabled={!saved} onClick={onDone}>

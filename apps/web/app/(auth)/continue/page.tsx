@@ -66,7 +66,7 @@ export default async function ContinuePage({ searchParams }: { searchParams: Pro
   return (
     <AuthCard title={k.title}>
       <div className="flex flex-col items-center gap-5 text-center">
-        <span className="flex size-16 items-center justify-center rounded-full bg-[#fdeee3] text-brand">
+        <span className="flex size-16 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
           <k.icon className="size-8" aria-hidden />
         </span>
         <p className="text-[15px] text-ink-muted">{k.body}</p>

@@ -55,7 +55,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
               {orgs.map((o) => (
                 <TR key={o.id}>
                   <TD className="font-semibold">
-                    <Link href={`/admin/organisations/${o.id}`} className="hover:text-brand hover:underline">
+                    <Link href={`/admin/organisations/${o.id}`} className="hover:text-brand-ink hover:underline">
                       {o.name}
                     </Link>
                   </TD>

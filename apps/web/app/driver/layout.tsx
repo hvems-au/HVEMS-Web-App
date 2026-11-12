@@ -4,7 +4,7 @@ import { Logo } from "@/components/brand/logo";
 export default function DriverLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-canvas">
-      <header className="border-b border-stroke bg-white">
+      <header className="border-b border-stroke bg-surface">
         <div className="mx-auto flex h-14 max-w-3xl items-center px-4">
           <div className="w-28">
             <Logo variant="horizontal" priority />

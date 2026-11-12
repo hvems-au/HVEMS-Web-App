@@ -17,14 +17,14 @@ export function PageHeader({
     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {breadcrumb ? (
-          <Link href={breadcrumb.href} className="mb-1 inline-block text-[13px] font-medium text-link hover:underline">
-            ← {breadcrumb.label}
+          <Link href={breadcrumb.href} className="mb-1.5 inline-flex items-center gap-1 text-[13px] font-medium text-ink-muted hover:text-link">
+            <span aria-hidden>←</span> {breadcrumb.label}
           </Link>
         ) : null}
-        <h1 className="text-h1 text-ink">{title}</h1>
-        {description ? <p className="mt-1 text-[14px] text-ink-subtle">{description}</p> : null}
+        <h1 className="text-[24px] leading-tight font-bold break-words text-ink sm:text-[28px]">{title}</h1>
+        {description ? <div className="mt-1 text-[14px] text-ink-muted">{description}</div> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 sm:justify-end">{actions}</div> : null}
     </div>
   );
 }
@@ -47,8 +47,8 @@ export function StatCard({
   const iconTone = {
     neutral: "bg-surface-muted text-ink-muted",
     red: "bg-danger-soft text-danger",
-    amber: "bg-warn-soft text-[#c26100]",
-    green: "bg-[#e6f6e5] text-[#0a7a00]",
+    amber: "bg-warn-soft text-warn-ink",
+    green: "bg-ok-soft text-ok-ink",
   }[tone];
   const body = (
     <div className="card flex h-full items-center gap-4 px-4 py-4 transition-shadow hover:shadow-md">

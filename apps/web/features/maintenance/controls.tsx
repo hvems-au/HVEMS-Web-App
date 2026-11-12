@@ -259,7 +259,7 @@ export function NewWorkOrderDialog({
             ) : null}
           </div>
           {shown.length ? (
-            <div role="status" className="rounded-[8px] border border-[#f0c37a] bg-warn-soft px-3 py-2.5 text-[13px] text-[#7a3d00]">
+            <div role="status" className="rounded-[8px] border border-warn-line bg-warn-soft px-3 py-2.5 text-[13px] text-warn-ink">
               <p className="flex items-center gap-1.5 font-semibold">
                 <AlertTriangle className="size-4" aria-hidden /> Check before assigning
               </p>

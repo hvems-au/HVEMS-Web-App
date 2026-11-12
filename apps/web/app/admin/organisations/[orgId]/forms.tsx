@@ -166,8 +166,8 @@ export function SupportAccessCard({
     });
   if (active) {
     return (
-      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-[10px] border border-[#9cc0f0] bg-[#e8f0fc] px-4 py-3 text-[13.5px]">
-        <span className="font-semibold text-[#1c5fbd]">Support access active until {active.untilText}</span>
+      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-[10px] border border-info/40 bg-info-soft px-4 py-3 text-[13.5px]">
+        <span className="font-semibold text-info-ink">Support access active until {active.untilText}</span>
         <span className="text-ink-muted">Read-only · {active.reason}</span>
         <Button size="sm" variant="secondary" className="ml-auto" disabled={pending} onClick={() => run(() => endSupportAccessAction(orgId, active.id))}>
           End now
@@ -177,7 +177,7 @@ export function SupportAccessCard({
   }
   return (
     <form
-      className="mb-5 flex flex-wrap items-end gap-3 rounded-[10px] border border-stroke bg-white px-4 py-3"
+      className="mb-5 flex flex-wrap items-end gap-3 rounded-[10px] border border-stroke bg-surface px-4 py-3"
       onSubmit={(e) => {
         e.preventDefault();
         run(() => startSupportAccessAction(orgId, reason, minutes, pin));
@@ -191,7 +191,7 @@ export function SupportAccessCard({
       <Field label="Minutes" htmlFor="sa-minutes">
         <select
           id="sa-minutes"
-          className="h-10 rounded-[6px] border border-stroke bg-white px-2 text-[14px]"
+          className="h-10 rounded-[6px] border border-stroke bg-surface px-2 text-[14px]"
           value={minutes}
           onChange={(e) => setMinutes(Number(e.target.value))}
         >

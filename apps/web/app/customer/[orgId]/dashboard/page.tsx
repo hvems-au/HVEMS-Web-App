@@ -105,7 +105,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
                   {flagged.map((a) => (
                     <TR key={a.id}>
                       <TD>
-                        <Link href={`${base}/equipment/${a.id}`} className="font-semibold text-brand underline underline-offset-2">
+                        <Link href={`${base}/equipment/${a.id}`} className="font-semibold text-brand-ink underline underline-offset-2">
                           {a.asset_number}
                         </Link>
                       </TD>
@@ -131,7 +131,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
             <CardBody className="px-0 py-1">
               {todoItems.length === 0 ? (
                 <p className="flex items-center gap-2 px-5 py-3 text-[13.5px] text-ink-muted">
-                  <CheckCircle2 className="size-4 text-[#16a34a]" aria-hidden /> All caught up
+                  <CheckCircle2 className="size-4 text-ok" aria-hidden /> All caught up
                 </p>
               ) : (
                 <ul>
@@ -153,17 +153,17 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
           <Card>
             <CardHeader title="Organisation" />
             <CardBody className="grid grid-cols-3 gap-3 text-center">
-              <Link href={`${base}/clients`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-[#ececef]">
+              <Link href={`${base}/clients`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-surface-hover">
                 <Building2 className="mx-auto size-5 text-ink-muted" aria-hidden />
                 <p className="mt-1 text-[20px] font-bold">{clients.length}</p>
                 <p className="text-[12px] text-ink-muted">Clients</p>
               </Link>
-              <Link href={`${base}/clients?tab=sites`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-[#ececef]">
+              <Link href={`${base}/clients?tab=sites`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-surface-hover">
                 <MapPin className="mx-auto size-5 text-ink-muted" aria-hidden />
                 <p className="mt-1 text-[20px] font-bold">{sites.length}</p>
                 <p className="text-[12px] text-ink-muted">Sites</p>
               </Link>
-              <Link href={`${base}/team`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-[#ececef]">
+              <Link href={`${base}/team`} className="rounded-[10px] bg-surface-muted px-2 py-3 hover:bg-surface-hover">
                 <Users className="mx-auto size-5 text-ink-muted" aria-hidden />
                 <p className="mt-1 text-[20px] font-bold">{members.length}</p>
                 <p className="text-[12px] text-ink-muted">Members</p>

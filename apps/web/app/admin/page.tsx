@@ -86,7 +86,7 @@ function FleetSection({ fleet: [total, vehicles, outOfService, companies] }: { f
               {rows.slice(0, 10).map((r) => (
                 <TR key={r.id}>
                   <TD className="font-semibold">
-                    <Link href={`/admin/organisations/${r.id}?tab=equipment`} className="hover:text-brand hover:underline">
+                    <Link href={`/admin/organisations/${r.id}?tab=equipment`} className="hover:text-brand-ink hover:underline">
                       {r.name}
                     </Link>
                   </TD>

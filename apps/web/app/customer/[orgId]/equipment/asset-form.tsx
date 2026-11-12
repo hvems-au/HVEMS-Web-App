@@ -296,7 +296,7 @@ function NewClassPanel({ orgId, onCancel, onCreated }: { orgId: string; onCancel
       }
     });
   return (
-    <div className="rounded-[10px] border border-brand/40 bg-[#fff8f2] p-4 md:col-span-2 xl:col-span-3">
+    <div className="rounded-[10px] border border-brand/40 bg-brand-soft p-4 md:col-span-2 xl:col-span-3">
       <p className="text-[14px] font-semibold text-ink">New asset class</p>
       <p className="mb-3 text-[13px] text-ink-subtle">Saved for your company, so it&apos;s available next time you add equipment.</p>
       {error ? (

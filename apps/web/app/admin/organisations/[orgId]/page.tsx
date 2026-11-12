@@ -169,7 +169,7 @@ export default async function AdminOrganisationPage({
             className={cn(
               "-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium",
               tab === t.id
-                ? "border-brand text-brand"
+                ? "border-brand text-brand-ink"
                 : "border-transparent text-ink-muted hover:text-ink",
             )}
           >

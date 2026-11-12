@@ -55,7 +55,7 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
           { label: `Open (${open.length})`, href: base, on: !closed },
           { label: `Closed (${done.length})`, href: `${base}?view=closed`, on: closed },
         ].map((t) => (
-          <Link key={t.href} href={t.href} className={cn("rounded-[6px] px-4 py-1.5", t.on ? "bg-white text-ink shadow-sm" : "text-ink-muted hover:text-ink")}>
+          <Link key={t.href} href={t.href} className={cn("rounded-[6px] px-4 py-1.5", t.on ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink")}>
             {t.label}
           </Link>
         ))}

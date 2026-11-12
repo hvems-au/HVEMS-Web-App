@@ -14,11 +14,11 @@ type Setup = { driverId: string; setupCode: string; expiresAt: string };
 function SetupCard({ setup, expiresLabel }: { setup: Setup; expiresLabel: string }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-[12px] border-2 border-brand bg-[#fff7f0] p-4 text-center">
+      <div className="rounded-[12px] border-2 border-brand bg-brand-soft p-4 text-center">
         <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">Operator ID</p>
         <p className="text-[26px] font-bold text-ink">{setup.driverId}</p>
         <p className="mt-2 text-[12px] font-semibold uppercase tracking-wide text-ink-subtle">Setup code</p>
-        <p className="font-mono text-[26px] font-bold tracking-[0.2em] text-brand">{setup.setupCode}</p>
+        <p className="font-mono text-[26px] font-bold tracking-[0.2em] text-brand-ink">{setup.setupCode}</p>
         <p className="mt-1 text-[12.5px] text-ink-muted">Valid until {expiresLabel}</p>
       </div>
       <FormAlert tone="info">

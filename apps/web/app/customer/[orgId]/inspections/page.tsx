@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { countOpenMissedPrestarts, getPersonNames, listInspections, listMissedPrestarts } from "@hvems/api-client";
 import { INSPECTION_RESULT_LABELS, formatDateTimeAU, startOfDayInZone, type InspectionResultValue } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { FilterBar } from "@/components/filter-bar";
 import { ResultBadge } from "@/components/safety";
 import { PageHeader } from "@/components/shell/page";
-import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
@@ -89,7 +90,7 @@ export default async function InspectionsPage({
     <Link
       href={id === "submitted" ? base : `${base}?tab=missed`}
       aria-current={tab === id ? "page" : undefined}
-      className={cn("-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium", tab === id ? "border-brand text-brand" : "border-transparent text-ink-muted hover:text-ink")}
+      className={cn("-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium", tab === id ? "border-brand text-brand-ink" : "border-transparent text-ink-muted hover:text-ink")}
     >
       {label}
     </Link>
@@ -180,35 +181,71 @@ export default async function InspectionsPage({
               <EmptyState title="No pre-starts yet">Open a piece of equipment and choose Pre-start.</EmptyState>
             )
           ) : (
-            <Table>
-              <THead>
-                <tr>
-                  <TH>Submitted</TH>
-                  <TH>Equipment</TH>
-                  <TH>Operator</TH>
-                  <TH>Result</TH>
-                </tr>
-              </THead>
-              <tbody>
+            <>
+              <p className="px-4 pt-3 text-[13px] text-ink-muted" aria-live="polite">
+                {rows.length === 100 ? "Latest 100 pre-starts" : `${rows.length} pre-start${rows.length === 1 ? "" : "s"}`}
+                {filtered ? " matching your filters" : ""}
+              </p>
+              {/* Phones: one card per pre-start; the whole card opens it. */}
+              <ul className="divide-y divide-stroke sm:hidden">
                 {rows.map((r) => (
-                  <TR key={r.id}>
-                    <TD className="whitespace-nowrap">
-                      <Link href={`/customer/${orgId}/inspections/${r.id}`} className="font-semibold text-link hover:underline">
-                        {formatDateTimeAU(new Date(r.submitted_at), ctx.timezone)}
+                  <li key={r.id} className="relative px-4 py-3 hover:bg-surface-hover">
+                    <div className="flex items-start justify-between gap-3">
+                      <Link href={`/customer/${orgId}/inspections/${r.id}`} className={cn("min-w-0 font-semibold text-ink", STRETCHED_LINK)}>
+                        {r.header.asset_number}
+                        <span className="block truncate text-[13px] font-normal text-ink-muted">{[r.header.make, r.header.model].filter(Boolean).join(" ")}</span>
                       </Link>
-                    </TD>
-                    <TD>
-                      <span className="font-semibold">{r.header.asset_number}</span>
-                      <span className="block text-[12.5px] text-ink-subtle">{[r.header.make, r.header.model].filter(Boolean).join(" ")}</span>
-                    </TD>
-                    <TD>{r.header.operator_name ?? "—"}</TD>
-                    <TD>
                       <ResultBadge result={r.result} />
-                    </TD>
-                  </TR>
+                    </div>
+                    <p className="mt-1.5 flex items-center justify-between gap-3 text-[13px] text-ink-muted">
+                      <span className="truncate">{r.header.operator_name ?? "Unknown operator"}</span>
+                      <span className="flex shrink-0 items-center gap-1 whitespace-nowrap">
+                        {formatDateTimeAU(new Date(r.submitted_at), ctx.timezone)}
+                        <ChevronRight className="size-4 text-ink-subtle" aria-hidden />
+                      </span>
+                    </p>
+                  </li>
                 ))}
-              </tbody>
-            </Table>
+              </ul>
+              {/* Larger screens: a table; the whole row opens the pre-start. */}
+              <div className="hidden sm:block">
+                <Table>
+                  <THead>
+                    <tr>
+                      <TH>Equipment</TH>
+                      <TH>Result</TH>
+                      <TH>Operator</TH>
+                      <TH>Submitted</TH>
+                      <TH className="w-px">
+                        <span className="sr-only">Open</span>
+                      </TH>
+                    </tr>
+                  </THead>
+                  <tbody>
+                    {rows.map((r) => (
+                      <TR key={r.id}>
+                        <TD>
+                          <Link href={`/customer/${orgId}/inspections/${r.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
+                            {r.header.asset_number}
+                          </Link>
+                          <span className="block text-[12.5px] text-ink-muted">{[r.header.make, r.header.model].filter(Boolean).join(" ")}</span>
+                        </TD>
+                        <TD>
+                          <ResultBadge result={r.result} />
+                        </TD>
+                        <TD>{r.header.operator_name ?? "—"}</TD>
+                        <TD className="whitespace-nowrap text-ink-muted">{formatDateTimeAU(new Date(r.submitted_at), ctx.timezone)}</TD>
+                        <TD className="text-right">
+                          <span className="inline-flex items-center gap-0.5 text-[13px] font-medium text-link">
+                            View <ChevronRight className="size-4" aria-hidden />
+                          </span>
+                        </TD>
+                      </TR>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </>
           )}
         </Card>
       ) : (

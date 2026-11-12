@@ -3,10 +3,11 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
-import { ArrowUpRight, Bell, Check, ChevronDown, ChevronsUpDown, LogOut, Menu, ShieldCheck, X } from "lucide-react";
+import { ArrowUpRight, Bell, Check, ChevronDown, ChevronsUpDown, LogOut, Menu, Monitor, Moon, ShieldCheck, Sun, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ICONS } from "@/components/shell/icons";
 import { IdleTimer } from "@/components/shell/idle-timer";
+import { useTheme, type ThemeChoice } from "@/components/theme/theme";
 import type { NavSection } from "@/lib/navigation";
 import { cn, initials } from "@/lib/utils";
 
@@ -110,8 +111,8 @@ function NavLinks({ nav, onNavigate }: { nav: NavSection[]; onNavigate?: () => v
                         active
                           ? "bg-brand text-white shadow-sm"
                           : item.increment
-                            ? "text-white/45 hover:bg-white/8 hover:text-white/80"
-                            : "text-white/90 hover:bg-white/8 hover:text-white",
+                            ? "text-white/45 hover:bg-nav-hover hover:text-white/80"
+                            : "text-white/90 hover:bg-nav-hover hover:text-white",
                       )}
                     >
                       <Icon className="size-4 shrink-0" aria-hidden />
@@ -153,7 +154,7 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
         <ChevronsUpDown className="size-4 shrink-0 text-white/60" aria-hidden />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content side="top" align="start" sideOffset={8} className="z-50 w-72 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl">
+        <DropdownMenu.Content side="top" align="start" sideOffset={8} className="z-50 w-72 rounded-[10px] border border-stroke bg-surface-raised p-1.5 shadow-pop">
           <DropdownMenu.Label className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
             Switch organisation or portal
           </DropdownMenu.Label>
@@ -175,7 +176,7 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
                   </span>
                 </span>
                 {c.id === current.id && c.portal === current.portal ? (
-                  <Check className="size-4 text-brand" aria-label="Current" />
+                  <Check className="size-4 text-brand-ink" aria-label="Current" />
                 ) : c.href.startsWith("/auth/handoff") ? (
                   <ArrowUpRight className="size-4 text-ink-subtle" aria-label="Opens another portal" />
                 ) : null}
@@ -194,7 +195,14 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
   );
 }
 
+const APPEARANCE: { value: ThemeChoice; label: string; Icon: typeof Sun }[] = [
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "dark", label: "Dark", Icon: Moon },
+  { value: "system", label: "System", Icon: Monitor },
+];
+
 function UserMenu({ user }: { user: AppShellProps["user"] }) {
+  const { choice, setChoice } = useTheme();
   // The sign-out form lives outside the menu: the menu closes (and leaves the page)
   // as soon as an item is chosen, which would cancel a form inside it.
   const signOutForm = React.useRef<HTMLFormElement>(null);
@@ -203,13 +211,13 @@ function UserMenu({ user }: { user: AppShellProps["user"] }) {
       <form ref={signOutForm} action="/auth/sign-out" method="post" className="hidden" />
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
-          className="flex size-10 items-center justify-center rounded-full bg-shade text-[13px] font-semibold text-white ring-offset-2 hover:ring-2 hover:ring-brand/40"
+          className="flex size-10 items-center justify-center rounded-full bg-ink text-[13px] font-semibold text-surface ring-offset-2 ring-offset-canvas hover:ring-2 hover:ring-brand/50 focus-visible:ring-2 focus-visible:ring-brand"
           aria-label="Account menu"
         >
           {initials(user.fullName || user.email)}
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content align="end" sideOffset={8} className="z-50 w-64 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl">
+          <DropdownMenu.Content align="end" sideOffset={8} className="z-50 w-64 rounded-[10px] border border-stroke bg-surface-raised p-1.5 shadow-pop">
             <div className="px-2 py-2">
               <p className="truncate text-[13.5px] font-semibold text-ink">{user.fullName || "Your account"}</p>
               <p className="truncate text-[12.5px] text-ink-subtle">{user.email}</p>
@@ -223,6 +231,25 @@ function UserMenu({ user }: { user: AppShellProps["user"] }) {
                 <ShieldCheck className="size-4 text-ink-muted" /> Account security
               </Link>
             </DropdownMenu.Item>
+            <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
+            <DropdownMenu.Label className="px-2 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-ink-subtle uppercase">Appearance</DropdownMenu.Label>
+            <DropdownMenu.RadioGroup value={choice} onValueChange={(v) => setChoice(v as ThemeChoice)}>
+              {APPEARANCE.map(({ value, label, Icon }) => (
+                <DropdownMenu.RadioItem
+                  key={value}
+                  value={value}
+                  onSelect={(e) => e.preventDefault()}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
+                >
+                  <Icon className="size-4 text-ink-muted" aria-hidden />
+                  <span className="flex-1">{label}</span>
+                  <DropdownMenu.ItemIndicator>
+                    <Check className="size-4 text-brand-ink" aria-hidden />
+                  </DropdownMenu.ItemIndicator>
+                </DropdownMenu.RadioItem>
+              ))}
+            </DropdownMenu.RadioGroup>
+            <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
             <DropdownMenu.Item
               onSelect={() => signOutForm.current?.requestSubmit()}
               className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
@@ -258,18 +285,18 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
       <IdleTimer />
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded focus:bg-white focus:px-3 focus:py-2"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded focus:bg-surface focus:px-3 focus:py-2"
       >
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[var(--sidebar-width)] bg-shade lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[var(--sidebar-width)] bg-nav lg:block">
         <SidebarBody nav={nav} current={current} contexts={contexts} />
       </aside>
 
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <button className="absolute inset-0 bg-black/50" aria-label="Close navigation" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-[260px] bg-shade shadow-2xl">
+          <button className="absolute inset-0 bg-overlay" aria-label="Close navigation" onClick={() => setOpen(false)} />
+          <div className="absolute inset-y-0 left-0 w-[280px] bg-nav shadow-2xl">
             <button className="absolute top-3 right-3 rounded p-1 text-white/70 hover:text-white" onClick={() => setOpen(false)} aria-label="Close navigation">
               <X className="size-5" />
             </button>

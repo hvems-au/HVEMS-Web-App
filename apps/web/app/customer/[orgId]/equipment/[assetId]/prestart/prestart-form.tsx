@@ -187,7 +187,7 @@ export function PrestartForm({
             <button
               type="button"
               onClick={() => removePhoto(p.key)}
-              className="absolute right-0.5 top-0.5 rounded-full bg-white/90 p-0.5 text-ink shadow"
+              className="absolute right-0.5 top-0.5 rounded-full bg-surface/90 p-0.5 text-ink shadow"
               aria-label="Remove photo"
             >
               <X className="size-3.5" />
@@ -196,7 +196,7 @@ export function PrestartForm({
         ))}
         <label
           className={cn(
-            "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[6px] border border-stroke bg-white px-3 text-[13px] font-semibold text-ink hover:bg-surface-muted",
+            "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[6px] border border-stroke bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-surface-muted",
             photos.length >= MAX_PHOTOS && "pointer-events-none opacity-50",
           )}
         >
@@ -285,8 +285,8 @@ export function PrestartForm({
                     <div role="radiogroup" aria-label={item.prompt} className="flex shrink-0 gap-1.5">
                       {(
                         [
-                          ["ok", item.operator_item ? "Yes" : "OK", "border-ok bg-[#e6f6e5] text-[#0a7a00]"],
-                          ["fault", item.operator_item ? "No" : "Fault", "border-danger bg-danger-soft text-[#c40f10]"],
+                          ["ok", item.operator_item ? "Yes" : "OK", "border-ok bg-ok-soft text-ok-ink"],
+                          ["fault", item.operator_item ? "No" : "Fault", "border-danger bg-danger-soft text-danger-ink"],
                           ["na", "N/A", "border-ink-subtle bg-surface-muted text-ink"],
                         ] as const
                       ).map(([value, label, on]) => (
@@ -299,7 +299,7 @@ export function PrestartForm({
                           onClick={() => setAnswer(item.item_code, value)}
                           className={cn(
                             "h-10 min-w-16 rounded-[6px] border-2 px-3 text-[13.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-30",
-                            a?.answer === value ? on : "border-stroke bg-white text-ink-muted hover:border-ink-subtle",
+                            a?.answer === value ? on : "border-stroke bg-surface text-ink-muted hover:border-ink-subtle",
                           )}
                         >
                           {label}

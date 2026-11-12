@@ -85,10 +85,10 @@ export default async function InspectionPage({
         <div
           className={
             i.result === "fail"
-              ? "mb-5 flex items-start gap-3 rounded-[12px] border-2 border-danger bg-danger-soft px-5 py-4 text-[#9b0b0c]"
+              ? "mb-5 flex items-start gap-3 rounded-[12px] border-2 border-danger bg-danger-soft px-5 py-4 text-danger-ink"
               : i.result === "pass_with_faults"
-                ? "mb-5 flex items-start gap-3 rounded-[12px] border-2 border-[#e8a33c] bg-warn-soft px-5 py-4 text-[#7a3d00]"
-                : "mb-5 flex items-start gap-3 rounded-[12px] border-2 border-ok bg-[#e8f7e7] px-5 py-4 text-[#0a6b00]"
+                ? "mb-5 flex items-start gap-3 rounded-[12px] border-2 border-warn-line bg-warn-soft px-5 py-4 text-warn-ink"
+                : "mb-5 flex items-start gap-3 rounded-[12px] border-2 border-ok bg-ok-soft px-5 py-4 text-ok-ink"
           }
           role="status"
         >

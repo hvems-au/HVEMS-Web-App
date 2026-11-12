@@ -22,7 +22,7 @@ const CREATE_LABEL: Partial<Record<PortalId, string>> = {
 function ContextRow({ c, href, external }: { c: MyContext; href: string; external?: boolean }) {
   return (
     <li>
-      <Link href={href} prefetch={external ? false : undefined} className="flex items-center gap-3 rounded-[10px] border border-stroke bg-white px-3.5 py-3 transition-colors hover:border-brand">
+      <Link href={href} prefetch={external ? false : undefined} className="flex items-center gap-3 rounded-[10px] border border-stroke bg-surface px-3.5 py-3 transition-colors hover:border-brand">
         <span className="flex size-10 items-center justify-center rounded-full bg-shade text-[13px] font-bold text-white">{initials(c.organisation_name)}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold text-ink">{c.organisation_name}</span>
@@ -75,7 +75,7 @@ export default async function SelectContextPage({ searchParams }: { searchParams
 
           {here.length > 0 ? (
             <section className="mt-6">
-              <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-brand">{PORTAL_INFO[portal].name}</h2>
+              <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-brand-ink">{PORTAL_INFO[portal].name}</h2>
               <ul className="flex flex-col gap-2">
                 {here.map((c) => (
                   <ContextRow key={c.organisation_id} c={c} href={portalPath(c)} />

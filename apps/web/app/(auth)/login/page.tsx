@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const idle = firstParam(sp.reason) === "idle";
   const info = PORTAL_INFO[await getCurrentPortal()];
   return (
-    <AuthCard title={info.loginTitle} subtitle={info.loginSubtitle}>
+    <AuthCard eyebrow={info.name} title="Sign in" subtitle={info.loginSubtitle}>
       {error ? (
         <div className="mb-5">
           <FormAlert>That link is invalid or has expired. Please sign in or request a new link.</FormAlert>
@@ -33,10 +33,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       {/* Self sign-up only where the portal offers it (never the Super Admin console, SoW §2.3). */}
       <SignInForm next={next} allowSignUp={info.signUp} />
       {publicEnv.NEXT_PUBLIC_SUPPORT_URL ? (
-        <p className="mt-6 text-center text-[12px] font-semibold text-ink-subtle">
+        <p className="mt-6 text-center text-[13px] text-ink-muted">
           Need help?{" "}
-          <Link href={publicEnv.NEXT_PUBLIC_SUPPORT_URL} className="text-link">
-            Contact Support
+          <Link href={publicEnv.NEXT_PUBLIC_SUPPORT_URL} className="font-medium text-link hover:underline">
+            Contact support
           </Link>
         </p>
       ) : null}

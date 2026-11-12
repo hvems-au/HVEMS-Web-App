@@ -1,56 +1,160 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* HVEMS design tokens: HVEMS Brand Identity Guidelines v1.0 (Sept 2026) for brand
-   colours and type; Figma variables for functional colours. See packages/ui/src/tokens.ts. */
+/* HVEMS design tokens. Brand colours and type: HVEMS Brand Identity Guidelines
+   v1.0 (Orange #CE5502, Charcoal #444444, Montserrat). Everything else is a
+   semantic token with a light and a dark value, so components never hard-code
+   colours. The theme is set on <html data-theme="light|dark"> before first paint
+   (components/theme). See docs/design/design-system.md. */
 :root {
-  --charcoal: #444444; /* HVEMS Charcoal */
-  --shade: var(--charcoal);
-  --text-dark: var(--charcoal);
-  --dark-grey: #6b6b6b;
-  --text-grey: #a7a6ab;
-  --stroke: #d9d9d9;
-  --light-grey: #f5f5f7;
-  --background: #f8f8f8;
-  --brand: #ce5502; /* HVEMS Orange */
+  color-scheme: light;
+  --sidebar-width: 232px;
+
+  /* Brand */
+  --brand: #ce5502; /* HVEMS Orange: fills (buttons, active nav) */
+  --brand-hover: #b84b02;
+  --brand-active: #a34302;
+  --brand-ink: #b84b02; /* orange as text: links to records, tabs */
+  --brand-soft: #fdeee3;
   --brand-progress: #f8781f;
-  --blue: #2071dd;
-  --green: #0ea400;
-  --red: #f11617;
-  --red-box: #ffe2e2;
-  --light-yellow: #fff5e0;
-  --sidebar-width: 216px;
+  --charcoal: #444444; /* HVEMS Charcoal */
+
+  /* Surfaces */
+  --background: #f5f5f6; /* page canvas */
+  --surface: #ffffff; /* cards, inputs, tables */
+  --surface-raised: #ffffff; /* menus, dialogs, popovers */
+  --surface-muted: #f2f2f4; /* table headers, quiet panels, segmented controls */
+  --surface-hover: #f6f6f8;
+  --nav: #3a3a3a; /* sidebar */
+  --nav-hover: rgba(255, 255, 255, 0.08);
+
+  /* Text: every level meets WCAG AA on --surface and --background */
+  --text-dark: #2b2b2e; /* primary */
+  --dark-grey: #55555b; /* secondary: 7.3:1 on white */
+  --text-grey: #6c6c73; /* tertiary / meta: 5.3:1 on white */
+  --link: #1c5fbd;
+
+  /* Lines */
+  --stroke: #dddde1;
+  --stroke-strong: #c4c4ca;
+
+  /* Status: fill, soft background, text on soft, line */
+  --green: #0d8a1f;
+  --ok-soft: #e7f5e8;
+  --ok-ink: #0a6b18;
+  --amber: #c26a00;
+  --light-yellow: #fff4dd;
+  --warn-ink: #7a3d00;
+  --warn-line: #efc073;
+  --red: #d71a1b;
+  --red-box: #fde8e8;
+  --danger-ink: #a10d0e;
+  --danger-line: #f3b0b0;
+  --blue: #1c5fbd;
+  --info-soft: #e8f0fc;
+  --info-ink: #1a55a8;
+
+  --elev-card: 0 1px 2px rgba(30, 30, 35, 0.05), 0 2px 8px rgba(30, 30, 35, 0.04);
+  --elev-pop: 0 10px 30px rgba(20, 20, 25, 0.14), 0 2px 6px rgba(20, 20, 25, 0.08);
+  --overlay: rgba(15, 15, 18, 0.45);
 }
+
+/* Dark: layered charcoal neutrals (not pure black), softened status colours,
+   lighter orange for text; fills keep the brand orange. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand: #d35c0c;
+  --brand-hover: #e0691a;
+  --brand-active: #c25207;
+  --brand-ink: #f39a57;
+  --brand-soft: rgba(229, 112, 34, 0.16);
+  --background: #141518;
+  --surface: #1c1e22;
+  --surface-raised: #24272c;
+  --surface-muted: #24272b;
+  --surface-hover: #262a2f;
+  --nav: #101114;
+  --nav-hover: rgba(255, 255, 255, 0.06);
+  --text-dark: #ececee;
+  --dark-grey: #b9b9c0;
+  --text-grey: #9a9aa2;
+  --link: #85b4f5;
+  --stroke: #32353b;
+  --stroke-strong: #474b52;
+  --green: #4fbf63;
+  --ok-soft: rgba(79, 191, 99, 0.14);
+  --ok-ink: #8ad898;
+  --amber: #e2a03f;
+  --light-yellow: rgba(226, 160, 63, 0.14);
+  --warn-ink: #f0c47f;
+  --warn-line: rgba(226, 160, 63, 0.4);
+  --red: #e5484d;
+  --red-box: rgba(229, 72, 77, 0.15);
+  --danger-ink: #ff9a9c;
+  --danger-line: rgba(229, 72, 77, 0.45);
+  --blue: #85b4f5;
+  --info-soft: rgba(133, 180, 245, 0.14);
+  --info-ink: #a6c8f8;
+  --elev-card: 0 0 0 1px rgba(255, 255, 255, 0.02);
+  --elev-pop: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --overlay: rgba(0, 0, 0, 0.6);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
   --font-sans: "Montserrat Variable", "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  --color-shade: var(--shade);
+  --color-shade: var(--charcoal);
+  --color-nav: var(--nav);
+  --color-nav-hover: var(--nav-hover);
   --color-ink: var(--text-dark);
   --color-ink-muted: var(--dark-grey);
   --color-ink-subtle: var(--text-grey);
   --color-stroke: var(--stroke);
-  --color-surface-muted: var(--light-grey);
+  --color-stroke-strong: var(--stroke-strong);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
   --color-canvas: var(--background);
   --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-active: var(--brand-active);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
   --color-brand-progress: var(--brand-progress);
-  --color-link: var(--blue);
+  --color-link: var(--link);
   --color-ok: var(--green);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
+  --color-warn: var(--amber);
+  --color-warn-soft: var(--light-yellow);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-line: var(--warn-line);
   --color-danger: var(--red);
   --color-danger-soft: var(--red-box);
-  --color-warn-soft: var(--light-yellow);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-line: var(--danger-line);
+  --color-info: var(--blue);
+  --color-info-soft: var(--info-soft);
+  --color-info-ink: var(--info-ink);
+  --color-overlay: var(--overlay);
 
   /* shadcn-style semantic aliases */
   --color-background: var(--background);
   --color-foreground: var(--text-dark);
   --color-primary: var(--brand);
   --color-primary-foreground: #ffffff;
-  --color-muted: var(--light-grey);
+  --color-muted: var(--surface-muted);
   --color-muted-foreground: var(--dark-grey);
   --color-border: var(--stroke);
   --color-input: var(--stroke);
   --color-ring: var(--brand);
   --color-destructive: var(--red);
+
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
 
   --radius-input: 6px;
   --radius-card: 12px;
@@ -69,6 +173,10 @@
     color: var(--text-dark);
     font-family: var(--font-sans);
   }
+  ::placeholder {
+    color: var(--text-grey);
+    opacity: 1;
+  }
   :focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
@@ -77,7 +185,7 @@
 
 @layer components {
   .card {
-    @apply rounded-[var(--radius-card)] border border-stroke bg-white shadow-[0_1px_2px_rgba(68,68,68,0.05),0_2px_8px_rgba(68,68,68,0.05)];
+    @apply rounded-[var(--radius-card)] border border-stroke bg-surface shadow-card;
   }
 }
 

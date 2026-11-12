@@ -49,7 +49,7 @@ export default async function ClientsPage({
               key={t}
               href={t === "sites" ? `${base}?tab=sites` : base}
               aria-current={tab === t ? "page" : undefined}
-              className={cn("-mb-px border-b-2 px-2.5 pb-2.5 text-[13px] font-medium capitalize", tab === t ? "border-brand text-brand" : "border-transparent text-ink-muted hover:text-ink")}
+              className={cn("-mb-px border-b-2 px-2.5 pb-2.5 text-[13px] font-medium capitalize", tab === t ? "border-brand text-brand-ink" : "border-transparent text-ink-muted hover:text-ink")}
             >
               {t} ({t === "clients" ? clients.length : sites.length})
             </Link>

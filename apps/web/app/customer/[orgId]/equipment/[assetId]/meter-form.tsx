@@ -69,7 +69,7 @@ export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { 
         </Field>
       ) : null}
       {needsConfirm ? (
-        <div className="rounded-[6px] border border-[#f0b46b] bg-warn-soft p-3 text-[13.5px] text-[#8a4300]">
+        <div className="rounded-[6px] border border-warn-line bg-warn-soft p-3 text-[13.5px] text-warn-ink">
           <p>{state.message}</p>
           <label className="mt-2 flex items-center gap-2 font-medium">
             <input type="checkbox" name="confirm_jump" className="size-4 accent-[var(--brand)]" /> Yes, this reading is correct

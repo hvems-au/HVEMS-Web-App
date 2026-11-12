@@ -10,8 +10,8 @@ import { forgotPasswordAction, resetPasswordAction, signInAction, signUpAction }
 function IconInput({ icon: Icon, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { icon: React.ElementType }) {
   return (
     <div className="relative">
-      <Icon className="pointer-events-none absolute top-1/2 left-3.5 size-[18px] -translate-y-1/2 text-ink-subtle" aria-hidden />
-      <Input className="h-12 pl-11 text-[15px]" {...props} />
+      <Icon className="pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-ink-subtle" aria-hidden />
+      <Input className="h-11 pl-10 text-[15px]" {...props} />
     </div>
   );
 }
@@ -20,12 +20,12 @@ function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [show, setShow] = React.useState(false);
   return (
     <div className="relative">
-      <Lock className="pointer-events-none absolute top-1/2 left-3.5 size-[18px] -translate-y-1/2 text-ink-subtle" aria-hidden />
-      <Input className="h-12 pr-11 pl-11 text-[15px]" type={show ? "text" : "password"} {...props} />
+      <Lock className="pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-ink-subtle" aria-hidden />
+      <Input className="h-11 pr-11 pl-10 text-[15px]" type={show ? "text" : "password"} {...props} />
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1.5 text-ink hover:bg-surface-muted"
+        className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-[6px] p-1.5 text-ink-muted hover:bg-surface-muted hover:text-ink"
         aria-label={show ? "Hide password" : "Show password"}
       >
         {show ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
@@ -48,35 +48,27 @@ export function SignInForm({ next, allowSignUp = true }: { next?: string; allowS
     <form action={action} className="flex flex-col gap-5" noValidate>
       {next ? <input type="hidden" name="next" value={next} /> : null}
       {state.status === "error" ? <FormAlert>{state.message}</FormAlert> : null}
-      <Field label="Email Address" htmlFor="email" error={fe(state, "email")}>
+      <Field label="Email address" htmlFor="email" error={fe(state, "email")}>
         <IconInput icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@company.com.au" required />
       </Field>
       <Field label="Password" htmlFor="password" error={fe(state, "password")}>
         <PasswordInput name="password" autoComplete="current-password" placeholder="Enter your password" required />
       </Field>
-      <div className="-mt-1 flex justify-end">
-        <Link href="/forgot-password" className="text-[14px] text-link hover:underline">
+      <div className="-mt-2 flex justify-end">
+        <Link href="/forgot-password" className="text-[13.5px] font-medium text-link hover:underline">
           Forgot password?
         </Link>
       </div>
-      <Button type="submit" size="lg" className="h-[49px] text-[18px]" disabled={pending || !!redirectTo}>
-        {pending || redirectTo ? "Signing in…" : "Login"} <ArrowRight className="!size-5" />
+      <Button type="submit" size="lg" className="h-11 text-[15px]" disabled={pending || !!redirectTo}>
+        {pending || redirectTo ? "Signing in…" : "Sign in"} <ArrowRight className="!size-[18px]" />
       </Button>
       {allowSignUp ? (
-        <>
-          <div className="flex items-center gap-3 text-[14px] font-medium text-ink-subtle">
-            <span className="h-px flex-1 bg-stroke" /> OR <span className="h-px flex-1 bg-stroke" />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[14px] font-medium text-ink">New to HVEMS?</p>
-              <p className="text-[12.5px] text-ink-subtle">Create your account to manage equipment or find work.</p>
-            </div>
-            <Button asChild variant="outline" size="sm" className="h-9 px-4">
-              <Link href={next ? `/sign-up?next=${encodeURIComponent(next)}` : "/sign-up"}>Sign Up</Link>
-            </Button>
-          </div>
-        </>
+        <p className="border-t border-stroke pt-5 text-center text-[13.5px] text-ink-muted">
+          New to HVEMS?{" "}
+          <Link href={next ? `/sign-up?next=${encodeURIComponent(next)}` : "/sign-up"} className="font-semibold text-link hover:underline">
+            Create an account
+          </Link>
+        </p>
       ) : null}
     </form>
   );
@@ -91,7 +83,7 @@ export function SignUpForm({ next }: { next?: string }) {
       <Field label="Full name" htmlFor="fullName" error={fe(state, "fullName")}>
         <IconInput icon={User} name="fullName" autoComplete="name" placeholder="e.g. Alex Smith" required />
       </Field>
-      <Field label="Email Address" htmlFor="email" error={fe(state, "email")}>
+      <Field label="Email address" htmlFor="email" error={fe(state, "email")}>
         <IconInput icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@company.com.au" required />
       </Field>
       <Field label="Password" htmlFor="password" error={fe(state, "password")} hint="At least 10 characters, including a number or symbol.">
@@ -110,12 +102,12 @@ export function SignUpForm({ next }: { next?: string }) {
         </label>
         {fe(state, "acceptTerms") ? <p className="mt-1 text-[13px] text-danger">{fe(state, "acceptTerms")}</p> : null}
       </div>
-      <Button type="submit" size="lg" className="mt-1 h-[49px] text-[17px]" disabled={pending}>
+      <Button type="submit" size="lg" className="mt-1 h-11 text-[15px]" disabled={pending}>
         {pending ? "Creating account…" : "Create account"}
       </Button>
       <p className="text-center text-[14px] text-ink-muted">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-brand hover:underline">
+        <Link href="/login" className="font-semibold text-brand-ink hover:underline">
           Log in
         </Link>
       </p>
@@ -129,10 +121,10 @@ export function ForgotPasswordForm() {
     <form action={action} className="flex flex-col gap-5" noValidate>
       {state.status === "error" ? <FormAlert>{state.message}</FormAlert> : null}
       {state.status === "success" ? <FormAlert tone="success">{state.message}</FormAlert> : null}
-      <Field label="Email Address" htmlFor="email" error={fe(state, "email")}>
+      <Field label="Email address" htmlFor="email" error={fe(state, "email")}>
         <IconInput icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@company.com.au" required />
       </Field>
-      <Button type="submit" size="lg" className="h-[49px]" disabled={pending}>
+      <Button type="submit" size="lg" className="h-11 text-[15px]" disabled={pending}>
         {pending ? "Sending…" : "Send reset link"}
       </Button>
       <Link href="/login" className="text-center text-[14px] text-link hover:underline">
@@ -153,7 +145,7 @@ export function ResetPasswordForm() {
       <Field label="Confirm new password" htmlFor="confirmPassword" error={fe(state, "confirmPassword")}>
         <PasswordInput name="confirmPassword" autoComplete="new-password" placeholder="Re-enter your new password" required />
       </Field>
-      <Button type="submit" size="lg" className="h-[49px]" disabled={pending}>
+      <Button type="submit" size="lg" className="h-11 text-[15px]" disabled={pending}>
         {pending ? "Saving…" : "Set new password"}
       </Button>
     </form>

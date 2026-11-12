@@ -44,7 +44,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
       {chain ? (
         <Card className="mb-4 flex items-start gap-3 p-4">
           {chain.broken.length === 0 ? (
-            <ShieldCheck className="mt-0.5 size-5 text-[#0a7a00]" aria-hidden />
+            <ShieldCheck className="mt-0.5 size-5 text-ok-ink" aria-hidden />
           ) : (
             <ShieldAlert className="mt-0.5 size-5 text-danger" aria-hidden />
           )}

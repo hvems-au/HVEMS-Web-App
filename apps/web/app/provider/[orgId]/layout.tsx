@@ -18,7 +18,7 @@ export default async function ProviderLayout({ children, params }: { children: R
       contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
       banner={
         ctx.context.status === "suspended" ? (
-          <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-[#9b0b0c]">
+          <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-danger-ink">
             This provider account has been de-activated by HVEMS: proposals and new engagements are paused. Contact HVEMS support for details.
           </div>
         ) : null

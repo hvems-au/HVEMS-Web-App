@@ -14,7 +14,7 @@ export default function DriverPortalPage() {
       <Card className="mt-5">
         <CardBody className="flex flex-col gap-4">
           <div className="flex items-start gap-3 rounded-[10px] bg-surface-muted p-3 text-[14px] text-ink">
-            <QrCode className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />
+            <QrCode className="mt-0.5 size-5 shrink-0 text-brand-ink" aria-hidden />
             Then sign in with your Operator ID and PIN. Your company gives you these.
           </div>
           <CodeForm />

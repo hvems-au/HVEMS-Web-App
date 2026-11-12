@@ -27,7 +27,7 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
           const name = [a.year, a.make, a.model].filter(Boolean).join(" ");
           return (
             <Link href={`${base}/${a.id}`} className="group block">
-              <span className="font-semibold text-brand group-hover:underline">{c.getValue()}</span>
+              <span className="font-semibold text-brand-ink group-hover:underline">{c.getValue()}</span>
               {name ? <span className="block text-[12.5px] text-ink-muted">{name}</span> : null}
             </Link>
           );
@@ -112,7 +112,7 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
         </thead>
         <tbody>
           {table.getRowModel().rows.map((r) => (
-            <tr key={r.id} className="border-b border-stroke/70 hover:bg-[#fcfcfd]">
+            <tr key={r.id} className="border-b border-stroke/70 hover:bg-surface-hover">
               {r.getVisibleCells().map((c) => (
                 <td key={c.id} className="px-4 py-3 align-middle">
                   {flexRender(c.column.columnDef.cell, c.getContext())}

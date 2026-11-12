@@ -34,12 +34,12 @@ export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 export type BadgeTone = "green" | "amber" | "red" | "blue" | "grey" | "orange";
 
 const badgeTones: Record<BadgeTone, string> = {
-  green: "bg-[#e6f6e5] text-[#0a7a00]",
-  amber: "bg-warn-soft text-[#9a4a00]",
-  red: "bg-danger-soft text-[#c40f10]",
-  blue: "bg-[#e8f0fc] text-[#1c5fbd]",
+  green: "bg-ok-soft text-ok-ink",
+  amber: "bg-warn-soft text-warn-ink",
+  red: "bg-danger-soft text-danger-ink",
+  blue: "bg-info-soft text-info-ink",
   grey: "bg-surface-muted text-ink-muted",
-  orange: "bg-[#fdeee3] text-brand",
+  orange: "bg-brand-soft text-brand-ink",
 };
 
 export function Badge({ tone = "grey", className, ...props }: React.HTMLAttributes<HTMLSpanElement> & { tone?: BadgeTone }) {
@@ -65,8 +65,15 @@ export function TH({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
   return <th scope="col" className={cn("px-4 py-2.5 font-semibold whitespace-nowrap", className)} {...props} />;
 }
 export function TR({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("border-b border-stroke/70 last:border-0", className)} {...props} />;
+  return <tr className={cn("relative border-b border-stroke last:border-0 hover:bg-surface-hover", className)} {...props} />;
 }
+
+/**
+ * Makes a link cover its whole table row or card (the "stretched link"): the row
+ * is one big click target, while other links and buttons in it still work
+ * (give them `relative z-10`). Put it on the row's main link.
+ */
+export const STRETCHED_LINK = "after:absolute after:inset-0 after:content-['']";
 export function TD({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return <td className={cn("px-4 py-3 align-middle text-ink", className)} {...props} />;
 }
@@ -84,7 +91,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-      {icon ? <div className="mb-1 flex size-12 items-center justify-center rounded-full bg-[#fdeee3] text-brand [&_svg]:size-6">{icon}</div> : null}
+      {icon ? <div className="mb-1 flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand-ink [&_svg]:size-6">{icon}</div> : null}
       <p className="text-[15px] font-semibold text-ink">{title}</p>
       {children ? <div className="max-w-md text-[14px] text-ink-muted">{children}</div> : null}
       {action ? <div className="mt-3">{action}</div> : null}
@@ -101,8 +108,8 @@ export function Dl({ items, className }: { items: { label: string; value: React.
     <dl className={cn("grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2", className)}>
       {items.map((i) => (
         <div key={i.label} className="min-w-0">
-          <dt className="text-[12px] font-medium uppercase tracking-wide text-ink-subtle">{i.label}</dt>
-          <dd className="mt-1 truncate text-[14px] text-ink">{i.value ?? "—"}</dd>
+          <dt className="text-[12px] font-medium text-ink-muted">{i.label}</dt>
+          <dd className="mt-1 text-[14px] break-words text-ink">{i.value ?? "—"}</dd>
         </div>
       ))}
     </dl>

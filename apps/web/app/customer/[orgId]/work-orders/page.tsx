@@ -34,7 +34,7 @@ export default async function WorkOrdersPage({
   const today = new Date().toLocaleDateString("en-CA", { timeZone: ctx.timezone });
   const base = `/customer/${orgId}/work-orders`;
   const tab = (on: boolean, href: string, label: string) => (
-    <Link href={href} aria-current={on ? "page" : undefined} className={cn("-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium", on ? "border-brand text-brand" : "border-transparent text-ink-muted hover:text-ink")}>
+    <Link href={href} aria-current={on ? "page" : undefined} className={cn("-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium", on ? "border-brand text-brand-ink" : "border-transparent text-ink-muted hover:text-ink")}>
       {label}
     </Link>
   );

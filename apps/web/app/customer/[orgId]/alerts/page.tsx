@@ -17,17 +17,17 @@ export const metadata: Metadata = { title: "Alerts" };
 
 const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }> = {
   critical_defect: { icon: OctagonAlert, tone: "text-danger" },
-  minor_defect: { icon: TriangleAlert, tone: "text-[#c26a00]" },
+  minor_defect: { icon: TriangleAlert, tone: "text-warn-ink" },
   operator_not_fit: { icon: UserX, tone: "text-danger" },
   out_of_service_hold: { icon: Hand, tone: "text-danger" },
-  needs_attention_hold: { icon: Hand, tone: "text-[#c26a00]" },
+  needs_attention_hold: { icon: Hand, tone: "text-warn-ink" },
   breakdown: { icon: Wrench, tone: "text-danger" },
-  regulator_notice: { icon: FileWarning, tone: "text-[#c26a00]" },
+  regulator_notice: { icon: FileWarning, tone: "text-warn-ink" },
   alert_escalated: { icon: BellRing, tone: "text-danger" },
-  credential_expiring: { icon: IdCard, tone: "text-[#c26a00]" },
+  credential_expiring: { icon: IdCard, tone: "text-warn-ink" },
   credential_expired: { icon: IdCard, tone: "text-danger" },
-  support_access_started: { icon: LifeBuoy, tone: "text-[#1c5fbd]" },
-  prestart_missed: { icon: ClipboardX, tone: "text-[#c26a00]" },
+  support_access_started: { icon: LifeBuoy, tone: "text-info-ink" },
+  prestart_missed: { icon: ClipboardX, tone: "text-warn-ink" },
 };
 const ESCALATION = ["", "Escalated: 30 min", "Escalated: 2 hours"] as const;
 
@@ -64,7 +64,7 @@ export default async function AlertsPage({ params }: { params: Promise<{ orgId: 
           ) : (
             <ul className="divide-y divide-stroke">
               {open.map((a) => (
-                <li key={a.id} className="flex flex-col gap-3 bg-[#fff4f2] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <li key={a.id} className="flex flex-col gap-3 bg-danger-soft px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-start gap-3">
                     <OctagonAlert className="mt-0.5 size-5 shrink-0 text-danger" aria-hidden />
                     <div className="min-w-0">
@@ -107,7 +107,7 @@ export default async function AlertsPage({ params }: { params: Promise<{ orgId: 
             {rows.map((n) => {
               const k = KIND[n.kind];
               return (
-                <li key={n.id} className={cn("flex items-start gap-3 px-5 py-3.5", !n.read_at && "bg-[#fff7f0]")}>
+                <li key={n.id} className={cn("flex items-start gap-3 px-5 py-3.5", !n.read_at && "bg-brand-soft")}>
                   <k.icon className={cn("mt-0.5 size-5 shrink-0", k.tone)} aria-hidden />
                   <div className="min-w-0 flex-1">
                     <p className={cn("text-[14.5px] text-ink", !n.read_at && "font-semibold")}>{n.title}</p>

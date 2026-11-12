@@ -97,7 +97,7 @@ export default async function ScannedEquipmentPage({ params }: { params: Promise
   ]);
 
   const who = (
-    <div className="mb-4 flex items-center justify-between gap-3 rounded-[10px] border border-stroke bg-white px-4 py-2.5">
+    <div className="mb-4 flex items-center justify-between gap-3 rounded-[10px] border border-stroke bg-surface px-4 py-2.5">
       <p className="text-[14px] text-ink">
         Signed in as <strong>{user.fullName || user.email}</strong>
       </p>

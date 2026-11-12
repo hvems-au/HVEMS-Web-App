@@ -42,7 +42,7 @@ export function DriverSignIn({ code }: { code: string }) {
     <button
       type="button"
       onClick={() => (setMode(m), setError(null), setSecret(""))}
-      className={cn("flex-1 rounded-[6px] px-2 py-1.5 text-[13.5px] font-semibold", mode === m ? "bg-white text-ink shadow-sm" : "text-ink-muted")}
+      className={cn("flex-1 rounded-[6px] px-2 py-1.5 text-[13.5px] font-semibold", mode === m ? "bg-surface text-ink shadow-sm" : "text-ink-muted")}
     >
       {label}
     </button>

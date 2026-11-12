@@ -11,7 +11,7 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: P
   return (
     <AuthCard title="Check your email">
       <div className="flex flex-col items-center gap-4 text-center">
-        <span className="flex size-16 items-center justify-center rounded-full bg-[#fdeee3] text-brand">
+        <span className="flex size-16 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
           <MailCheck className="size-8" aria-hidden />
         </span>
         <p className="text-[15px] text-ink-muted">

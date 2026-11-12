@@ -224,11 +224,11 @@ export function MemberActions({
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content align="end" className="z-50 w-60 rounded-[10px] border border-stroke bg-white p-1.5 text-[13px] shadow-xl">
+          <DropdownMenu.Content align="end" className="z-50 w-60 rounded-[10px] border border-stroke bg-surface p-1.5 text-[13px] shadow-xl">
             <DropdownMenu.Sub>
               <DropdownMenu.SubTrigger className="rounded-md px-2 py-2 outline-none data-[highlighted]:bg-surface-muted">Change role</DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
-                <DropdownMenu.SubContent className="z-50 w-52 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl">
+                <DropdownMenu.SubContent className="z-50 w-52 rounded-[10px] border border-stroke bg-surface p-1.5 shadow-xl">
                   {roles
                     .filter((r) => r.value !== role)
                     .map((r) => (

@@ -23,12 +23,12 @@ export function ConditionBanner({ condition }: { condition: AssetCondition }) {
   return (
     <div
       role="alert"
-      className={red ? "rounded-[10px] border border-danger/30 bg-danger-soft px-4 py-3" : "rounded-[10px] border border-[#f0b46b] bg-warn-soft px-4 py-3"}
+      className={red ? "rounded-[10px] border border-danger/30 bg-danger-soft px-4 py-3" : "rounded-[10px] border border-warn-line bg-warn-soft px-4 py-3"}
     >
       <div className="flex gap-3">
-        <Icon className={red ? "mt-0.5 size-5 shrink-0 text-danger" : "mt-0.5 size-5 shrink-0 text-[#c26100]"} aria-hidden />
+        <Icon className={red ? "mt-0.5 size-5 shrink-0 text-danger" : "mt-0.5 size-5 shrink-0 text-warn-ink"} aria-hidden />
         <div>
-          <p className={red ? "font-semibold text-[#9b0b0c]" : "font-semibold text-[#8a4300]"}>
+          <p className={red ? "font-semibold text-danger-ink" : "font-semibold text-warn-ink"}>
             {red ? "Broken/Out of service — do not operate" : "Needs attention — operate with care and follow your company's procedure"}
           </p>
           <p className="mt-1 text-[13px] text-ink-muted">{RECORDS_ONLY_NOTICE}</p>

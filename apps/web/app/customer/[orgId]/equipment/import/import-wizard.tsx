@@ -74,7 +74,7 @@ export function ImportWizard({ orgId }: { orgId: string }) {
         <CardHeader title="2. Choose the file and run a trial" />
         <CardBody className="flex flex-col gap-4">
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-stroke px-4 py-8 text-center hover:border-brand">
-            <FileUp className="size-7 text-brand" aria-hidden />
+            <FileUp className="size-7 text-brand-ink" aria-hidden />
             <span className="text-[14px] font-medium text-ink">{fileName ?? "Choose a CSV file"}</span>
             <span className="text-[12.5px] text-ink-subtle">{rows.length ? `${rows.length} rows ready` : "Up to 1,000 rows"}</span>
             <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => void onFile(e.target.files?.[0])} />
@@ -98,10 +98,10 @@ export function ImportWizard({ orgId }: { orgId: string }) {
           <CardHeader title="3. Results" />
           <CardBody>
             {!result.dry_run && result.created > 0 ? (
-              <div className="flex items-center gap-3 rounded-[10px] border border-ok/30 bg-[#e8f7e7] p-4">
-                <CheckCircle2 className="size-6 text-[#0a7a00]" />
+              <div className="flex items-center gap-3 rounded-[10px] border border-ok/30 bg-ok-soft p-4">
+                <CheckCircle2 className="size-6 text-ok-ink" />
                 <div>
-                  <p className="font-semibold text-[#0a6b00]">{result.created} assets imported</p>
+                  <p className="font-semibold text-ok-ink">{result.created} assets imported</p>
                   <Link href={`/customer/${orgId}/equipment`} className="text-[14px] text-link hover:underline">
                     View equipment register
                   </Link>

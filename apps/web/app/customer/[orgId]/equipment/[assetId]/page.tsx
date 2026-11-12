@@ -175,10 +175,10 @@ export default async function AssetPage({
         <div className="mb-5 flex flex-col gap-3">
           <ConditionBanner condition={asset.condition} />
           {awaitingReturn ? (
-            <div className="flex flex-col gap-3 rounded-[12px] border-2 border-[#e8a33c] bg-warn-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-[12px] border-2 border-warn-line bg-warn-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[15px] font-bold text-[#7a3d00]">Repaired: waiting to return to service</p>
-                <p className="text-[13.5px] text-[#7a3d00]">
+                <p className="text-[15px] font-bold text-warn-ink">Repaired: waiting to return to service</p>
+                <p className="text-[13.5px] text-warn-ink">
                   {otherOutOfService
                     ? "Other Critical defects or holds are still open. Clear them first."
                     : "Step 2 of 2: confirm the equipment is fit to use. It stays Out of service until then."}
@@ -191,7 +191,7 @@ export default async function AssetPage({
           ) : null}
         </div>
       ) : (
-        <div className="mb-5 rounded-[10px] border border-stroke bg-white px-4 py-3 text-[14px] text-ink-muted">
+        <div className="mb-5 rounded-[10px] border border-stroke bg-surface px-4 py-3 text-[14px] text-ink-muted">
           Archived ({asset.archive_disposal}) effective{" "}
           {asset.archive_effective_date ? formatDateAU(new Date(asset.archive_effective_date), ctx.timezone) : "—"}: {asset.archive_reason}. History is kept and
           the asset no longer counts towards the fleet subscription from the following month.
@@ -211,7 +211,7 @@ export default async function AssetPage({
             aria-current={view === id ? "page" : undefined}
             className={cn(
               "-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium",
-              view === id ? "border-brand text-brand" : "border-transparent text-ink-muted hover:text-ink",
+              view === id ? "border-brand text-brand-ink" : "border-transparent text-ink-muted hover:text-ink",
             )}
           >
             {label}
@@ -408,7 +408,7 @@ export default async function AssetPage({
                           <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(r.read_at), ctx.timezone)}</TD>
                           <TD className="font-semibold whitespace-nowrap">
                             {formatNumber(r.value, 1)} {r.unit === "km" ? "km" : "h"}
-                            {r.out_of_sequence ? <span className="block text-[11.5px] font-normal text-[#9a4a00]">Out of sequence</span> : null}
+                            {r.out_of_sequence ? <span className="block text-[11.5px] font-normal text-warn-ink">Out of sequence</span> : null}
                             {r.lower_reading_reason ? (
                               <span className="block text-[11.5px] font-normal text-ink-subtle">Lower: {r.lower_reading_reason}</span>
                             ) : null}

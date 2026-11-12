@@ -111,7 +111,7 @@ export default async function EquipmentPage({
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "border-b-2 px-2.5 pb-2.5 text-[13px] font-medium whitespace-nowrap",
-                    active ? "border-brand text-brand" : "border-transparent text-ink-muted hover:text-ink",
+                    active ? "border-brand text-brand-ink" : "border-transparent text-ink-muted hover:text-ink",
                   )}
                 >
                   {t.label}

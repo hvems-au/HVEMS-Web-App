@@ -50,7 +50,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
         actions={<WorkOrderStatusBadge status={w.status} />}
       />
       {w.assignment_warnings?.length && !["closed", "cancelled"].includes(w.status) ? (
-        <div role="status" className="mb-5 rounded-[10px] border border-[#f0c37a] bg-warn-soft px-4 py-3 text-[13.5px] text-[#7a3d00]">
+        <div role="status" className="mb-5 rounded-[10px] border border-warn-line bg-warn-soft px-4 py-3 text-[13.5px] text-warn-ink">
           <p className="flex items-center gap-1.5 font-semibold">
             <AlertTriangle className="size-4" aria-hidden /> Allocation warning for {who(w.assigned_to) ?? "the assignee"}
           </p>

@@ -86,7 +86,7 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
   admin: {
     name: "Super Admin console",
     loginTitle: "Administrator Login",
-    loginSubtitle: "HVEMS staff access to the platform administration console.",
+    loginSubtitle: "For HVEMS staff only.",
     orgKinds: [],
     signUp: false,
     prefixes: ["/admin", "/account/security"],
@@ -95,7 +95,7 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
   company: {
     name: "Company portal",
     loginTitle: "Company Login",
-    loginSubtitle: "Manage your equipment, inspections, defects, maintenance, team and marketplace jobs.",
+    loginSubtitle: "Your fleet, inspections, defects and maintenance in one place.",
     orgKinds: ["company"],
     signUp: true,
     prefixes: ["/customer", "/onboarding", "/select-context", "/account"],
@@ -104,7 +104,7 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
   market: {
     name: "Marketplace",
     loginTitle: "Marketplace Login",
-    loginSubtitle: "Post a job and engage verified providers. No fleet subscription needed.",
+    loginSubtitle: "Post a job and hire verified providers. No fleet subscription needed.",
     orgKinds: ["marketplace_customer"],
     signUp: true,
     prefixes: ["/customer", "/onboarding", "/select-context", "/account"],
@@ -113,7 +113,7 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
   provider: {
     name: "Provider portal",
     loginTitle: "Provider Login",
-    loginSubtitle: "Find jobs, submit proposals and manage your engagements.",
+    loginSubtitle: "Find jobs, send proposals and manage your work.",
     orgKinds: ["provider"],
     signUp: true,
     prefixes: ["/provider", "/onboarding", "/select-context", "/account"],

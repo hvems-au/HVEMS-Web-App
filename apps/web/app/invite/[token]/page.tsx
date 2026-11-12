@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { acceptInvitation, AppError } from "@hvems/api-client";
-import { AuthCard } from "@/components/auth-card";
+import { AuthCard, AuthFrame } from "@/components/auth-card";
 import { FormAlert } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/session";
@@ -42,8 +42,8 @@ export default async function InvitePage({
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/invite/${token}`)}`);
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
-      <AuthCard title="Join on HVEMS" subtitle={`You're signed in as ${user.email}.`}>
+    <AuthFrame>
+      <AuthCard eyebrow="Invitation" title="Join on HVEMS" subtitle={`You're signed in as ${user.email}.`}>
         {typeof error === "string" ? (
           <div className="mb-5">
             <FormAlert>{MESSAGES[error] ?? "We couldn't accept this invitation."}</FormAlert>
@@ -55,6 +55,6 @@ export default async function InvitePage({
           </Button>
         </form>
       </AuthCard>
-    </div>
+    </AuthFrame>
   );
 }

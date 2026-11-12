@@ -23,10 +23,10 @@ export default async function DriverDonePage({ params }: { params: Promise<{ cod
   const result = i.result as "pass" | "pass_with_faults" | "fail";
   const tone =
     result === "fail"
-      ? "border-danger bg-danger-soft text-[#9b0b0c]"
+      ? "border-danger bg-danger-soft text-danger-ink"
       : result === "pass_with_faults"
-        ? "border-[#e8a33c] bg-warn-soft text-[#7a3d00]"
-        : "border-ok bg-[#e8f7e7] text-[#0a6b00]";
+        ? "border-warn-line bg-warn-soft text-warn-ink"
+        : "border-ok bg-ok-soft text-ok-ink";
   const Icon = result === "fail" ? OctagonAlert : result === "pass_with_faults" ? TriangleAlert : CheckCircle2;
   return (
     <div className="mx-auto flex max-w-md flex-col gap-5">

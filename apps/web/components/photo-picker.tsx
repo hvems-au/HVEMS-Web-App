@@ -78,7 +78,7 @@ export function PhotoPicker({
           <button
             type="button"
             onClick={() => setItems((prev) => prev.filter((x) => x.key !== i.key))}
-            className="absolute right-0.5 top-0.5 rounded-full bg-white/90 p-0.5 shadow"
+            className="absolute right-0.5 top-0.5 rounded-full bg-surface/90 p-0.5 shadow"
             aria-label="Remove photo"
           >
             <X className="size-3.5" />
@@ -86,7 +86,7 @@ export function PhotoPicker({
         </div>
       ))}
       {items.length < max ? (
-        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[6px] border border-stroke bg-white px-3 text-[13px] font-semibold text-ink hover:bg-surface-muted">
+        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[6px] border border-stroke bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-surface-muted">
           <Camera className="size-4" /> {label}
           <input
             type="file"

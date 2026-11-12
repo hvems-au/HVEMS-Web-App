@@ -53,7 +53,7 @@ export function OnboardingForm({ kinds }: { kinds: readonly string[] }) {
             <label
               key={k.value}
               className={cn(
-                "flex cursor-pointer flex-col gap-2 rounded-[12px] border-2 bg-white p-4 transition-colors",
+                "flex cursor-pointer flex-col gap-2 rounded-[12px] border-2 bg-surface p-4 transition-colors",
                 kind === k.value ? "border-brand shadow-sm" : "border-stroke hover:border-ink-subtle",
               )}
             >
