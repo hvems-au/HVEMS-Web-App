@@ -1,5 +1,13 @@
 # Development progress log
 
+## 2026-11-12 — Development site live; test accounts; MFA switch for testing
+**Done**
+- Vercel development site (project from `develop`, Sydney functions): dev-portal / dev-provider / dev-operator / dev-admin / dev-market.hvems.com.au. Portals never indexed (robots.txt, X-Robots-Tag, noindex metadata).
+- Repository moved to the hvems-au GitHub organisation; CI runs on `main` and `develop`.
+- Migration `20261112114037 mfa_enforcement_switch` (applied by Claude): setting `security.mfa_enforced` (default true) relaxes the company MFA rule and staff console access when false; console and CSV export follow the database's `mfa_satisfied`. pgTAP `280`. **Switched off in the development database only.** Production must keep it on.
+- Development test accounts (password in the team's notes, not here): portal@, fleet@, technician@, finance@ (Omnific Developers), operator@ (OP-0002), provider@ (HVEMS Test Provider), all @hvems.com.au, named "Name - Role". Checked: every account signs in on the live development site.
+- Staff accounts landing on a customer portal now see a pointer to the console instead of company set-up.
+
 ## 2026-11-12 — 2C Technicians: profiles, qualifications, leave, allocation warnings (CS-19)
 **Done**
 - Migration `20261112072355 workforce` (applied by Claude): `workforce_profiles` (trade, phone, notes, available), `workforce_qualifications` (trade certificate, licence, high-risk work, induction, first aid, manufacturer training, other; expiry), `workforce_leave` (annual / sick / training / other; cancelled with `cancel_leave`, never deleted). All keyed to the membership `(organisation_id, user_id)`, RLS: `workforce.manage` writes, managers and the person read, audited. Expiry alerts: `app.notify_qualification_expiry` (pg_cron `hvems-qualification-expiry`, 7:05 am Brisbane) to the Owner, Fleet Managers and Company Admins, once before (setting `drivers.credential_warning_days`) and once on expiry. Work orders: `required_qualification` and `assignment_warnings`, set by trigger whenever the person, due date or requirement changes (on leave that day, marked unavailable, no current qualification of that kind); never blocks. RPCs `allocation_warnings` (preview, managers) and `set_work_order_requirement`. pgTAP `270`.
