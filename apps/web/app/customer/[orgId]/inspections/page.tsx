@@ -166,7 +166,7 @@ export default async function InspectionsPage({
         <Card>
           <FilterBar
             action={base}
-            search={{ value: f.q, placeholder: "Search equipment, rego or operator" }}
+            search={{ value: f.q, placeholder: "Equipment, rego, operator" }}
             fields={[
               { kind: "select", name: "asset", label: "Equipment", all: "All equipment", value: f.asset, options: equipmentOptions },
               { kind: "select", name: "operator", label: "Operator", all: "All operators", value: f.operator, options: operatorOptions },
@@ -263,7 +263,7 @@ export default async function InspectionsPage({
             <FilterBar
               action={base}
               keep={{ tab: "missed" }}
-              search={{ value: f.q, placeholder: "Search equipment, make, model or rego" }}
+              search={{ value: f.q, placeholder: "Equipment, make, rego" }}
               fields={[
                 { kind: "select", name: "asset", label: "Equipment", all: "All equipment", value: f.asset, options: equipmentOptions },
                 {
