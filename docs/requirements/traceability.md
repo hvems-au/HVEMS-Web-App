@@ -1,7 +1,7 @@
 # Requirements traceability — CS-01 to CS-45
 
 Source: HVEMS Client Scope of Work v2.2, Appendix A. Status: ✅ done in 2A · 🟡 foundation laid (2A) and completed later · ⏳ planned · ➖ not Stage 2.
-Evidence paths are relative to the repository root. "pgTAP" = `supabase/tests/*.test.sql`; "Vitest" = `packages/*/src/*.test.ts`.
+Evidence paths are relative to the repository root. "pgTAP" = `supabase/tests/*.test.sql`; "Vitest" 🟡 | In-house/vendor work orders, start/complete/close/reopen/cancel, allocation warnings (pgTAP 250, 270); "post to marketplace" comes with 2D || Service plans by days/km/hours, schedule with Overdue/Due soon, overdue rule (pgTAP 250); calendar view to do || Breakdowns and regulator notices with holds and alerts (2B) || Frequency per type/equipment incl. custom days; missed pre-starts detected hourly, reviewed and audited (pgTAP 240, 260); inspection filters || Pre-start forms by equipment type, safety-equipment checks, operator/manager submission, results and PDFs ✅; checklist editor waits for the HVEMS checklist review (P-01) |`packages/*/src/*.test.ts`.
 
 | ID | Scope item | Stage / increment | Status | Evidence / notes |
 |---|---|---|---|---|
