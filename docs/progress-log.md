@@ -2,7 +2,7 @@
 
 ## 2026-11-12 — Issue categories, live search everywhere, alert tray, bulk missed review
 **Done**
-- Migration  (applied by Claude):  (breakdown, engine, brakes, tyres, electrical, hydraulics, leak, damage, safety equipment, other) and  (category required);  still works and files under other. The category never changes severity; urgency does. pgTAP .
+- Migration `20261112154800 issue_categories` (applied by Claude): `defects.issue_category` (breakdown, engine, brakes, tyres, electrical, hydraulics, leak, damage, safety equipment, other) and `submit_issue_report` (category required); `report_issue` still works and files under other. The category never changes severity; urgency does. pgTAP `310`.
 - Report an issue: "What kind of issue is it?" picker (Breakdown suggests "stop using it"), "Describe the problem". The kind shows on Defects (new column and filter), the defect page, the equipment page and the operator's history.
 - Search and filters apply as you type everywhere (equipment, inspections, audit, operator lists); every filter dropdown can be typed into. Inspections: search on both Pre-starts (equipment, rego, operator) and Missed. Fixed the From/To date filters, which were being ignored.
 - Missed pre-starts: tick several (or all) and mark them not used or missed in one go (same note on each; each still checked by the database).
