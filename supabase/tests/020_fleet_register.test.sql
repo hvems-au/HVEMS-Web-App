@@ -14,6 +14,8 @@ select tests.create_user('finance@alpha.test', 'Fred Finance') as finance \gset
 select tests.authenticate_as(:'owner', 'aal2');
 select public.create_organisation('company', 'Alpha Haulage') as org \gset
 reset role;
+-- These tests cover per-operator equipment access (the stricter company setting).
+update public.organisations set operators_any_equipment = false where id = :'org';
 select tests.add_member(:'org', :'admin', 'administrator') as admin_m \gset
 select tests.add_member(:'org', :'fm', 'fleet_manager') as fm_m \gset
 select tests.add_member(:'org', :'driver', 'driver_operator') as driver_m \gset

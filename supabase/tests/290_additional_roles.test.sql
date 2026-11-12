@@ -29,7 +29,7 @@ select tests.authenticate_as(:'tech');
 select ok('workforce.manage' = any (public.my_capabilities(:'org')), 'now they have Fleet Manager permissions');
 select ok('work_orders.work' = any (public.my_capabilities(:'org')), 'and keep their technician permissions');
 select is(tests.error_code(format($$select public.set_member_additional_roles(%L, '{}')$$, :'tech_m')),
-  'cannot_change_own_role', 'and still cannot change their own roles');
+  'forbidden', 'and still cannot change roles themselves');
 reset role;
 
 select ok(exists (select 1 from app.alert_recipients(:'org', false) r where r = :'tech'), 'they receive Fleet Manager alerts');

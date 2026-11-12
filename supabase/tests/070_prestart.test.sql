@@ -11,6 +11,8 @@ select tests.create_user('driver.p@example.test', 'Dan Driver') as driver \gset
 
 select tests.authenticate_as(:'owner');
 select public.create_organisation('company', 'Papa Plant') as org \gset
+-- Per-operator equipment access (the stricter company setting) is what these tests cover.
+select public.set_operator_equipment_access(:'org', false);
 insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, serial_number, meter_type)
   values (:'org', 'EX-P1', tests.class_id('excavator'), 'CAT', '320', 'SNP1', 'hours') returning id as ex \gset
 reset role;
