@@ -5,9 +5,9 @@ import { getStaffContext, requireUser } from "@/lib/session";
 
 /** Console CSV export with the page's filters (AUD-02). HVEMS staff with MFA only. */
 export async function GET(request: Request) {
-  const user = await requireUser("/admin/audit");
+  await requireUser("/admin/audit");
   const staff = await getStaffContext();
-  if (!staff || user.aal !== "aal2") notFound();
+  if (!staff || !staff.mfa_satisfied) notFound();
   const sp = Object.fromEntries(new URL(request.url).searchParams);
   const parsed = parseAuditQuery(sp);
   const q = staff.role === "platform_administrator" ? parsed : { ...parsed, tab: "changes" as const };
