@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPersonNames, listAssetsForExport } from "@hvems/api-client";
-import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, prestartFrequencyText, toCsv, type AssetCondition } from "@hvems/domain";
+import { CONDITION_LABELS, OWNER_TYPE_LABELS, toCsv, type AssetCondition } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -28,8 +28,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ orgI
   const csv = toCsv([
     [
       "Equipment ID", "Class", "Make", "Model", "Year", "Registration", "State", "VIN", "Serial number",
-      "Owner type", "Client", "Site", "Odometer / hour meter", "Odometer (km)", "Odometer read", "Hour meter (h)", "Hour meter read",
-      "Condition", "Current operator", "Pre-start checks", "Notes", "Archived", "Archive reason",
+      "Owner type", "Client", "Site", "Odometer (km)", "Odometer reading date", "Hour meter (hours)", "Hour meter reading date",
+      "Condition", "Current operator", "Notes", "Archived date", "Archive reason",
     ],
     ...rows.map((a) => [
       a.asset_number,
@@ -44,14 +44,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ orgI
       OWNER_TYPE_LABELS[a.owner_type],
       a.client?.name,
       a.site?.name,
-      METER_TYPE_LABELS[a.meter_type],
       a.current_odometer_km,
       dmy(a.odometer_read_at, tz),
       a.current_engine_hours,
       dmy(a.engine_hours_read_at, tz),
       a.archived_at ? "Archived" : CONDITION_LABELS[a.condition],
       a.current_operator_id ? (names.get(a.current_operator_id) ?? "Former operator") : "",
-      prestartFrequencyText(a.prestart_frequency, a.prestart_every_days) ?? "As per type",
       a.notes,
       dmy(a.archived_at, tz),
       a.archive_reason,

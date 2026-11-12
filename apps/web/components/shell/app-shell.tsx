@@ -7,7 +7,7 @@ import { ArrowUpRight, Bell, Check, ChevronDown, ChevronsUpDown, LogOut, Menu, M
 import { Logo } from "@/components/brand/logo";
 import { ICONS } from "@/components/shell/icons";
 import { IdleTimer } from "@/components/shell/idle-timer";
-import { useTheme, type ThemeChoice } from "@/components/theme/theme";
+import { ThemeSwitcher, useTheme, type ThemeChoice } from "@/components/theme/theme";
 import type { NavSection } from "@/lib/navigation";
 import { cn, initials } from "@/lib/utils";
 
@@ -318,7 +318,8 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
           <p className="hidden truncate text-[13px] font-medium text-ink-muted lg:block">
             {current.name} <span className="text-ink-subtle">· {current.kindLabel}</span>
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeSwitcher compact />
             <Link
               href={alerts?.href ?? current.href.replace(/\/dashboard$/, "") + "/module/notifications"}
               className="relative rounded-full p-2 text-ink hover:bg-surface-muted"
