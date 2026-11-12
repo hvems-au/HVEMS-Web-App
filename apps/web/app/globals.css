@@ -177,6 +177,16 @@
     color: var(--text-grey);
     opacity: 1;
   }
+  /* Native dropdown lists (Windows/Chromium draw them from the option colours):
+     keep them on the theme's surface so dark mode isn't white-on-white. */
+  select option,
+  select optgroup {
+    background-color: var(--surface-raised);
+    color: var(--text-dark);
+  }
+  select option:disabled {
+    color: var(--text-grey);
+  }
   :focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;

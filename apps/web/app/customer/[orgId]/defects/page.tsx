@@ -4,7 +4,11 @@ import { listActiveSafetyEvents, listDefects } from "@hvems/api-client";
 import { ISSUE_CATEGORIES, DEFECT_SEVERITY_EFFECT, DEFECT_STATUS_LABELS, formatDateAU, formatDateTimeAU, todayISO } from "@hvems/domain";
 import { SeverityBadge } from "@/components/safety";
 import { AutoFilterForm } from "@/components/auto-filter-form";
-import { Select } from "@/components/ui/form";
+import { Input, SEARCH_FIELD } from "@/components/ui/form";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Search } from "lucide-react";
+import { can } from "@hvems/permissions";
+import { DefectCheck, DefectsBulk } from "./bulk";
 import { IssueCategoryTag } from "@/features/operator/issue-category";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, CardHeader, EmptyState, Table, TD, TH, THead, TR, STRETCHED_LINK } from "@/components/ui/primitives";
@@ -22,9 +26,10 @@ export default async function DefectsPage({
   searchParams,
 }: {
   params: Promise<{ orgId: string }>;
-  searchParams: Promise<{ view?: string; type?: string }>;
+  searchParams: Promise<{ view?: string; type?: string; q?: string }>;
 }) {
-  const [{ orgId }, { view, type }] = await Promise.all([params, searchParams]);
+  const [{ orgId }, { view, type, q: rawQ }] = await Promise.all([params, searchParams]);
+  const q = (typeof rawQ === "string" ? rawQ : "").trim().slice(0, 80);
   const ctx = await loadOrgContext(orgId, ["company"]);
   const db = await createSupabaseServerClient();
   const closed = view === "closed";
@@ -61,7 +66,13 @@ export default async function DefectsPage({
   const open = all.filter((d) => d.status === "open").sort((a, b) => RANK[a.severity] - RANK[b.severity] || b.reported_at.localeCompare(a.reported_at));
   const done = all.filter((d) => d.status !== "open");
   const kind = type && (type === "prestart" || ISSUE_CATEGORIES.some((c) => c.value === type)) ? type : "";
-  const rows = (closed ? done : open).filter((d) => !kind || (kind === "prestart" ? d.source !== "operator_report" : d.issue_category === kind));
+  // Search (as you type): any part of the defect, its details or the equipment ID / make / model.
+  const needle = q.toLowerCase();
+  const rows = (closed ? done : open)
+    .filter((d) => !kind || (kind === "prestart" ? d.source !== "operator_report" : d.issue_category === kind))
+    .filter((d) => !needle || [d.title, d.description, d.asset?.asset_number, d.asset?.make, d.asset?.model].some((x) => (x ?? "").toLowerCase().includes(needle)));
+  // Bulk close: for people who can clear defects (the database checks each one again).
+  const canBulk = !closed && (can(ctx.capabilities, "defects.clear_non_critical") || can(ctx.capabilities, "defects.clear_critical"));
   const today = todayISO(ctx.timezone);
   const base = `/customer/${orgId}/defects`;
 
@@ -87,17 +98,29 @@ export default async function DefectsPage({
             </Link>
           ))}
         </div>
-        <AutoFilterForm action={base} className="w-full sm:w-64">
+        <AutoFilterForm action={base} className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           {closed ? <input type="hidden" name="view" value="closed" /> : null}
-          <Select name="type" defaultValue={kind} aria-label="Kind of issue" className="h-10">
-            <option value="">All kinds of issue</option>
-            <option value="prestart">Pre-start faults</option>
-            {ISSUE_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
+          <span className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden />
+            <Input
+              name="q"
+              defaultValue={q}
+              placeholder="Defect, details or equipment"
+              aria-label="Search defects"
+              autoComplete="off"
+              enterKeyHint="search"
+              className={cn("h-10 pl-9 text-[13.5px]", SEARCH_FIELD)}
+            />
+          </span>
+          <span className="w-full sm:w-56">
+            <SearchableSelect
+              name="type"
+              value={kind}
+              label="Kind of issue"
+              all="All kinds of issue"
+              options={[{ value: "prestart", label: "Pre-start faults" }, ...ISSUE_CATEGORIES.map((c) => ({ value: c.value as string, label: c.label as string }))]}
+            />
+          </span>
         </AutoFilterForm>
       </div>
       {!closed && events.length ? (
@@ -119,13 +142,86 @@ export default async function DefectsPage({
       ) : null}
       <Card>
         {rows.length === 0 ? (
-          <EmptyState title={kind ? "Nothing of that kind" : closed ? "No closed defects yet" : "No open defects"}>
+          <EmptyState title={q || kind ? "No defects match" : closed ? "No closed defects yet" : "No open defects"}>
             Faults from pre-starts and issues reported by operators appear here.
           </EmptyState>
+        ) : canBulk ? (
+          <DefectsBulk orgId={orgId} ids={rows.map((d) => d.id)}>
+            <Table>
+              <THead>
+                <tr>
+                  {canBulk ? (
+                    <TH className="w-px">
+                      <span className="sr-only">Select</span>
+                    </TH>
+                  ) : null}
+                  <TH>Defect</TH>
+                  <TH>Kind</TH>
+                  <TH>Severity</TH>
+                  <TH>Equipment</TH>
+                  <TH>{closed ? "Outcome" : "Status"}</TH>
+                  <TH>Reported</TH>
+                </tr>
+              </THead>
+              <tbody>
+                {rows.map((d) => {
+                  const due = d.deferred_until ?? d.due_date;
+                  return (
+                    <TR key={d.id}>
+                      {canBulk ? (
+                        <TD>
+                          <DefectCheck id={d.id} label={d.title} />
+                        </TD>
+                      ) : null}
+                      <TD className="max-w-[340px]">
+                        <Link href={`${base}/${d.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
+                          {d.title}
+                        </Link>
+                        {d.description ? <span className="line-clamp-2 block text-[13px] text-ink-muted">“{d.description}”</span> : null}
+                      </TD>
+                      <TD className="text-[13px]">
+                        <IssueCategoryTag value={d.issue_category} source={d.source} />
+                      </TD>
+                      <TD>
+                        <span title={DEFECT_SEVERITY_EFFECT[d.severity]}>
+                          <SeverityBadge severity={d.severity} />
+                        </span>
+                      </TD>
+                      <TD>
+                        <Link href={`/customer/${orgId}/equipment/${d.asset_id}`} className="relative z-10 font-medium text-link hover:underline">
+                          {d.asset?.asset_number ?? "Equipment"}
+                        </Link>
+                      </TD>
+                      <TD>
+                        {closed ? (
+                          <Badge tone={d.status === "repaired" ? "green" : "grey"}>{DEFECT_STATUS_LABELS[d.status]}</Badge>
+                        ) : (
+                          <span className="flex flex-wrap gap-1.5">
+                            {!d.triaged_at ? <Badge tone="blue">New</Badge> : <Badge tone="grey">Triaged</Badge>}
+                            {due ? (
+                              <Badge tone={due < today ? "red" : "grey"}>
+                                {due < today ? "Overdue" : "Due"} {formatDateAU(new Date(`${due}T00:00:00Z`), "UTC")}
+                              </Badge>
+                            ) : null}
+                          </span>
+                        )}
+                      </TD>
+                      <TD className="whitespace-nowrap text-ink-muted">{formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}</TD>
+                    </TR>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </DefectsBulk>
         ) : (
           <Table>
             <THead>
               <tr>
+                {canBulk ? (
+                  <TH className="w-px">
+                    <span className="sr-only">Select</span>
+                  </TH>
+                ) : null}
                 <TH>Defect</TH>
                 <TH>Kind</TH>
                 <TH>Severity</TH>
@@ -139,6 +235,11 @@ export default async function DefectsPage({
                 const due = d.deferred_until ?? d.due_date;
                 return (
                   <TR key={d.id}>
+                    {canBulk ? (
+                      <TD>
+                        <DefectCheck id={d.id} label={d.title} />
+                      </TD>
+                    ) : null}
                     <TD className="max-w-[340px]">
                       <Link href={`${base}/${d.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
                         {d.title}

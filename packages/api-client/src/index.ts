@@ -1332,16 +1332,17 @@ export async function getDashboardTodo(db: HvemsClient, organisationId: string) 
     return error ? 0 : (n ?? 0);
   };
   const head = { count: "exact" as const, head: true };
-  const [criticalDefects, otherDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview] = await Promise.all([
+  const [criticalDefects, minorDefects, advisoryDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview] = await Promise.all([
     count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "critical")),
-    count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").neq("severity", "critical")),
+    count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "minor")),
+    count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "advisory")),
     count(db.from("missed_prestarts").select("id", head).eq("organisation_id", organisationId).eq("status", "open")),
     count(raw(db).from("service_schedule").select("id", head).eq("organisation_id", organisationId).eq("status", "overdue")),
     count(raw(db).from("service_schedule").select("id", head).eq("organisation_id", organisationId).eq("status", "due_soon")),
     count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).in("status", ["open", "in_progress"])),
     count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).eq("status", "completed")),
   ]);
-  return { criticalDefects, otherDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview };
+  return { criticalDefects, minorDefects, advisoryDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview };
 }
 
 // ---------------------------------------------------------------------------

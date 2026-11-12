@@ -166,3 +166,44 @@ export async function acknowledgeAlertAction(orgId: string, alertId: string): Pr
   const db = await createSupabaseServerClient();
   return run(orgId, undefined, "Alert acknowledged", () => acknowledgeAlert(db, id));
 }
+
+/**
+ * Close several open defects at once: "repaired" (same repair note on each) or
+ * "no_fault" (dismissed with the same reason). Each one still goes through the
+ * database rules: clearance authority, Critical repairs leave the equipment
+ * awaiting return to service, the repairer rule. Failures are counted, the rest saved.
+ */
+export async function closeDefectsBulkAction(
+  orgId: string,
+  ids: string[],
+  how: "repaired" | "no_fault",
+  note: string,
+): Promise<ActionState<{ saved: number; failed: number; awaitingReturn: number }>> {
+  const text = note.trim();
+  if (!ids.length || ids.length > 200) return { status: "error", code: "invalid", message: "Choose between 1 and 200 defects" };
+  if (text.length < 3) return { status: "error", code: "note_required", message: how === "repaired" ? "Describe the repair" : "Say why there's no fault" };
+  try {
+    const db = await createSupabaseServerClient();
+    let saved = 0;
+    let awaitingReturn = 0;
+    let firstError: unknown = null;
+    for (const id of ids) {
+      try {
+        if (how === "repaired") {
+          const r = await clearDefect(db, { defectId: id, repairDetails: text });
+          if (r?.awaiting_return_to_service) awaitingReturn++;
+        } else {
+          await dismissDefect(db, id, text);
+        }
+        saved++;
+      } catch (e) {
+        firstError ??= e;
+      }
+    }
+    revalidatePath(`/customer/${orgId}`, "layout");
+    if (!saved && firstError) return errorState(firstError);
+    return { status: "success", data: { saved, failed: ids.length - saved, awaitingReturn } };
+  } catch (e) {
+    return errorState(e);
+  }
+}

@@ -31,7 +31,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   ]);
   const todoItems = [
     { n: todo.criticalDefects, label: "Critical defects", href: `/customer/${orgId}/defects`, tone: "red" as const },
-    { n: todo.otherDefects, label: "Other open defects", href: `/customer/${orgId}/defects`, tone: "amber" as const },
+    { n: todo.minorDefects, label: "Minor defects", href: `/customer/${orgId}/defects`, tone: "amber" as const },
+    { n: todo.advisoryDefects, label: "Advisory defects", href: `/customer/${orgId}/defects`, tone: "blue" as const },
     { n: todo.missedPrestarts, label: "Missed pre-starts to review", href: `/customer/${orgId}/inspections?tab=missed`, tone: "amber" as const },
     { n: todo.overdueServices, label: "Services overdue", href: `/customer/${orgId}/maintenance`, tone: "red" as const },
     { n: todo.dueSoonServices, label: "Services due soon", href: `/customer/${orgId}/maintenance`, tone: "amber" as const },
@@ -74,10 +75,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
         <StatCard label="Broken/Out of service" value={counts.out_of_service} sub="Do not operate" icon={<AlertOctagon />} tone="red" href={`${base}/equipment?condition=out_of_service`} />
         <StatCard
           label="Open defects"
-          value={todo.criticalDefects + todo.otherDefects}
-          sub={todo.criticalDefects ? `${todo.criticalDefects} critical · ${todo.otherDefects} other` : "Includes advisory defects"}
+          value={todo.criticalDefects + todo.minorDefects + todo.advisoryDefects}
+          sub={[`${todo.criticalDefects} critical`, todo.minorDefects ? `${todo.minorDefects} minor` : null, `${todo.advisoryDefects} advisory`].filter(Boolean).join(" · ")}
           icon={<Wrench />}
-          tone={todo.criticalDefects ? "red" : todo.otherDefects ? "amber" : "green"}
+          tone={todo.criticalDefects ? "red" : todo.minorDefects + todo.advisoryDefects ? "amber" : "green"}
           href={`${base}/defects`}
         />
       </div>
