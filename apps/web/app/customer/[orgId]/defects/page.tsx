@@ -4,7 +4,7 @@ import { listActiveSafetyEvents, listDefects } from "@hvems/api-client";
 import { DEFECT_SEVERITY_EFFECT, DEFECT_STATUS_LABELS, formatDateAU, formatDateTimeAU, todayISO } from "@hvems/domain";
 import { SeverityBadge } from "@/components/safety";
 import { PageHeader } from "@/components/shell/page";
-import { Badge, Card, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { Badge, Card, CardHeader, EmptyState, Table, TD, TH, THead, TR, STRETCHED_LINK } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -84,8 +84,8 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
           <Table>
             <THead>
               <tr>
-                <TH>Severity</TH>
                 <TH>Defect</TH>
+                <TH>Severity</TH>
                 <TH>Equipment</TH>
                 <TH>{closed ? "Outcome" : "Status"}</TH>
                 <TH>Reported</TH>
@@ -96,19 +96,19 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
                 const due = d.deferred_until ?? d.due_date;
                 return (
                   <TR key={d.id}>
+                    <TD className="max-w-[340px]">
+                      <Link href={`${base}/${d.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
+                        {d.title}
+                      </Link>
+                      {d.description ? <span className="line-clamp-2 block text-[13px] text-ink-muted">“{d.description}”</span> : null}
+                    </TD>
                     <TD>
                       <span title={DEFECT_SEVERITY_EFFECT[d.severity]}>
                         <SeverityBadge severity={d.severity} />
                       </span>
                     </TD>
                     <TD>
-                      <Link href={`${base}/${d.id}`} className="font-semibold text-link hover:underline">
-                        {d.title}
-                      </Link>
-                      {d.description ? <span className="block text-[13px] text-ink-muted">“{d.description}”</span> : null}
-                    </TD>
-                    <TD>
-                      <Link href={`/customer/${orgId}/equipment/${d.asset_id}`} className="hover:underline">
+                      <Link href={`/customer/${orgId}/equipment/${d.asset_id}`} className="relative z-10 font-medium text-link hover:underline">
                         {d.asset?.asset_number ?? "Equipment"}
                       </Link>
                     </TD>
@@ -126,7 +126,7 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
                         </span>
                       )}
                     </TD>
-                    <TD className="whitespace-nowrap">{formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}</TD>
+                    <TD className="whitespace-nowrap text-ink-muted">{formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}</TD>
                   </TR>
                 );
               })}

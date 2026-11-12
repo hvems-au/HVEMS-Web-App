@@ -22,8 +22,27 @@ Refined industrial operations product: neutral working surfaces, charcoal struct
 | Inspection detail (faults first, defect links, answers folded) | ✅ | ✅ | ✅ | ✅ | open ✅ |
 | Pre-start completion (compact summary, full-width answers, sticky progress + next unanswered) | ✅ | ✅ | ✅ | ✅ | answering / progress / jump ✅ (not submitted in tests) |
 
-## Remaining coverage (next)
-Apply the validated patterns to: dashboard, equipment (list, detail, form, import), clients & sites, defects & safety, alerts, operators, maintenance, work orders, technicians, team, audit history, settings, account security, onboarding / select account, operator portal, provider portal, Super Admin console (dashboard, organisations, asset classes, audit, settings), placeholders ("coming soon" modules), not-found and error pages. For each: phone layout for tables, whole-row links, empty / no-results states, both themes.
+## Rollout (12/11/2026)
+Every page now inherits the tokens (both themes), the page header, the table component (sideways scroll inside the card, first column pinned on phones, minimum width so columns stay readable), row hover, detail lists that wrap, and the filter bar.
+
+| Area | Bespoke work done | Inherited only | Phone | Dark | Checked (dark, 390px: loads, no overflow, no console errors) |
+|---|---|---|---|---|---|
+| Equipment list | phone cards, whole-row links | | ✅ | ✅ | ✅ |
+| Work orders list | phone cards, whole-row links, "Overdue" in words | | ✅ | ✅ | ✅ |
+| Defects list | defect first, whole-row links | | table | ✅ | ✅ |
+| Dashboard, equipment detail / history / new, clients & sites, alerts, operators, maintenance, technicians, team, audit, settings, account security, module placeholders | | ✅ | table / stacked | ✅ | ✅ |
+| Super Admin console: dashboard, organisations, asset classes, audit, settings | | ✅ | table | ✅ | ✅ |
+| Provider dashboard | | ✅ | | ✅ | desktop ✅ |
+| Operator portal (sign-in on equipment code, pre-start, result) | pre-start form shared with company portal | ✅ | ✅ | ✅ | pre-start ✅ |
+
+## Still to do (next session)
+1. Phone cards (like Equipment / Work orders) for: defects, technicians, operators, team, maintenance schedule, audit, admin organisations.
+2. Dashboard: lead with the To-do card on phones; stat tiles one row of two.
+3. Equipment detail: compact identity header on phones; actions into an overflow menu.
+4. Forms: error summary at the top of long forms (equipment form, pre-start) and unsaved-change protection on the equipment form.
+5. Operator portal start page and result page review on a phone in both themes.
+6. Not-found / error / loading pages in dark mode review.
+7. Accessibility pass: keyboard-only walk-through of each portal, 200% zoom, screen reader spot checks; measure contrast with a tool.
 
 ## Checks
 - Typecheck, lint, unit tests and CI on every commit.

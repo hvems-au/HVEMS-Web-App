@@ -5,7 +5,8 @@ import { createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, use
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { AssetListItem } from "@hvems/types";
 import { ConditionBadge } from "@/components/condition";
-import { formatNumber } from "@/lib/utils";
+import { STRETCHED_LINK } from "@/components/ui/primitives";
+import { cn, formatNumber } from "@/lib/utils";
 
 const col = createColumnHelper<AssetListItem>();
 
@@ -26,7 +27,7 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
           const a = c.row.original;
           const name = [a.year, a.make, a.model].filter(Boolean).join(" ");
           return (
-            <Link href={`${base}/${a.id}`} className="group block">
+            <Link href={`${base}/${a.id}`} className={cn("group block", STRETCHED_LINK)}>
               <span className="font-semibold text-brand-ink group-hover:underline">{c.getValue()}</span>
               {name ? <span className="block text-[12.5px] text-ink-muted">{name}</span> : null}
             </Link>
@@ -86,8 +87,33 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
   });
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-[13px]">
+    <>
+    {/* Phones: one card per piece of equipment; the whole card opens it. */}
+    <ul className="divide-y divide-stroke sm:hidden">
+      {rows.map((a) => {
+        const name = [a.year, a.make, a.model].filter(Boolean).join(" ");
+        const operator = a.current_operator_id ? operators[a.current_operator_id] : null;
+        return (
+          <li key={a.id} className="relative px-4 py-3 hover:bg-surface-hover">
+            <div className="flex items-start justify-between gap-3">
+              <Link href={`${base}/${a.id}`} className={cn("min-w-0 font-semibold text-ink", STRETCHED_LINK)}>
+                {a.asset_number}
+                {name ? <span className="block truncate text-[13px] font-normal text-ink-muted">{name}</span> : null}
+              </Link>
+              {a.archived_at ? <span className="text-[12px] font-semibold text-ink-muted">Archived</span> : <ConditionBadge condition={a.condition} />}
+            </div>
+            <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-ink-muted">
+              <span>{a.asset_class?.name}</span>
+              {a.registration_number ? <span>{a.registration_number}</span> : null}
+              {operator ? <span>{operator}</span> : null}
+              <span>{meter(a)}</span>
+            </p>
+          </li>
+        );
+      })}
+    </ul>
+    <div className="hidden overflow-x-auto sm:block">
+      <table className="w-full border-collapse text-left text-[13.5px]">
         <thead className="bg-surface-muted">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
@@ -112,7 +138,7 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
         </thead>
         <tbody>
           {table.getRowModel().rows.map((r) => (
-            <tr key={r.id} className="border-b border-stroke/70 hover:bg-surface-hover">
+            <tr key={r.id} className="relative border-b border-stroke hover:bg-surface-hover">
               {r.getVisibleCells().map((c) => (
                 <td key={c.id} className="px-4 py-3 align-middle">
                   {flexRender(c.column.columnDef.cell, c.getContext())}
@@ -123,5 +149,6 @@ export function AssetTable({ rows, base, operators = {} }: { rows: AssetListItem
         </tbody>
       </table>
     </div>
+    </>
   );
 }

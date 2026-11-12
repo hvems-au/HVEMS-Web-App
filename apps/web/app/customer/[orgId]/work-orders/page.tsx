@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { formatWorkOrderNumber, listWorkOrders } from "@hvems/api-client";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
-import { Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { NewWorkOrderDialog } from "@/features/maintenance/controls";
 import { maintenanceOptions } from "@/features/maintenance/options";
 import { PriorityBadge, WorkOrderStatusBadge } from "@/features/maintenance/badges";
@@ -56,42 +56,76 @@ export default async function WorkOrdersPage({
             {finished ? null : "Create one here, or from a service plan on the Maintenance page."}
           </EmptyState>
         ) : (
-          <Table>
-            <THead>
-              <tr>
-                <TH>Number</TH>
-                <TH>Equipment</TH>
-                <TH>Work</TH>
-                <TH>Done by</TH>
-                <TH>Priority</TH>
-                <TH>Due</TH>
-                <TH>Status</TH>
-              </tr>
-            </THead>
-            <tbody>
-              {rows.map((w) => (
-                <TR key={w.id}>
-                  <TD>
-                    <Link href={`${base}/${w.id}`} className="font-mono font-semibold text-link hover:underline">
-                      {formatWorkOrderNumber(w.number)}
-                    </Link>
-                  </TD>
-                  <TD className="font-semibold">{w.asset?.asset_number ?? "—"}</TD>
-                  <TD>{w.title}</TD>
-                  <TD className="text-ink-muted">{w.kind === "vendor" ? w.vendor_name : w.assigned_to ? (opts.nameOf.get(w.assigned_to) ?? "Member") : "Not assigned"}</TD>
-                  <TD>
-                    <PriorityBadge priority={w.priority} />
-                  </TD>
-                  <TD className={cn("whitespace-nowrap", w.due_on && w.due_on < today && !finished ? "font-semibold text-danger" : "")}>
-                    {w.due_on ? dmy(w.due_on) : "—"}
-                  </TD>
-                  <TD>
-                    <WorkOrderStatusBadge status={w.status} />
-                  </TD>
-                </TR>
-              ))}
-            </tbody>
-          </Table>
+          <>
+            {/* Phones: one card per work order. */}
+            <ul className="divide-y divide-stroke sm:hidden">
+              {rows.map((w) => {
+                const overdue = !!w.due_on && w.due_on < today && !finished;
+                return (
+                  <li key={w.id} className="relative px-4 py-3 hover:bg-surface-hover">
+                    <div className="flex items-start justify-between gap-3">
+                      <Link href={`${base}/${w.id}`} className={cn("min-w-0", STRETCHED_LINK)}>
+                        <span className="font-mono text-[12.5px] font-semibold text-ink-muted">{formatWorkOrderNumber(w.number)}</span>
+                        <span className="block font-semibold text-ink">{w.title}</span>
+                      </Link>
+                      <WorkOrderStatusBadge status={w.status} />
+                    </div>
+                    <p className="mt-1 text-[13px] text-ink-muted">
+                      {w.asset?.asset_number ?? "—"} · {w.kind === "vendor" ? w.vendor_name : w.assigned_to ? (opts.nameOf.get(w.assigned_to) ?? "Member") : "Not assigned"}
+                    </p>
+                    <p className="mt-1.5 flex items-center gap-2 text-[13px]">
+                      <PriorityBadge priority={w.priority} />
+                      {w.due_on ? (
+                        <span className={cn(overdue ? "font-semibold text-danger-ink" : "text-ink-muted")}>
+                          {overdue ? "Overdue · " : "Due "}
+                          {dmy(w.due_on)}
+                        </span>
+                      ) : null}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden sm:block">
+            <Table>
+              <THead>
+                <tr>
+                  <TH>Number</TH>
+                  <TH>Equipment</TH>
+                  <TH>Work</TH>
+                  <TH>Done by</TH>
+                  <TH>Priority</TH>
+                  <TH>Due</TH>
+                  <TH>Status</TH>
+                </tr>
+              </THead>
+              <tbody>
+                {rows.map((w) => (
+                  <TR key={w.id}>
+                    <TD>
+                      <Link href={`${base}/${w.id}`} className={cn("font-mono font-semibold text-link hover:underline", STRETCHED_LINK)}>
+                        {formatWorkOrderNumber(w.number)}
+                      </Link>
+                    </TD>
+                    <TD className="font-semibold">{w.asset?.asset_number ?? "—"}</TD>
+                    <TD>{w.title}</TD>
+                    <TD className="text-ink-muted">{w.kind === "vendor" ? w.vendor_name : w.assigned_to ? (opts.nameOf.get(w.assigned_to) ?? "Member") : "Not assigned"}</TD>
+                    <TD>
+                      <PriorityBadge priority={w.priority} />
+                    </TD>
+                    <TD className={cn("whitespace-nowrap", w.due_on && w.due_on < today && !finished ? "font-semibold text-danger-ink" : "text-ink-muted")}>
+                      {w.due_on ? dmy(w.due_on) : "—"}
+                      {w.due_on && w.due_on < today && !finished ? <span className="block text-[12px] font-medium">Overdue</span> : null}
+                    </TD>
+                    <TD>
+                      <WorkOrderStatusBadge status={w.status} />
+                    </TD>
+                  </TR>
+                ))}
+              </tbody>
+            </Table>
+            </div>
+          </>
         )}
       </Card>
     </>
