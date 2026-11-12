@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
-import { ArrowUpRight, Bell, Check, ChevronsUpDown, LogOut, Menu, ShieldCheck, X } from "lucide-react";
+import { ArrowUpRight, Bell, Check, ChevronDown, ChevronsUpDown, LogOut, Menu, ShieldCheck, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ICONS } from "@/components/shell/icons";
 import { IdleTimer } from "@/components/shell/idle-timer";
@@ -32,45 +32,99 @@ export interface AppShellProps {
   children: React.ReactNode;
 }
 
+// Which menu groups the person opened or closed (this browser only; a convenience).
+const NAV_KEY = "hvems.nav.groups";
+const NAV_EVENT = "hvems-nav-groups";
+function subscribeNavGroups(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(NAV_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(NAV_EVENT, onChange);
+  };
+}
+function readNavGroups(): string {
+  try {
+    return window.localStorage.getItem(NAV_KEY) ?? "{}";
+  } catch {
+    return "{}";
+  }
+}
+
+function isActive(pathname: string, href: string) {
+  return pathname === href || (href !== "/admin" && pathname.startsWith(href + "/"));
+}
+
 function NavLinks({ nav, onNavigate }: { nav: NavSection[]; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const raw = React.useSyncExternalStore(subscribeNavGroups, readNavGroups, () => "{}");
+  const chosen = React.useMemo<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      return {};
+    }
+  }, [raw]);
+  // A group opens by itself when it holds the current page, unless the person closed it.
+  const isOpen = (s: NavSection) => !s.title || (chosen[s.title] ?? s.items.some((i) => isActive(pathname, i.href)));
+  const toggle = (title: string, open: boolean) => {
+    try {
+      window.localStorage.setItem(NAV_KEY, JSON.stringify({ ...chosen, [title]: !open }));
+    } catch {
+      // Storage blocked: the group just won't remember.
+    }
+    window.dispatchEvent(new Event(NAV_EVENT));
+  };
   return (
-    <nav aria-label="Main" className="flex flex-col gap-2.5">
-      {nav.map((section, i) => (
-        <div key={i} className={cn(i > 0 && !section.title && "border-t border-white/10 pt-3")}>
-          {section.title ? (
-            <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">{section.title}</p>
-          ) : null}
-          <ul className="flex flex-col gap-0.5">
-            {section.items.map((item) => {
-              const Icon = ICONS[item.icon];
-              const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onNavigate}
-                    aria-current={active ? "page" : undefined}
-                    title={item.increment ? `${item.label} — delivered in increment ${item.increment}` : undefined}
-                    className={cn(
-                      "group flex items-center gap-2.5 rounded-[7px] px-3 py-[7px] text-[13px] font-medium transition-colors",
-                      active
-                        ? "bg-brand text-white shadow-sm"
-                        : item.increment
-                          ? "text-white/45 hover:bg-white/8 hover:text-white/80"
-                          : "text-white/90 hover:bg-white/8 hover:text-white",
-                    )}
-                  >
-                    <Icon className="size-[17px] shrink-0" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {item.increment ? <span className="sr-only">(coming in increment {item.increment})</span> : null}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
+    <nav aria-label="Main" className="flex flex-col gap-1.5">
+      {nav.map((section, i) => {
+        const open = isOpen(section);
+        const id = `nav-group-${i}`;
+        return (
+          <div key={i} className={cn(i > 0 && !section.title && "mt-1 border-t border-white/10 pt-2.5")}>
+            {section.title ? (
+              <button
+                type="button"
+                onClick={() => toggle(section.title!, open)}
+                aria-expanded={open}
+                aria-controls={id}
+                className="flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/45 hover:bg-white/5 hover:text-white/70"
+              >
+                {section.title}
+                <ChevronDown className={cn("size-3.5 transition-transform", open ? "rotate-0" : "-rotate-90")} aria-hidden />
+              </button>
+            ) : null}
+            <ul id={id} hidden={!open} className="flex flex-col gap-0.5">
+              {section.items.map((item) => {
+                const Icon = ICONS[item.icon];
+                const active = isActive(pathname, item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      aria-current={active ? "page" : undefined}
+                      title={item.increment ? `${item.label} — delivered in increment ${item.increment}` : undefined}
+                      className={cn(
+                        "group flex items-center gap-2.5 rounded-[7px] px-3 py-[7px] text-[12.5px] font-medium transition-colors",
+                        active
+                          ? "bg-brand text-white shadow-sm"
+                          : item.increment
+                            ? "text-white/45 hover:bg-white/8 hover:text-white/80"
+                            : "text-white/90 hover:bg-white/8 hover:text-white",
+                      )}
+                    >
+                      <Icon className="size-4 shrink-0" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.increment ? <span className="sr-only">(coming in increment {item.increment})</span> : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
     </nav>
   );
 }
@@ -99,12 +153,7 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
         <ChevronsUpDown className="size-4 shrink-0 text-white/60" aria-hidden />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="top"
-          align="start"
-          sideOffset={8}
-          className="z-50 w-72 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl"
-        >
+        <DropdownMenu.Content side="top" align="start" sideOffset={8} className="z-50 w-72 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl">
           <DropdownMenu.Label className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
             Switch organisation or portal
           </DropdownMenu.Label>
@@ -151,35 +200,38 @@ function UserMenu({ user }: { user: AppShellProps["user"] }) {
   const signOutForm = React.useRef<HTMLFormElement>(null);
   return (
     <>
-    <form ref={signOutForm} action="/auth/sign-out" method="post" className="hidden" />
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger
-        className="flex size-10 items-center justify-center rounded-full bg-shade text-[13px] font-semibold text-white ring-offset-2 hover:ring-2 hover:ring-brand/40"
-        aria-label="Account menu"
-      >
-        {initials(user.fullName || user.email)}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={8} className="z-50 w-64 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl">
-          <div className="px-2 py-2">
-            <p className="truncate text-[13.5px] font-semibold text-ink">{user.fullName || "Your account"}</p>
-            <p className="truncate text-[12.5px] text-ink-subtle">{user.email}</p>
-          </div>
-          <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
-          <DropdownMenu.Item asChild>
-            <Link href="/account/security" className="flex items-center gap-2 rounded-md px-2 py-2 text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted">
-              <ShieldCheck className="size-4 text-ink-muted" /> Account security
-            </Link>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={() => signOutForm.current?.requestSubmit()}
-            className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
-          >
-            <LogOut className="size-4 text-ink-muted" /> Sign out
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      <form ref={signOutForm} action="/auth/sign-out" method="post" className="hidden" />
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger
+          className="flex size-10 items-center justify-center rounded-full bg-shade text-[13px] font-semibold text-white ring-offset-2 hover:ring-2 hover:ring-brand/40"
+          aria-label="Account menu"
+        >
+          {initials(user.fullName || user.email)}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content align="end" sideOffset={8} className="z-50 w-64 rounded-[10px] border border-stroke bg-white p-1.5 shadow-xl">
+            <div className="px-2 py-2">
+              <p className="truncate text-[13.5px] font-semibold text-ink">{user.fullName || "Your account"}</p>
+              <p className="truncate text-[12.5px] text-ink-subtle">{user.email}</p>
+            </div>
+            <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
+            <DropdownMenu.Item asChild>
+              <Link
+                href="/account/security"
+                className="flex items-center gap-2 rounded-md px-2 py-2 text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
+              >
+                <ShieldCheck className="size-4 text-ink-muted" /> Account security
+              </Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => signOutForm.current?.requestSubmit()}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
+            >
+              <LogOut className="size-4 text-ink-muted" /> Sign out
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
     </>
   );
 }
@@ -204,7 +256,10 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
   return (
     <div className="min-h-dvh bg-canvas">
       <IdleTimer />
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded focus:bg-white focus:px-3 focus:py-2">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded focus:bg-white focus:px-3 focus:py-2"
+      >
         Skip to content
       </a>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[var(--sidebar-width)] bg-shade lg:block">
