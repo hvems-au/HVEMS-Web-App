@@ -20,9 +20,9 @@
           <tr><td style="font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:21px;font-weight:700;color:#444444;padding:0 0 14px 0;">Sign in to HVEMS</td></tr>
           <tr><td style="font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:15px;line-height:1.6;color:#444444;padding:0 0 18px 0;">Use the button below to sign in, or enter this code: <strong style="font-size:18px;letter-spacing:3px;">{{ .Token }}</strong></td></tr>
           <tr><td style="padding:8px 0 24px 0;">
-          <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#CE5502;color:#ffffff;font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:8px;">Sign in</a>
+          <a href="{{ .SiteURL }}/continue?token_hash={{ .TokenHash }}&type=email&redirect_to={{ .RedirectTo }}" style="display:inline-block;background:#CE5502;color:#ffffff;font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:8px;">Sign in</a>
         </td></tr>
-          <tr><td style="font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:13px;line-height:1.6;color:#6b6b6b;padding:0 0 24px 0;">The button works once and expires in 1 hour. If it doesn't open, copy this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="color:#CE5502;word-break:break-all;">{{ .ConfirmationURL }}</a><br><br>If you didn't ask for this, you can ignore this email.</td></tr>
+          <tr><td style="font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:13px;line-height:1.6;color:#6b6b6b;padding:0 0 24px 0;">The button works once and expires in 1 hour. If it doesn't open, copy this link into your browser:<br><a href="{{ .SiteURL }}/continue?token_hash={{ .TokenHash }}&type=email&redirect_to={{ .RedirectTo }}" style="color:#CE5502;word-break:break-all;">{{ .SiteURL }}/continue?token_hash={{ .TokenHash }}&type=email&redirect_to={{ .RedirectTo }}</a><br><br>If you didn't ask for this, you can ignore this email.</td></tr>
         </table>
       </td></tr>
       <tr><td style="font-family:Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;color:#6b6b6b;padding:18px 4px 0 4px;">

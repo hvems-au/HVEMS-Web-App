@@ -131,7 +131,7 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
 };
 
 /** Routes every portal except the driver portal serves (sign-in, recovery, callbacks). */
-export const AUTH_PREFIXES = ["/login", "/sign-up", "/forgot-password", "/reset-password", "/check-email", "/auth", "/invite"] as const;
+export const AUTH_PREFIXES = ["/login", "/sign-up", "/forgot-password", "/reset-password", "/check-email", "/continue", "/auth", "/invite"] as const;
 
 export function startsWithAny(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));

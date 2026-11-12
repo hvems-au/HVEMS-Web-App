@@ -53,8 +53,10 @@ function layout({ preheader, heading, body, button, after = "" }) {
 `;
 }
 
-const linkNote = (expiry) =>
-  `The button works once and expires in ${expiry}. If it doesn't open, copy this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="color:${ORANGE};word-break:break-all;">{{ .ConfirmationURL }}</a>`;
+// Links open HVEMS's /continue page (not Supabase's address); the token is used only when the person presses Continue.
+const link = (type) => `{{ .SiteURL }}/continue?token_hash={{ .TokenHash }}&type=${type}&redirect_to={{ .RedirectTo }}`;
+const linkNote = (expiry, type) =>
+  `The button works once and expires in ${expiry}. If it doesn't open, copy this link into your browser:<br><a href="${link(type)}" style="color:${ORANGE};word-break:break-all;">${link(type)}</a>`;
 const notYou = "If you didn't ask for this, you can ignore this email.";
 const securityFooter = "If this wasn't you, reset your password straight away from the sign-in page and contact your Company Admin or HVEMS support.";
 
@@ -67,8 +69,8 @@ export const templates = {
       preheader: "One click to finish setting up your HVEMS account.",
       heading: "Confirm your email",
       body: "Thanks for signing up. Confirm this email address to finish setting up your HVEMS account.",
-      button: { href: "{{ .ConfirmationURL }}", label: "Confirm email" },
-      after: `${linkNote("1 hour")}<br><br>${notYou}`,
+      button: { href: link("email"), label: "Confirm email" },
+      after: `${linkNote("1 hour", "email")}<br><br>${notYou}`,
     }),
   },
   invite: {
@@ -78,8 +80,8 @@ export const templates = {
       preheader: "Accept your invitation to HVEMS.",
       heading: "You've been invited to HVEMS",
       body: "You've been invited to join HVEMS. Accept the invitation to set your password and sign in.",
-      button: { href: "{{ .ConfirmationURL }}", label: "Accept invitation" },
-      after: `${linkNote("1 hour")}<br><br>If you weren't expecting this, you can ignore this email.`,
+      button: { href: link("invite"), label: "Accept invitation" },
+      after: `${linkNote("1 hour", "invite")}<br><br>If you weren't expecting this, you can ignore this email.`,
     }),
   },
   magic_link: {
@@ -89,8 +91,8 @@ export const templates = {
       preheader: "Your one-time sign-in link for HVEMS.",
       heading: "Sign in to HVEMS",
       body: 'Use the button below to sign in, or enter this code: <strong style="font-size:18px;letter-spacing:3px;">{{ .Token }}</strong>',
-      button: { href: "{{ .ConfirmationURL }}", label: "Sign in" },
-      after: `${linkNote("1 hour")}<br><br>${notYou}`,
+      button: { href: link("email"), label: "Sign in" },
+      after: `${linkNote("1 hour", "email")}<br><br>${notYou}`,
     }),
   },
   email_change: {
@@ -100,8 +102,8 @@ export const templates = {
       preheader: "Confirm the new email address for your HVEMS account.",
       heading: "Confirm your new email",
       body: "You asked to change your HVEMS sign-in email from {{ .Email }} to <strong>{{ .NewEmail }}</strong>. Confirm the change below.",
-      button: { href: "{{ .ConfirmationURL }}", label: "Confirm new email" },
-      after: `${linkNote("1 hour")}<br><br>${securityFooter}`,
+      button: { href: link("email_change"), label: "Confirm new email" },
+      after: `${linkNote("1 hour", "email_change")}<br><br>${securityFooter}`,
     }),
   },
   recovery: {
@@ -111,8 +113,8 @@ export const templates = {
       preheader: "Choose a new password for HVEMS.",
       heading: "Reset your password",
       body: "We received a request to reset the password for your HVEMS account. Choose a new one using the button below.",
-      button: { href: "{{ .ConfirmationURL }}", label: "Choose a new password" },
-      after: `${linkNote("1 hour")}<br><br>If you didn't ask to reset your password, ignore this email. Your password won't change.`,
+      button: { href: link("recovery"), label: "Choose a new password" },
+      after: `${linkNote("1 hour", "recovery")}<br><br>If you didn't ask to reset your password, ignore this email. Your password won't change.`,
     }),
   },
   reauthentication: {

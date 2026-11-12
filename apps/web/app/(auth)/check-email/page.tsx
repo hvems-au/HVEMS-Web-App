@@ -15,8 +15,8 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: P
           <MailCheck className="size-8" aria-hidden />
         </span>
         <p className="text-[15px] text-ink-muted">
-          We&apos;ve sent a verification link to {email ? <strong className="text-ink">{email}</strong> : "your email address"}. Open it on this
-          device to finish creating your account.
+          We&apos;ve sent a verification link to {email ? <strong className="text-ink">{email}</strong> : "your email address"}. Open it to finish
+          creating your account.
         </p>
         <p className="text-[13px] text-ink-subtle">Didn&apos;t get it? Check your junk folder, or wait a minute and sign up again.</p>
         <Link href="/login" className="text-[14px] font-semibold text-link hover:underline">
