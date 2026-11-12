@@ -5,13 +5,14 @@ import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
+import { AutoFilterForm } from "./auto-filter-form";
 
 export type FilterField =
   | { kind: "select"; name: string; label: string; value?: string; all: string; options: { value: string; label: string }[] }
   | { kind: "date"; name: string; label: string; value?: string };
 
 /**
- * A row of filters sent as a plain GET form, so filters live in the URL (shareable,
+ * A row of filters that apply as soon as one changes; filters live in the URL (shareable,
  * kept by Back). On phones the fields fold behind a "Filters" button showing how
  * many are applied; on larger screens they're always shown. `keep` carries other
  * query values, such as the current tab.
@@ -32,9 +33,8 @@ export function FilterBar({ action, fields, keep = {} }: { action: string; field
           </Link>
         ) : null}
       </div>
-      <form
+      <AutoFilterForm
         id="filter-fields"
-        method="get"
         action={action}
         className={cn("grid grid-cols-2 items-end gap-3 px-4 pb-4 sm:flex sm:flex-wrap sm:pt-4", open ? "grid" : "hidden sm:flex")}
       >
@@ -59,16 +59,13 @@ export function FilterBar({ action, fields, keep = {} }: { action: string; field
           </label>
         ))}
         <div className="col-span-2 flex items-center gap-3 sm:col-span-1">
-          <Button type="submit" size="sm" className="h-10 flex-1 sm:flex-none">
-            Apply filters
-          </Button>
           {applied ? (
-            <Link href={clearHref} className="hidden text-[13px] font-medium text-link hover:underline sm:inline">
+            <Link href={clearHref} className="hidden pb-2.5 text-[13px] font-medium text-link hover:underline sm:inline">
               Reset
             </Link>
           ) : null}
         </div>
-      </form>
+      </AutoFilterForm>
     </div>
   );
 }

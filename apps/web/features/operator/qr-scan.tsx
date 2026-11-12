@@ -21,8 +21,8 @@ export function QrScanButton({ searchPath }: { searchPath: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" size="lg" className="h-12 w-full text-[16px]">
-          <QrCode /> Scan QR label
+        <Button type="button" variant="secondary" className="h-12 shrink-0 px-3" aria-label="Scan QR label">
+          <QrCode /> <span className="hidden min-[380px]:inline">Scan QR</span>
         </Button>
       </DialogTrigger>
       <DialogContent title="Scan the QR label" description="Point the camera at the QR code on the equipment.">

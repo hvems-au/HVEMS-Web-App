@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form";
 import { Card } from "@/components/ui/primitives";
+import { AutoFilterForm } from "@/components/auto-filter-form";
 import { cn } from "@/lib/utils";
 import { ENTITY_LABELS } from "./format";
 import { ACTION_LABELS, AUDIT_ACTIONS, auditQueryString, SECURITY_LABELS, type AuditQuery } from "./query";
@@ -54,7 +55,7 @@ export function AuditFilterBar({
           </Button>
         </a>
       </div>
-      <form method="get" className="flex flex-wrap items-end gap-3 p-4">
+      <AutoFilterForm className="flex flex-wrap items-end gap-3 p-4">
         {q.tab === "security" ? <input type="hidden" name="tab" value="security" /> : null}
         {organisations ? (
           <label className="flex min-w-[200px] flex-col gap-1 text-[13px] font-medium text-ink">
@@ -129,13 +130,10 @@ export function AuditFilterBar({
             </Select>
           </label>
         )}
-        <Button type="submit" variant="secondary">
-          Filter
-        </Button>
         <Link href={`${basePath}${q.tab === "security" ? "?tab=security" : ""}`} className="pb-2 text-[13px] text-link hover:underline">
           Clear
         </Link>
-      </form>
+      </AutoFilterForm>
     </Card>
   );
 }

@@ -11,6 +11,7 @@ import { Card, EmptyState } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
+import { AutoFilterForm } from "@/components/auto-filter-form";
 import { AssetTable } from "./asset-table";
 
 export const metadata: Metadata = { title: "Equipment" };
@@ -120,12 +121,12 @@ export default async function EquipmentPage({
               );
             })}
           </nav>
-          <form className="relative mb-3 w-full lg:w-80" role="search" action={base}>
+          <AutoFilterForm className="relative mb-3 w-full lg:w-80" role="search" action={base}>
             {tab.condition ? <input type="hidden" name="condition" value={tab.condition} /> : null}
             {tab.archived ? <input type="hidden" name="status" value="archived" /> : null}
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden />
-            <Input name="q" defaultValue={q} placeholder="Search ID, make, model, rego or VIN" className="h-9 pl-9 text-[13px]" aria-label="Search equipment" />
-          </form>
+            <Input name="q" defaultValue={q} placeholder="Search ID, make, model, rego or VIN" className="h-9 pl-9 text-[13px]" aria-label="Search equipment" autoComplete="off" />
+          </AutoFilterForm>
         </div>
         {rows.length === 0 ? (
           <EmptyState
