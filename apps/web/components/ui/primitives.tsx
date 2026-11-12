@@ -51,27 +51,8 @@ export function Badge({ tone = "grey", className, ...props }: React.HTMLAttribut
   );
 }
 
-/**
- * Tables scroll sideways inside their card, never the page. On phones the first
- * column (the record's identity) stays pinned while the rest scrolls.
- */
-export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
-  return (
-    <div className="w-full overflow-x-auto overscroll-x-contain">
-      <table
-        className={cn(
-          "w-full border-collapse text-left text-[13.5px] max-sm:min-w-[620px]",
-          "max-sm:[&_td:first-child]:min-w-[150px] max-sm:[&_td:first-child]:max-w-[200px]",
-          "max-sm:[&_td:first-child]:sticky max-sm:[&_td:first-child]:left-0 max-sm:[&_td:first-child]:z-[1] max-sm:[&_td:first-child]:bg-surface",
-          "max-sm:[&_th:first-child]:sticky max-sm:[&_th:first-child]:left-0 max-sm:[&_th:first-child]:z-[1] max-sm:[&_th:first-child]:bg-surface-muted",
-          "max-sm:[&_td:first-child]:shadow-[1px_0_0_var(--stroke)] max-sm:[&_th:first-child]:shadow-[1px_0_0_var(--stroke)]",
-          className,
-        )}
-        {...props}
-      />
-    </div>
-  );
-}
+export { Table } from "./table";
+
 export function THead(props: React.HTMLAttributes<HTMLTableSectionElement>) {
   return <thead className="bg-surface-muted text-[12.5px] font-semibold text-ink-muted" {...props} />;
 }

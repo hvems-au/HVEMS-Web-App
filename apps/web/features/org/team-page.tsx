@@ -101,7 +101,7 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                       <p className="font-semibold">
                         {m.profile?.full_name || m.profile?.email} {self ? <span className="font-normal text-ink-subtle">(you)</span> : null}
                       </p>
-                      <p className="text-[12px] text-ink-subtle">{m.profile?.email}</p>
+                      <p className="text-[12px] text-ink-subtle">{m.profile?.email?.endsWith(".invalid") ? "Signs in with an Operator ID and PIN" : m.profile?.email}</p>
                       {lock && !self ? (
                         <MemberSignInLock
                           portal={portal}
