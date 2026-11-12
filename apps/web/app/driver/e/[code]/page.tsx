@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { getAsset, getEquipmentPublic, getMyContexts, getPrestartChecklist, listDefects, signOrganisationLogo, type HvemsClient } from "@hvems/api-client";
 import { DEFECT_SEVERITY_LABELS } from "@hvems/domain";
@@ -69,7 +70,7 @@ export default async function ScannedEquipmentPage({ params }: { params: Promise
       <div className="mx-auto max-w-md">
         {machine}
         <Card>
-          <CardHeader title="Sign in to do the pre-start" description="Your name is recorded on the pre-start." />
+          <CardHeader title="Sign in to continue" description="Then do the pre-start or report an issue for this equipment. Your name is recorded." />
           <CardBody>
             {user && !member ? (
               <p className="mb-3 rounded-[8px] bg-warn-soft px-3 py-2 text-[13.5px] text-ink">
@@ -82,6 +83,11 @@ export default async function ScannedEquipmentPage({ params }: { params: Promise
       </div>
     );
   }
+
+  // Signed in and allowed to use this equipment: open its screen in the operator
+  // workspace (pre-start or report an issue), with the scanned equipment selected.
+  const visible = await getAsset(db, eq.asset_id).catch(() => null);
+  if (visible && !visible.archived_at) redirect(`/driver/o/${eq.organisation_id}/equipment/${eq.asset_id}`);
 
   const signOut = (
     <form action={driverSignOutAction.bind(null, code)}>

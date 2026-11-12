@@ -6,6 +6,8 @@ import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/
 import { loadOrgContext, requireCapability } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CredentialsDialog, type CredentialRow } from "./credentials-dialog";
+import { OperatorAccessCard } from "@/features/operator/access-card";
+import { portalOrigin } from "@/lib/portals";
 import { ActiveToggle, AddDriverDialog, EquipmentAccessDialog, FinishAccountButton, ResetPinDialog } from "./driver-controls";
 
 export const metadata: Metadata = { title: "Operators" };
@@ -23,7 +25,7 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
   const ctx = await loadOrgContext(orgId, ["company"]);
   await requireCapability(ctx, "drivers.manage");
   const db = await createSupabaseServerClient();
-  const [drivers, assets, perms, credentials, warnSetting] = await Promise.all([
+  const [drivers, assets, perms, credentials, warnSetting, orgRow] = await Promise.all([
     listDrivers(db, orgId),
     db
       .from("assets")
@@ -36,7 +38,9 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
     db.from("asset_operator_permissions").select("membership_id, asset_id").eq("organisation_id", orgId).not("asset_id", "is", null),
     listDriverCredentials(db, orgId),
     db.from("platform_settings").select("value").eq("key", "drivers.credential_warning_days").maybeSingle(),
+    db.from("organisations").select("operator_code, operators_any_equipment").eq("id", orgId).maybeSingle(),
   ]);
+  const access = orgRow.data as { operator_code: string | null; operators_any_equipment: boolean } | null;
   const equipment = assets.map((a) => ({ id: a.id, label: `${a.asset_number}${a.make || a.model ? ` · ${[a.make, a.model].filter(Boolean).join(" ")}` : ""}` }));
   const permsByMember = new Map<string, string[]>();
   for (const p of perms.data ?? []) permsByMember.set(p.membership_id as string, [...(permsByMember.get(p.membership_id as string) ?? []), p.asset_id as string]);
@@ -57,6 +61,12 @@ export default async function DriversPage({ params }: { params: Promise<{ orgId:
         title="Operators"
         description="Operators sign in on the equipment with an Operator ID and PIN."
         actions={<AddDriverDialog orgId={orgId} />}
+      />
+      <OperatorAccessCard
+        orgId={orgId}
+        companyCode={access?.operator_code ?? null}
+        anyEquipment={access?.operators_any_equipment ?? true}
+        signInUrl={portalOrigin("driver").replace(/^https?:\/\//, "")}
       />
       <Card>
         {drivers.length === 0 ? (

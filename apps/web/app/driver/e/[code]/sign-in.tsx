@@ -4,12 +4,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
-import { driverSignInAction, memberSignInAction } from "../../actions";
+import { driverSignInAction, memberSignInAction, operatorSignInAction } from "../../actions";
 
 type Mode = "pin" | "setup" | "email";
 
-/** Operator ID + PIN; first time: setup code + new PIN; or a member's own email login. */
-export function DriverSignIn({ code }: { code: string }) {
+/**
+ * Operator ID + PIN; first time: setup code + new PIN; or a member's own email
+ * login. On a scanned label (`code`) the label identifies the company; signing
+ * in directly asks for the company code instead. `next` is where to go after
+ * (an internal /driver path, checked by the caller).
+ */
+export function DriverSignIn({ code, next }: { code?: string; next?: string }) {
+  const [companyCode, setCompanyCode] = React.useState("");
   const router = useRouter();
   const [mode, setMode] = React.useState<Mode>("pin");
   const [driverId, setDriverId] = React.useState("");
@@ -29,12 +35,18 @@ export function DriverSignIn({ code }: { code: string }) {
       return;
     }
     start(async () => {
+      const newPin = mode === "setup" ? pin1 : undefined;
       const res =
         mode === "email"
           ? await memberSignInAction({ email, password })
-          : await driverSignInAction({ code, driverId, secret, newPin: mode === "setup" ? pin1 : undefined });
-      if (res.status === "success") router.refresh();
-      else if (res.status === "error") setError(res.message);
+          : code
+            ? await driverSignInAction({ code, driverId, secret, newPin })
+            : await operatorSignInAction({ companyCode, driverId, secret, newPin });
+      if (res.status === "error") return setError(res.message);
+      if (res.status !== "success") return;
+      if (code) return router.refresh(); // the scanned page re-opens with the equipment selected
+      router.push(next ?? "/driver");
+      router.refresh();
     });
   };
 
@@ -80,6 +92,20 @@ export function DriverSignIn({ code }: { code: string }) {
         </>
       ) : (
         <>
+          {code ? null : (
+            <Field label="Company code" htmlFor="d-company" hint="Your manager gives you this with your Operator ID">
+              <Input
+                id="d-company"
+                value={companyCode}
+                onChange={(e) => setCompanyCode(e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                autoComplete="organization"
+                maxLength={8}
+                placeholder="e.g. MM5GQY"
+                className="font-mono text-[18px] tracking-widest uppercase"
+              />
+            </Field>
+          )}
           <Field label="Operator ID" htmlFor="d-id">
             <Input
               value={driverId}

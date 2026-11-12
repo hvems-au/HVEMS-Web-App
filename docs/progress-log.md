@@ -1,5 +1,20 @@
 # Development progress log
 
+## 2026-11-12 — Operator workspace: direct sign-in, dashboard, issue reports, personal history
+**Done**
+- Migration `20261112143228 operator_workspace` (applied by Claude): company code (`organisations.operator_code`, generated) and the company setting `operators_any_equipment` (default on: operators may use any current equipment; off: only equipment ticked on their profile). `app.permitted_asset_ids()` is the single place that decides it. `operator_sign_in` (company code + Operator ID + PIN, server only, shares the PIN rules and lock-out of `driver_sign_in`; wrong code gets the same generic message). `report_issue` raises a defect from an operator (source `operator_report`; "stop using it" → critical, out of service, critical alert; "needs attention soon" → minor; "not urgent" → advisory), safe to retry (`client_request_id`). Operators can read defects they reported. pgTAP `300`.
+- Migration `20261112143845 additional_roles`: one person can hold several roles in a company (capabilities are the union). pgTAP `290`. Team page: "Additional roles…".
+- Web (operator.* portal, `/driver`): "Driver / Operator sign in" with company code, Operator ID and PIN; signed-in operators go straight to their dashboard (or choose a company). Workspace `/driver/o/[company]`: Home (Start pre-start, Report an issue, My pre-starts, My reported issues, recent items), Vehicles & equipment (search by equipment ID, make/model, registration, VIN or serial; filter by type), equipment screen, pre-start (shared form), issue report (urgency, details, photos), My pre-starts, My reported issues (plain-language progress, no internal notes). QR labels still work: signed in → equipment screen; signed out → sign in → straight back to that equipment. Any workspace link opened while signed out returns to the same page after sign-in (handled in `proxy.ts`). Operators page (company portal): company code and the company-wide access switch.
+- Checked in the browser on a phone (light and dark) as OP-0002: direct sign-in, dashboard, search (three ways), issue report → company Defects as advisory operator report, pre-start submitted (15,240 km / 530 h) → My pre-starts, QR signed in and signed out, deep link signed out, another company's address shows Page not found. Hosted DB (rolled back): retried report returns the same record, operators can't clear defects, other people's inspections hidden, wrong company code refused.
+- Test data left in development: two "Loose step on cab (test)" advisory reports on WC-1, one pre-start on WC-1.
+
+**Limitations**
+- No odometer / hour meter reading on an issue report; no saved drafts.
+- Operator detail pages count photos but don't show them.
+- No switch from the company portal into the operator workspace: sessions are per portal, so people sign in on operator.* separately.
+- Another company's workspace address renders "Page not found" with HTTP 200 in development (Next.js streams the layout's not-found); no data is shown.
+
+
 ## 2026-11-12 — Development site live; test accounts; MFA switch for testing
 **Done**
 - Vercel development site (project from `develop`, Sydney functions): dev-portal / dev-provider / dev-operator / dev-admin / dev-market.hvems.com.au. Portals never indexed (robots.txt, X-Robots-Tag, noindex metadata).

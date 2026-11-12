@@ -33,14 +33,14 @@ Every page now inherits the tokens (both themes), the page header, the table com
 | Dashboard, equipment detail / history / new, clients & sites, alerts, operators, maintenance, technicians, team, audit, settings, account security, module placeholders | | ✅ | table / stacked | ✅ | ✅ |
 | Super Admin console: dashboard, organisations, asset classes, audit, settings | | ✅ | table | ✅ | ✅ |
 | Provider dashboard | | ✅ | | ✅ | desktop ✅ |
-| Operator portal (sign-in on equipment code, pre-start, result) | pre-start form shared with company portal | ✅ | ✅ | ✅ | pre-start ✅ |
+| Operator portal (direct sign-in, dashboard, equipment search, pre-start, issue report, my pre-starts / issues) | pre-start form shared with company portal | ✅ | ✅ | ✅ | pre-start ✅ |
 
 ## Still to do (next session)
 1. Phone cards (like Equipment / Work orders) for: defects, technicians, operators, team, maintenance schedule, audit, admin organisations.
 2. Dashboard: lead with the To-do card on phones; stat tiles one row of two.
 3. Equipment detail: compact identity header on phones; actions into an overflow menu.
 4. Forms: error summary at the top of long forms (equipment form, pre-start) and unsaved-change protection on the equipment form.
-5. Operator portal start page and result page review on a phone in both themes.
+5. ~~Operator portal review on a phone in both themes~~ (done 12/11/2026 with the operator workspace).
 6. Not-found / error / loading pages in dark mode review.
 7. Accessibility pass: keyboard-only walk-through of each portal, 200% zoom, screen reader spot checks; measure contrast with a tool.
 

@@ -163,7 +163,7 @@ export function PrestartForm({
         lower_reading_reason: lowerReason.trim() || undefined,
       });
       if (res.status === "success" && res.data) {
-        router.push(doneBase ? `${doneBase}/${res.data.inspection_id}` : `/customer/${orgId}/inspections/${res.data.inspection_id}?submitted=1`);
+        router.push(doneBase ? `${doneBase}/${res.data.inspection_id}?submitted=1` : `/customer/${orgId}/inspections/${res.data.inspection_id}?submitted=1`);
         return;
       }
       if (res.status === "error") {

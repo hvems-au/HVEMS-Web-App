@@ -15,7 +15,7 @@ const codeSchema = z.string().trim().min(6).max(40);
  * equipment and counts wrong attempts; on success the server opens a session
  * for the operator's linked account on this portal only.
  */
-export async function driverSignInAction(input: { code: string; driverId: string; secret: string; newPin?: string }): Promise<ActionState> {
+export async function driverSignInAction(input: { code: string; driverId: string; secret: string; newPin?: string }): Promise<ActionState<{ organisationId: string }>> {
   const number = parseDriverId(input.driverId);
   if (!number) return { status: "error", code: "invalid", message: "Enter your Operator ID, e.g. OP-0001" };
   const v = z
@@ -31,18 +31,55 @@ export async function driverSignInAction(input: { code: string; driverId: string
       p_new_pin: v.data.newPin ?? null,
     });
     if (error) throw toAppError(error);
-    const res = data as { ok: boolean; code?: string; message?: string; user_id?: string };
-    if (!res.ok || !res.user_id) return { status: "error", code: res.code ?? "invalid_credentials", message: res.message ?? "Operator ID or PIN is not right" };
+    return await finishPinSignIn(data as PinResult);
+  } catch (e) {
+    return errorState(e);
+  }
+}
 
-    const { data: user } = await admin.auth.admin.getUserById(res.user_id);
-    if (!user.user?.email) throw new Error("Operator login is not set up");
-    const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: "magiclink", email: user.user.email });
-    if (linkError || !link.properties?.hashed_token) throw new Error("Could not sign in");
-    const db = await createSupabaseServerClient();
-    await db.auth.signOut({ scope: "local" });
-    const { error: otpError } = await db.auth.verifyOtp({ type: "email", token_hash: link.properties.hashed_token });
-    if (otpError) throw new Error("Could not sign in");
-    return { status: "success" };
+type PinResult = { ok: boolean; code?: string; message?: string; user_id?: string; organisation_id?: string };
+
+/** After the database accepted the PIN: open a session for the operator's linked account on this portal. */
+async function finishPinSignIn(res: PinResult): Promise<ActionState<{ organisationId: string }>> {
+  if (!res.ok || !res.user_id) return { status: "error", code: res.code ?? "invalid_credentials", message: res.message ?? "Operator ID or PIN is not right" };
+  const admin = createSupabaseAdminClient();
+  const { data: user } = await admin.auth.admin.getUserById(res.user_id);
+  if (!user.user?.email) throw new Error("Operator login is not set up");
+  const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: "magiclink", email: user.user.email });
+  if (linkError || !link.properties?.hashed_token) throw new Error("Could not sign in");
+  const db = await createSupabaseServerClient();
+  await db.auth.signOut({ scope: "local" });
+  const { error: otpError } = await db.auth.verifyOtp({ type: "email", token_hash: link.properties.hashed_token });
+  if (otpError) throw new Error("Could not sign in");
+  return { status: "success", data: { organisationId: res.organisation_id ?? "" } };
+}
+
+/**
+ * Direct sign-in without scanning: company code + Operator ID + PIN (or setup
+ * code + new PIN). The same database checks as the QR sign-in (wrong-attempt
+ * lockout, PIN rules, security events).
+ */
+export async function operatorSignInAction(input: { companyCode: string; driverId: string; secret: string; newPin?: string }): Promise<ActionState<{ organisationId: string }>> {
+  const number = parseDriverId(input.driverId);
+  if (!number) return { status: "error", code: "invalid", message: "Enter your Operator ID, e.g. OP-0001" };
+  const v = z
+    .object({
+      companyCode: z.string().trim().min(4, "Enter your company code").max(12),
+      secret: z.string().trim().min(4, "Enter your PIN").max(20),
+      newPin: z.string().regex(/^\d{6}$/, "Your new PIN must be 6 digits").optional(),
+    })
+    .safeParse(input);
+  if (!v.success) return { status: "error", code: "invalid", message: v.error.issues[0]?.message ?? "Check the details" };
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await (admin as unknown as HvemsClient).rpc("operator_sign_in", {
+      p_company_code: v.data.companyCode,
+      p_driver_number: number,
+      p_secret: v.data.secret,
+      p_new_pin: v.data.newPin ?? null,
+    });
+    if (error) throw toAppError(error);
+    return await finishPinSignIn(data as PinResult);
   } catch (e) {
     return errorState(e);
   }
@@ -62,6 +99,7 @@ export async function memberSignInAction(input: { email: string; password: strin
   return { status: "success" };
 }
 
+/** Where to go after signing out: back to the scanned label, or the sign-in page. */
 export async function driverSignOutAction(code?: string): Promise<void> {
   const db = await createSupabaseServerClient();
   await db.auth.signOut({ scope: "local" });

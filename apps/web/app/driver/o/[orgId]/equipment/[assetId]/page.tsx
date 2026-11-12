@@ -1,0 +1,76 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ClipboardCheck, MessageSquareWarning, OctagonAlert, TriangleAlert } from "lucide-react";
+import { getAsset, listDefects } from "@hvems/api-client";
+import { DEFECT_SEVERITY_LABELS } from "@hvems/domain";
+import { Button } from "@/components/ui/button";
+import { Badge, Card, CardHeader } from "@/components/ui/primitives";
+import { OperatorAssetHeader, restrictionText } from "@/features/operator/asset-header";
+import { loadOperatorContext } from "@/features/operator/context";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Equipment" };
+
+/** The selected vehicle or machine: restrictions, what's already reported, and the two actions. */
+export default async function OperatorAsset({ params }: { params: Promise<{ orgId: string; assetId: string }> }) {
+  const { orgId, assetId } = await params;
+  const base = `/driver/o/${orgId}`;
+  const ctx = await loadOperatorContext(orgId, `${base}/equipment/${assetId}`);
+  const db = await createSupabaseServerClient();
+  // RLS: only equipment of this company the operator may use; anything else is "not found".
+  const asset = await getAsset(db, assetId).catch(() => null);
+  if (!asset || asset.organisation_id !== orgId || asset.archived_at) notFound();
+  const open = await listDefects(db, { organisationId: orgId, assetId, status: "open" }).catch(() => []);
+  const restriction = restrictionText(asset.condition);
+
+  return (
+    <>
+      <OperatorAssetHeader asset={asset} />
+      {restriction ? (
+        <div
+          role="status"
+          className={cn(
+            "mb-4 flex items-start gap-2.5 rounded-[10px] border px-4 py-3 text-[14px] font-medium",
+            restriction.tone === "danger" ? "border-danger-line bg-danger-soft text-danger-ink" : "border-warn-line bg-warn-soft text-warn-ink",
+          )}
+        >
+          {restriction.tone === "danger" ? <OctagonAlert className="mt-0.5 size-5 shrink-0" aria-hidden /> : <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />}
+          {restriction.text}
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {ctx.capabilities.has("inspections.submit") ? (
+          <Button asChild size="lg" className="h-14 text-[16px]">
+            <Link href={`${base}/equipment/${assetId}/prestart`}>
+              <ClipboardCheck className="!size-5" /> Start pre-start
+            </Link>
+          </Button>
+        ) : null}
+        {ctx.capabilities.has("defects.report") ? (
+          <Button asChild variant="secondary" size="lg" className="h-14 text-[16px]">
+            <Link href={`${base}/equipment/${assetId}/report`}>
+              <MessageSquareWarning className="!size-5" /> Report an issue
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+      <Card className="mt-5">
+        <CardHeader title={`Already reported (${open.length})`} description={open.length ? "No need to report these again." : undefined} />
+        {open.length === 0 ? (
+          <p className="px-5 pt-1 pb-5 text-[14px] text-ink-muted">No open issues on this equipment.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-stroke">
+            {open.map((d) => (
+              <li key={d.id} className="flex items-start gap-2.5 px-5 py-3 text-[14px]">
+                <Badge tone={d.severity === "critical" ? "red" : d.severity === "minor" ? "amber" : "grey"}>{DEFECT_SEVERITY_LABELS[d.severity]}</Badge>
+                <span className="text-ink">{d.title}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </>
+  );
+}

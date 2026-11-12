@@ -111,7 +111,20 @@ export async function proxy(request: NextRequest) {
   }
 
   // The driver portal keeps the session fresh but never sends people to /login.
-  if (portal === "driver") return response;
+  // Signed out in the operator workspace: sign in on /driver, then come back to
+  // the exact page (layouts can't see the full path, so this happens here).
+  if (portal === "driver") {
+    if (!signedIn && pathname.startsWith("/driver/o/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = info.home;
+      url.search = "";
+      url.searchParams.set("next", pathname + request.nextUrl.search);
+      const out = NextResponse.redirect(url);
+      for (const cookie of response.cookies.getAll()) out.cookies.set(cookie);
+      return out;
+    }
+    return response;
+  }
 
   if (!signedIn && startsWithAny(pathname, info.prefixes)) {
     const url = request.nextUrl.clone();
