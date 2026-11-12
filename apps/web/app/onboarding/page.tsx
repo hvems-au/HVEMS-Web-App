@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
 import { getCurrentPortal } from "@/lib/current-portal";
 import { PORTAL_INFO, portalOrigin, type PortalId } from "@/lib/portals";
-import { getContexts, requireUser } from "@/lib/session";
+import { Button } from "@/components/ui/button";
+import { getContexts, getStaffContext, requireUser } from "@/lib/session";
 import { OnboardingForm } from "./onboarding-form";
 
 export const metadata: Metadata = { title: "Set up your account" };
@@ -23,9 +24,35 @@ const ELSEWHERE: { portal: PortalId; label: string }[] = [
 
 export default async function OnboardingPage() {
   const user = await requireUser("/onboarding");
-  const [contexts, portal] = await Promise.all([getContexts(), getCurrentPortal()]);
+  const [contexts, portal, staff] = await Promise.all([getContexts(), getCurrentPortal(), getStaffContext().catch(() => null)]);
   const info = PORTAL_INFO[portal];
   if (info.orgKinds.length === 0) notFound();
+  // HVEMS staff accounts can't belong to a customer organisation: point them to the console instead of a form that would be refused.
+  if (staff) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
+        <div className="card w-full max-w-md px-6 py-8 text-center sm:px-10">
+          <div className="mx-auto mb-6 w-40">
+            <Logo variant="horizontal" priority />
+          </div>
+          <h1 className="text-[22px] font-bold text-ink">This is an HVEMS staff account</h1>
+          <p className="mt-2 text-[14.5px] text-ink-muted">
+            Staff accounts use the Super Admin console. To work in a customer account, sign out and sign in with a separate customer login.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <Button asChild size="lg">
+              <a href={`${portalOrigin("admin")}/login`}>Go to the Super Admin console</a>
+            </Button>
+            <form action="/auth/sign-out" method="post">
+              <Button type="submit" variant="ghost" className="w-full">
+                Sign out
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-dvh bg-canvas px-4 py-10">
       <div className="mx-auto max-w-2xl">
