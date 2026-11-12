@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, FileDown, OctagonAlert, TriangleAlert } from "lucide-react";
+import { CheckCircle2, ChevronDown, FileDown, OctagonAlert, TriangleAlert } from "lucide-react";
 import { getInspection, signInspectionPhotos } from "@hvems/api-client";
 import { RECORDS_ONLY_NOTICE, formatDateTimeAU } from "@hvems/domain";
 import { ResultBadge, SeverityBadge } from "@/components/safety";
@@ -111,6 +111,27 @@ export default async function InspectionPage({
         </div>
       ) : null}
 
+      {faults.length ? (
+        <Card className="mb-5 border-danger-line">
+          <CardHeader title={`Faults (${faults.length})`} description="Items marked as a fault on this pre-start" />
+          <CardBody className="flex flex-col divide-y divide-stroke px-0 pb-0">
+            {faults.map((a) => (
+              <div key={a.id} className="px-5 py-3">
+                <p className="text-[14.5px] font-medium text-ink">
+                  <span className="mr-1.5 text-[12px] font-semibold text-ink-subtle">{a.item_code}</span>
+                  {a.prompt}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  {a.operator_item ? <Badge tone="blue">About the operator</Badge> : <SeverityBadge severity={a.severity} />}
+                </div>
+                {a.note ? <p className="mt-1.5 text-[14px] text-ink-muted">“{a.note}”</p> : null}
+                {thumbs(a.item_code)}
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader title="Equipment at the time" action={<Link href={assetHref} className="text-[13px] font-semibold text-link hover:underline">Open equipment</Link>} />
@@ -145,7 +166,10 @@ export default async function InspectionPage({
               <ul className="flex flex-col gap-1.5">
                 {defects.map((d) => (
                   <li key={d.id} className="flex items-start gap-2">
-                    <SeverityBadge severity={d.severity} /> <span>{d.title}</span>
+                    <SeverityBadge severity={d.severity} />
+                    <Link href={`/customer/${orgId}/defects/${d.id}`} className="font-medium text-link hover:underline">
+                      {d.title}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -155,27 +179,6 @@ export default async function InspectionPage({
           </CardBody>
         </Card>
       </div>
-
-      {faults.length ? (
-        <Card className="mt-5">
-          <CardHeader title="Faults" />
-          <CardBody className="flex flex-col divide-y divide-stroke px-0 pb-0">
-            {faults.map((a) => (
-              <div key={a.id} className="px-5 py-3">
-                <p className="text-[14.5px] font-medium text-ink">
-                  <span className="mr-1.5 text-[12px] font-semibold text-ink-subtle">{a.item_code}</span>
-                  {a.prompt}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  {a.operator_item ? <Badge tone="blue">About the operator</Badge> : <SeverityBadge severity={a.severity} />}
-                </div>
-                {a.note ? <p className="mt-1.5 text-[14px] text-ink-muted">“{a.note}”</p> : null}
-                {thumbs(a.item_code)}
-              </div>
-            ))}
-          </CardBody>
-        </Card>
-      ) : null}
 
       {i.notes || photosFor(null).length ? (
         <Card className="mt-5">
@@ -187,12 +190,18 @@ export default async function InspectionPage({
         </Card>
       ) : null}
 
-      <Card className="mt-5">
-        <CardHeader title="All answers" />
-        <CardBody className="flex flex-col gap-4">
+      <details className="card group mt-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="text-h6 font-semibold text-ink">All answers</span>
+            <span className="ml-2 text-[13px] text-ink-muted">{answers.length} items</span>
+          </span>
+          <ChevronDown className="size-5 text-ink-muted transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <CardBody className="flex flex-col gap-4 border-t border-stroke">
           {sections.map((s) => (
             <div key={s.name}>
-              <h3 className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-ink-subtle">{s.name}</h3>
+              <h3 className="mb-1.5 text-[13px] font-semibold text-ink-muted">{s.name}</h3>
               <ul className="flex flex-col divide-y divide-stroke rounded-[10px] border border-stroke">
                 {s.items.map((a) => (
                   <li key={a.id} className="flex items-start justify-between gap-3 px-3 py-2 text-[14px]">
@@ -207,7 +216,7 @@ export default async function InspectionPage({
             </div>
           ))}
         </CardBody>
-      </Card>
+      </details>
     </>
   );
 }

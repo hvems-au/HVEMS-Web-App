@@ -282,7 +282,7 @@ export function PrestartForm({
                         </Badge>
                       </div>
                     </div>
-                    <div role="radiogroup" aria-label={item.prompt} className="flex shrink-0 gap-1.5">
+                    <div role="radiogroup" aria-label={item.prompt} className="grid shrink-0 grid-cols-3 gap-2 md:flex md:gap-1.5">
                       {(
                         [
                           ["ok", item.operator_item ? "Yes" : "OK", "border-ok bg-ok-soft text-ok-ink"],
@@ -298,8 +298,8 @@ export function PrestartForm({
                           disabled={value === "na" && !item.na_allowed}
                           onClick={() => setAnswer(item.item_code, value)}
                           className={cn(
-                            "h-10 min-w-16 rounded-[6px] border-2 px-3 text-[13.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-30",
-                            a?.answer === value ? on : "border-stroke bg-surface text-ink-muted hover:border-ink-subtle",
+                            "h-11 min-w-16 rounded-[8px] border-2 px-3 text-[14px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-30 md:h-10",
+                            a?.answer === value ? on : "border-stroke-strong bg-surface text-ink hover:border-ink-subtle",
                           )}
                         >
                           {label}
@@ -363,6 +363,43 @@ export function PrestartForm({
           </div>
         </CardBody>
       </Card>
+
+      {/* Progress stays in view while scrolling through the checks. */}
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-stroke bg-surface/95 px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-[12px] sm:border">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[13px] text-ink" aria-live="polite">
+            <span className="font-semibold">
+              {answered} of {checklist.length}
+            </span>{" "}
+            answered
+            {faults.length ? <span className="text-danger-ink"> · {faults.length} fault{faults.length === 1 ? "" : "s"}</span> : null}
+          </p>
+          {answered < checklist.length ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const next = checklist.find((i) => !answers[i.item_code]?.answer);
+                if (next) document.getElementById(`item:${next.item_code}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              Next unanswered
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => document.getElementById("f-declaration")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            >
+              Review and submit
+            </Button>
+          )}
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-label="Checks answered" aria-valuemin={0} aria-valuemax={checklist.length} aria-valuenow={answered}>
+          <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${checklist.length ? (answered / checklist.length) * 100 : 0}%` }} />
+        </div>
+      </div>
     </form>
   );
 }

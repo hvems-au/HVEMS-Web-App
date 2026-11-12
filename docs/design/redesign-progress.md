@@ -19,8 +19,8 @@ Refined industrial operations product: neutral working surfaces, charcoal struct
 | Sign-in, sign-up, recovery, email links, invitations (shared frame) | ✅ | ✅ | ✅ | ✅ | sign-in ✅ |
 | Navigation shell (grouped, collapsible, account menu, appearance) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Inspections list (cards on phones, whole-row links, count, filters) | ✅ | ✅ | ✅ | ✅ | open / filter ✅ |
-| Inspection detail | ⏳ | | | | |
-| Pre-start completion (company portal and operator portal) | ⏳ | | | | |
+| Inspection detail (faults first, defect links, answers folded) | ✅ | ✅ | ✅ | ✅ | open ✅ |
+| Pre-start completion (compact summary, full-width answers, sticky progress + next unanswered) | ✅ | ✅ | ✅ | ✅ | answering / progress / jump ✅ (not submitted in tests) |
 
 ## Remaining coverage (next)
 Apply the validated patterns to: dashboard, equipment (list, detail, form, import), clients & sites, defects & safety, alerts, operators, maintenance, work orders, technicians, team, audit history, settings, account security, onboarding / select account, operator portal, provider portal, Super Admin console (dashboard, organisations, asset classes, audit, settings), placeholders ("coming soon" modules), not-found and error pages. For each: phone layout for tables, whole-row links, empty / no-results states, both themes.

@@ -49,25 +49,37 @@ export default async function PrestartPage({ params }: { params: Promise<{ orgId
         breadcrumb={{ label: asset.asset_number, href: base }}
       />
       <Card className="mb-5">
-        <CardHeader title="Equipment" description="Filled in from the equipment record" action={<ConditionBadge condition={asset.condition} />} />
+        <CardHeader title="Equipment" action={<ConditionBadge condition={asset.condition} />} />
         <CardBody>
+          {/* The facts people check before starting; the rest is one tap away. */}
           <Dl
-            className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+            className="grid-cols-2 lg:grid-cols-4"
             items={[
               { label: "Equipment ID", value: asset.asset_number },
-              { label: "Class", value: asset.asset_class?.name ?? "—" },
               { label: "Make / Model", value: [asset.make, asset.model].filter(Boolean).join(" ") || "—" },
-              { label: "Year", value: asset.year ?? "—" },
               { label: "Rego", value: asset.registration_number ? `${asset.registration_number} ${asset.registration_state ?? ""}`.trim() : "—" },
-              { label: "VIN / Serial", value: asset.vin ?? asset.serial_number ?? "—" },
-              { label: "Site", value: asset.site?.name ?? "—" },
-              { label: "Client", value: asset.client?.name ?? "—" },
               ...(tracksKm ? [{ label: "Last odometer", value: reading(asset.current_odometer_km, "km", asset.odometer_read_at) }] : []),
               ...(tracksHours ? [{ label: "Last hour meter", value: reading(asset.current_engine_hours, "hours", asset.engine_hours_read_at) }] : []),
-              { label: "Operator", value: ctx.user.fullName || ctx.user.email },
-              { label: "Date", value: nowLabel(tz) },
             ]}
           />
+          <details className="group mt-4">
+            <summary className="cursor-pointer list-none text-[13px] font-medium text-link [&::-webkit-details-marker]:hidden">
+              <span className="group-open:hidden">More details</span>
+              <span className="hidden group-open:inline">Fewer details</span>
+            </summary>
+            <Dl
+              className="mt-3 grid-cols-2 lg:grid-cols-4"
+              items={[
+                { label: "Class", value: asset.asset_class?.name ?? "—" },
+                { label: "Year", value: asset.year ?? "—" },
+                { label: "VIN / Serial", value: asset.vin ?? asset.serial_number ?? "—" },
+                { label: "Site", value: asset.site?.name ?? "—" },
+                { label: "Client", value: asset.client?.name ?? "—" },
+                { label: "Operator", value: ctx.user.fullName || ctx.user.email },
+                { label: "Date", value: nowLabel(tz) },
+              ]}
+            />
+          </details>
           {openDefects.length > 0 ? (
             <div className="mt-4 rounded-[10px] border border-stroke bg-surface-muted/50 p-3">
               <p className="text-[13px] font-semibold text-ink">Already reported ({openDefects.length}): no need to report these again</p>
