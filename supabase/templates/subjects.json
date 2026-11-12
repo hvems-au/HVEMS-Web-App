@@ -1,0 +1,42 @@
+{
+  "confirmation": {
+    "dashboard": "Confirm sign up",
+    "subject": "Confirm your email for HVEMS"
+  },
+  "invite": {
+    "dashboard": "Invite user",
+    "subject": "You've been invited to HVEMS"
+  },
+  "magic_link": {
+    "dashboard": "Magic link",
+    "subject": "Your HVEMS sign-in link"
+  },
+  "email_change": {
+    "dashboard": "Change email address",
+    "subject": "Confirm your new email for HVEMS"
+  },
+  "recovery": {
+    "dashboard": "Reset password",
+    "subject": "Reset your HVEMS password"
+  },
+  "reauthentication": {
+    "dashboard": "Reauthentication",
+    "subject": "Your HVEMS verification code: {{ .Token }}"
+  },
+  "password_changed_notification": {
+    "dashboard": "Password changed",
+    "subject": "Your HVEMS password was changed"
+  },
+  "email_changed_notification": {
+    "dashboard": "Email address changed",
+    "subject": "Your HVEMS sign-in email was changed"
+  },
+  "mfa_factor_enrolled_notification": {
+    "dashboard": "MFA method added",
+    "subject": "An authenticator app was added to your HVEMS account"
+  },
+  "mfa_factor_unenrolled_notification": {
+    "dashboard": "MFA method removed",
+    "subject": "An authenticator app was removed from your HVEMS account"
+  }
+}
