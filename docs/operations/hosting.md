@@ -26,7 +26,7 @@ One `CNAME` per address, pointing to Vercel (Vercel shows the exact target when 
 The website's own records (`@`, `www`) and the MailerSend records stay as they are.
 
 ## Settings per Vercel site
-Both sites: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (server only), the five `*_HOST` values above, `NEXT_PUBLIC_APP_URL` (the company address), `EMAIL_PROVIDER_API_KEY`, Stripe keys (test keys on development, live keys on production only). Region: `syd1`.
+Both sites: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (server only), the five `*_HOST` values above, `NEXT_PUBLIC_APP_URL` (the company address), Stripe keys (test keys on development, live keys on production only). Region: `syd1`. Not needed yet: `EMAIL_PROVIDER_API_KEY` (sign-in emails go through Supabase SMTP; the key is only for the app's own alert emails, planned for 2D).
 
 ## Supabase Auth per project
 - **Site URL:** the company address (`https://portal.hvems.com.au` or `https://dev-portal.hvems.com.au`). Email links are built from it.
