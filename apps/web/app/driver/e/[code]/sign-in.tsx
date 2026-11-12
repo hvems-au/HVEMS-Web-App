@@ -17,7 +17,7 @@ type Mode = "pin" | "setup" | "email";
 export function DriverSignIn({ code, next }: { code?: string; next?: string }) {
   const [companyCode, setCompanyCode] = React.useState("");
   const router = useRouter();
-  const [mode, setMode] = React.useState<Mode>("pin");
+  const [mode, setMode] = React.useState<Mode>("email");
   const [driverId, setDriverId] = React.useState("");
   const [secret, setSecret] = React.useState("");
   const [pin1, setPin1] = React.useState("");
@@ -54,7 +54,7 @@ export function DriverSignIn({ code, next }: { code?: string; next?: string }) {
     <button
       type="button"
       onClick={() => (setMode(m), setError(null), setSecret(""))}
-      className={cn("flex-1 rounded-[6px] px-2 py-1.5 text-[13.5px] font-semibold", mode === m ? "bg-surface text-ink shadow-sm" : "text-ink-muted")}
+      className={cn("flex-1 rounded-[6px] px-1 py-1.5 text-[13px] font-semibold whitespace-nowrap", mode === m ? "bg-surface text-ink shadow-sm" : "text-ink-muted")}
     >
       {label}
     </button>
@@ -76,9 +76,9 @@ export function DriverSignIn({ code, next }: { code?: string; next?: string }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="flex gap-1 rounded-[8px] bg-surface-muted p-1">
+        {tab("email", "Email login")}
         {tab("pin", "Operator PIN")}
         {tab("setup", "First time")}
-        {tab("email", "Email login")}
       </div>
       {error ? <FormAlert>{error}</FormAlert> : null}
       {mode === "email" ? (

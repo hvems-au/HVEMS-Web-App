@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ConditionBadge } from "@/components/condition";
-import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/form";
 import { Card, EmptyState } from "@/components/ui/primitives";
 import { loadOperatorContext } from "@/features/operator/context";
-import { QrScanButton } from "@/features/operator/qr-scan";
+import { OperatorEquipmentSearch } from "@/features/operator/equipment-search";
 import { equipmentCodeFromText } from "@/lib/equipment-code";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { firstParam } from "@/lib/utils";
@@ -97,35 +95,7 @@ export default async function OperatorEquipment({
       <p className="mt-0.5 mb-4 text-[14px] text-ink-muted">
         {purpose ? "Choose the vehicle or machine." : "Find a vehicle or machine to do a pre-start or report an issue."}
       </p>
-      <form method="get" className="mb-4 flex flex-col gap-2 sm:flex-row" role="search">
-        {purpose ? <input type="hidden" name="for" value={purpose} /> : null}
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-[18px] -translate-y-1/2 text-ink-subtle" aria-hidden />
-          <Input
-            name="q"
-            defaultValue={q}
-            placeholder="Rego, equipment ID, make, model or QR code"
-            aria-label="Search vehicles and equipment"
-            className="h-12 pl-10 text-[16px]"
-            autoComplete="off"
-            enterKeyHint="search"
-          />
-        </div>
-        {classes.length > 1 ? (
-          <Select name="class" defaultValue={cls} aria-label="Type" className="h-12 sm:w-56">
-            <option value="">All types</option>
-            {classes.map(([id, name]) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
-            ))}
-          </Select>
-        ) : null}
-        <Button type="submit" size="lg" className="h-12">
-          Search
-        </Button>
-        <QrScanButton searchPath={`${base}/equipment${purpose ? `?for=${purpose}` : ""}`} />
-      </form>
+      <OperatorEquipmentSearch key={purpose ?? "all"} purpose={purpose} q={q} cls={cls} classes={classes} />
       <Card>
         {rows.length === 0 ? (
           q || cls ? (
