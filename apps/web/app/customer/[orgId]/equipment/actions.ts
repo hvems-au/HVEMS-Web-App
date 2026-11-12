@@ -106,6 +106,62 @@ export async function recordMeterReadingAction(orgId: string, assetId: string, _
   }
 }
 
+/** What happened to each unit, so the form can show the right follow-up beside the right box. */
+export type ReadingsResult =
+  | { status: "idle" }
+  | { status: "success"; message: string; recorded: ("km" | "hours")[] }
+  | { status: "error"; code: string; message: string; unit?: "km" | "hours"; recorded: ("km" | "hours")[] };
+
+/**
+ * Odometer and hour meter side by side: each filled box is saved as its own
+ * reading with its own request id (retries never double-record), using the same
+ * rules as a single reading. Stops at the first unit that needs attention.
+ */
+export async function recordReadingsAction(orgId: string, assetId: string, _prev: ReadingsResult, form: FormData): Promise<ReadingsResult> {
+  const units = (["km", "hours"] as const).filter((u) => String(form.get(`value_${u}`) ?? "").trim() !== "");
+  if (units.length === 0) return { status: "error", code: "invalid", message: "Enter an odometer or hour meter reading.", recorded: [] };
+  const db = await createSupabaseServerClient();
+  const recorded: ("km" | "hours")[] = [];
+  let pending = false;
+  for (const unit of units) {
+    const parsed = meterReadingSchema.safeParse({
+      unit,
+      value: form.get(`value_${unit}`),
+      lower_reason: form.get(`lower_reason_${unit}`) ?? undefined,
+      confirm_jump: form.get(`confirm_jump_${unit}`) === "on",
+      client_request_id: form.get(`client_request_id_${unit}`) || undefined,
+      add_meter: form.get(`add_meter_${unit}`) === "on",
+    });
+    if (!parsed.success) {
+      return { status: "error", code: "invalid", message: parsed.error.issues[0]?.message ?? "Check the reading.", unit, recorded };
+    }
+    try {
+      const reading = await recordMeterReading(db, {
+        assetId,
+        unit,
+        value: parsed.data.value,
+        clientRequestId: parsed.data.client_request_id,
+        lowerReason: parsed.data.lower_reason,
+        confirmJump: parsed.data.confirm_jump,
+        addMeter: parsed.data.add_meter,
+      });
+      recorded.push(unit);
+      if (reading.status === "pending_acceptance") pending = true;
+    } catch (e) {
+      const err = errorState(e);
+      revalidatePath(`/customer/${orgId}/equipment/${assetId}`);
+      return { status: "error", code: err.status === "error" ? err.code : "error", message: err.status === "error" ? err.message : "Something went wrong.", unit, recorded };
+    }
+  }
+  revalidatePath(`/customer/${orgId}/equipment/${assetId}`);
+  const what = recorded.length === 2 ? "Odometer and hour meter readings" : recorded[0] === "km" ? "Odometer reading" : "Hour meter reading";
+  return {
+    status: "success",
+    message: pending ? `${what} saved. A manager must accept them before they become current.` : `${what} recorded.`,
+    recorded,
+  };
+}
+
 export async function importAssetsAction(orgId: string, rows: Record<string, string>[], dryRun: boolean): Promise<ActionState<ImportResult>> {
   try {
     const db = await createSupabaseServerClient();

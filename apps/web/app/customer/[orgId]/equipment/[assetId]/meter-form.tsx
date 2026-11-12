@@ -2,81 +2,98 @@
 import * as React from "react";
 import type { MeterType } from "@hvems/domain";
 import { Button } from "@/components/ui/button";
-import { Field, FormAlert, Input, Select } from "@/components/ui/form";
-import { idleState, type ClientActionState } from "@/lib/client-state";
-import { recordMeterReadingAction } from "../actions";
+import { FormAlert, Input } from "@/components/ui/form";
+import { recordReadingsAction, type ReadingsResult } from "../actions";
 
-/** Records a reading. A fresh client_request_id per attempt makes retries idempotent. */
+type Unit = "km" | "hours";
+const UNIT = {
+  km: { label: "Odometer", suffix: "km", noun: "odometer", example: "e.g. 125400" },
+  hours: { label: "Hour meter", suffix: "hours", noun: "hour meter", example: "e.g. 5230.5" },
+} as const;
+
 /**
- * Both units are always offered. Recording the unit the asset doesn't track yet
- * needs an explicit tick by a manager role (canAddMeter); the asset then tracks both.
+ * Odometer on the left, hour meter on the right, each with its own box. Fill in
+ * one or both; each is saved as its own reading with its own request id, so a
+ * retry never records twice. A unit the asset doesn't track yet can be started
+ * by manager roles only (canAddMeter), with an explicit tick.
  */
 export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { orgId: string; assetId: string; meterType: MeterType; canAddMeter?: boolean }) {
-  const [requestId, setRequestId] = React.useState(() => crypto.randomUUID());
-  const formRef = React.useRef<HTMLFormElement>(null);
-  const [state, action, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
-    const res = await recordMeterReadingAction(orgId, assetId, prev, form);
-    if (res.status === "success") {
-      formRef.current?.reset();
-      setRequestId(crypto.randomUUID());
+  const [ids, setIds] = React.useState(() => ({ km: crypto.randomUUID(), hours: crypto.randomUUID() }));
+  const [values, setValues] = React.useState<Record<Unit, string>>({ km: "", hours: "" });
+  const [state, action, pending] = React.useActionState(async (prev: ReadingsResult, form: FormData) => {
+    const res = await recordReadingsAction(orgId, assetId, prev, form);
+    // Units that were saved get a fresh request id and an empty box; a unit that
+    // needs attention keeps its value and id, so trying again is safe.
+    const done = res.status === "idle" ? [] : res.recorded;
+    if (done.length) {
+      setIds((cur) => ({ km: done.includes("km") ? crypto.randomUUID() : cur.km, hours: done.includes("hours") ? crypto.randomUUID() : cur.hours }));
+      setValues((cur) => ({ km: done.includes("km") ? "" : cur.km, hours: done.includes("hours") ? "" : cur.hours }));
     }
     return res;
-  }, idleState);
-  const needsReason = state.status === "error" && state.code === "lower_reading_reason_required";
-  const needsConfirm = state.status === "error" && state.code === "implausible_jump_confirmation_required";
+  }, { status: "idle" } as ReadingsResult);
 
-  const tracked = (u: "km" | "hours") => meterType === "both" || (u === "km" ? meterType === "kilometres" : meterType === "hours");
-  const units = (["km", "hours"] as const).slice().sort((a, b) => Number(tracked(b)) - Number(tracked(a)));
-  const [unit, setUnit] = React.useState<"km" | "hours">(units[0] ?? "km");
-  const untracked = !tracked(unit);
+  const tracked = (u: Unit) => meterType === "both" || (u === "km" ? meterType === "kilometres" : meterType === "hours");
+  const failedUnit = state.status === "error" ? state.unit : undefined;
+  const followUp = (u: Unit) => (failedUnit === u && state.status === "error" ? state.code : null);
+
+  const column = (u: Unit) => {
+    const meta = UNIT[u];
+    const on = tracked(u);
+    const disabled = !on && !canAddMeter;
+    const code = followUp(u);
+    return (
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <label htmlFor={`reading-${u}`} className="text-[13px] font-medium text-ink">
+          {meta.label} <span className="font-normal text-ink-muted">({meta.suffix})</span>
+        </label>
+        <Input
+          id={`reading-${u}`}
+          name={`value_${u}`}
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder={meta.example}
+          disabled={disabled}
+          value={values[u]}
+          onChange={(e) => setValues((cur) => ({ ...cur, [u]: e.target.value.replace(/[^\d.]/g, "") }))}
+          aria-invalid={failedUnit === u || undefined}
+        />
+        <input type="hidden" name={`client_request_id_${u}`} value={ids[u]} />
+        {!on ? (
+          canAddMeter ? (
+            <label className="flex items-start gap-2 text-[12.5px] text-ink-muted">
+              <input type="checkbox" name={`add_meter_${u}`} className="mt-0.5 size-4 accent-[var(--brand)]" />
+              <span>Start recording the {meta.noun} for this equipment</span>
+            </label>
+          ) : (
+            <p className="text-[12.5px] text-ink-muted">Not recorded for this equipment.</p>
+          )
+        ) : null}
+        {code === "lower_reading_reason_required" ? (
+          <Input name={`lower_reason_${u}`} placeholder="Why is it lower? e.g. replaced" aria-label={`Reason for a lower ${meta.noun} reading`} required />
+        ) : null}
+        {code === "implausible_jump_confirmation_required" ? (
+          <label className="flex items-center gap-2 text-[12.5px] font-medium text-warn-ink">
+            <input type="checkbox" name={`confirm_jump_${u}`} className="size-4 accent-[var(--brand)]" /> Yes, this reading is correct
+          </label>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
-    <form ref={formRef} action={action} className="flex flex-col gap-3 border-t border-stroke pt-4">
-      <input type="hidden" name="client_request_id" value={requestId} />
-      {state.status === "error" && !needsReason && !needsConfirm ? <FormAlert>{state.message}</FormAlert> : null}
+    <form action={action} className="flex flex-col gap-3 border-t border-stroke pt-4">
+      {state.status === "error" ? (
+        <FormAlert>
+          {failedUnit ? `${UNIT[failedUnit].label}: ` : ""}
+          {state.message}
+        </FormAlert>
+      ) : null}
       {state.status === "success" ? <FormAlert tone="success">{state.message}</FormAlert> : null}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Reading" htmlFor="unit">
-          <Select name="unit" value={unit} onChange={(e) => setUnit(e.target.value as "km" | "hours")}>
-            {units.map((u) => (
-              <option key={u} value={u}>
-                {u === "km" ? "Odometer (km)" : "Hour meter (hours)"}
-                {tracked(u) ? "" : " (not tracked yet)"}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Value" htmlFor="value" error={state.status === "error" ? state.fieldErrors?.value : undefined}>
-          <Input name="value" inputMode="decimal" required />
-        </Field>
+        {column("km")}
+        {column("hours")}
       </div>
-      {untracked ? (
-        canAddMeter ? (
-          <label className="flex items-start gap-2 rounded-[6px] border border-stroke bg-surface-muted p-3 text-[13.5px] text-ink">
-            <input type="checkbox" name="add_meter" required className="mt-0.5 size-4 accent-[var(--brand)]" />
-            <span>
-              Also record {unit === "km" ? "odometer" : "hour meter"} readings for this asset.
-              <span className="block text-[12.5px] text-ink-subtle">It will then record {meterType === "none" ? (unit === "km" ? "the odometer" : "the hour meter") : "both the odometer and the hour meter"}. The change is recorded in the audit history.</span>
-            </span>
-          </label>
-        ) : (
-          <FormAlert tone="info">This asset doesn&apos;t record {unit === "km" ? "odometer" : "hour meter"} readings yet. Ask a Fleet Manager or Company Admin to start tracking it.</FormAlert>
-        )
-      ) : null}
-      {needsReason ? (
-        <Field label="Reason for a lower reading" htmlFor="lower_reason" error={state.message}>
-          <Input name="lower_reason" placeholder="e.g. Odometer or hour meter replaced" required />
-        </Field>
-      ) : null}
-      {needsConfirm ? (
-        <div className="rounded-[6px] border border-warn-line bg-warn-soft p-3 text-[13.5px] text-warn-ink">
-          <p>{state.message}</p>
-          <label className="mt-2 flex items-center gap-2 font-medium">
-            <input type="checkbox" name="confirm_jump" className="size-4 accent-[var(--brand)]" /> Yes, this reading is correct
-          </label>
-        </div>
-      ) : null}
-      <Button type="submit" variant="outline" disabled={pending || (untracked && !canAddMeter)}>
+      <Button type="submit" variant="outline" disabled={pending || (!values.km.trim() && !values.hours.trim())}>
         {pending ? "Saving…" : "Record reading"}
       </Button>
     </form>
