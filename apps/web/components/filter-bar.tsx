@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/form";
+import { Input, SEARCH_FIELD } from "@/components/ui/form";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { cn } from "@/lib/utils";
 import { AutoFilterForm } from "./auto-filter-form";
@@ -51,7 +51,7 @@ export function FilterBar({
                 aria-label={search.placeholder}
                 autoComplete="off"
                 enterKeyHint="search"
-                className="h-10 pl-9"
+                className={cn("h-10 pl-9", SEARCH_FIELD)}
               />
             </div>
           ) : (

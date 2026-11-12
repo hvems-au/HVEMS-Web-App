@@ -6,7 +6,7 @@ import type { AssetCondition } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/form";
+import { Input, SEARCH_FIELD } from "@/components/ui/form";
 import { Card, EmptyState } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -125,7 +125,7 @@ export default async function EquipmentPage({
             {tab.condition ? <input type="hidden" name="condition" value={tab.condition} /> : null}
             {tab.archived ? <input type="hidden" name="status" value="archived" /> : null}
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden />
-            <Input name="q" defaultValue={q} placeholder="Search ID, make, model, rego or VIN" className="h-9 pl-9 text-[13px]" aria-label="Search equipment" autoComplete="off" />
+            <Input name="q" defaultValue={q} placeholder="Search ID, make, model, rego or VIN" className={cn("h-9 pl-9 text-[13px]", SEARCH_FIELD)} aria-label="Search equipment" autoComplete="off" />
           </AutoFilterForm>
         </div>
         {rows.length === 0 ? (

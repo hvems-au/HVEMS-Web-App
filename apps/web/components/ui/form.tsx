@@ -4,6 +4,9 @@ import { cn } from "@/lib/utils";
 const control =
   "w-full rounded-[6px] border border-stroke bg-surface px-3 text-[14px] text-ink placeholder:text-ink-subtle transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:bg-surface-muted disabled:text-ink-muted aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/15";
 
+/** Search boxes: an orange outline in dark mode so they stand out before they're clicked. */
+export const SEARCH_FIELD = "dark:border-brand/70 dark:bg-surface-raised dark:hover:border-brand dark:placeholder:text-ink-muted";
+
 export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(control, "h-11", className)} {...props} />;
 }

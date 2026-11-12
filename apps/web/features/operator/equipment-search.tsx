@@ -1,7 +1,8 @@
 "use client";
 import { Search } from "lucide-react";
 import { AutoFilterForm } from "@/components/auto-filter-form";
-import { Input, Select } from "@/components/ui/form";
+import { Input, SEARCH_FIELD, Select } from "@/components/ui/form";
+import { cn } from "@/lib/utils";
 
 /**
  * Search box. The list updates as you
@@ -29,7 +30,7 @@ export function OperatorEquipmentSearch({
           defaultValue={q}
           placeholder="Rego, ID, make, model or QR code"
           aria-label="Search vehicles and equipment"
-          className="h-12 pl-10 text-[16px]"
+          className={cn("h-12 pl-10 text-[16px]", SEARCH_FIELD)}
           autoComplete="off"
           enterKeyHint="search"
         />
