@@ -113,7 +113,12 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                         />
                       ) : null}
                     </TD>
-                    <TD>{ROLE_LABELS[m.role]}</TD>
+                    <TD>
+                      {ROLE_LABELS[m.role]}
+                      {m.additional_roles?.length ? (
+                        <span className="block text-[12.5px] text-ink-muted">+ {m.additional_roles.map((r) => ROLE_LABELS[r]).join(", ")}</span>
+                      ) : null}
+                    </TD>
                     {kind === "company" ? (
                       <TD>
                         <div className="flex flex-wrap gap-1">
@@ -138,6 +143,8 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
                             membershipId={m.id}
                             name={m.profile?.full_name || m.profile?.email || "member"}
                             role={m.role}
+                            additionalRoles={m.additional_roles ?? []}
+                            operatorProfile={!!m.profile?.email?.endsWith(".invalid")}
                             roles={invitableRoles.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
                             grants={canGrant ? grants.map((g) => ({ id: g.id, label: GRANT_LABELS[g.grant_type] })) : []}
                             assignable={

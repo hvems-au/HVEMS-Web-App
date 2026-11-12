@@ -53,6 +53,19 @@ export async function changeRoleAction(portal: string, orgId: string, membership
   }
 }
 
+/** A member's additional roles (permissions are the union of all their roles). */
+export async function setAdditionalRolesAction(portal: string, orgId: string, membershipId: string, roles: MemberRole[]): Promise<ActionState> {
+  try {
+    const db = await createSupabaseServerClient();
+    const { error } = await db.rpc("set_member_additional_roles", { p_membership_id: membershipId, p_roles: roles });
+    if (error) throw error;
+    revalidatePath(teamPath(portal, orgId));
+    return { status: "success", message: roles.length ? "Roles updated" : "Additional roles removed" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
 export async function removeMemberAction(portal: string, orgId: string, membershipId: string): Promise<ActionState> {
   try {
     const db = await createSupabaseServerClient();

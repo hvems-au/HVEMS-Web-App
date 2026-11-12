@@ -17,6 +17,7 @@ import {
   resetMemberMfaAction,
   revokeGrantAction,
   revokeInvitationAction,
+  setAdditionalRolesAction,
 } from "./actions";
 
 type Opt<T extends string = string> = { value: T; label: string };
@@ -114,6 +115,83 @@ export function RevokeInvitationButton({ portal, orgId, invitationId }: { portal
   );
 }
 
+/** Tick the extra roles a member also holds; they get the permissions of every role. */
+function AdditionalRolesDialog({
+  portal,
+  orgId,
+  membershipId,
+  name,
+  mainRole,
+  options,
+  current,
+  open,
+  onOpenChange,
+}: {
+  portal: string;
+  orgId: string;
+  membershipId: string;
+  name: string;
+  mainRole: string;
+  options: Opt<MemberRole>[];
+  current: MemberRole[];
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
+  const router = useRouter();
+  const [chosen, setChosen] = React.useState<MemberRole[]>(current);
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, start] = React.useTransition();
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        onOpenChange(o);
+        if (o) {
+          setChosen(current);
+          setError(null);
+        }
+      }}
+    >
+      <DialogContent title={"Roles for " + name} description={"Main role: " + mainRole + ". Tick any other roles they also hold; they get the permissions of every role. Changes are recorded."}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            start(async () => {
+              const res = await setAdditionalRolesAction(portal, orgId, membershipId, chosen);
+              if (res.status === "error") return setError(res.message);
+              notify(res);
+              onOpenChange(false);
+              router.refresh();
+            });
+          }}
+        >
+          {error ? <FormAlert>{error}</FormAlert> : null}
+          <fieldset className="flex flex-col gap-1">
+            <legend className="mb-1.5 text-[13px] font-medium text-ink">Also holds</legend>
+            {options.map((o) => (
+              <label key={o.value} className="flex items-center gap-2.5 rounded-[8px] px-2 py-2 text-[14px] text-ink hover:bg-surface-muted">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[var(--brand)]"
+                  checked={chosen.includes(o.value)}
+                  onChange={(e) => setChosen((c) => (e.target.checked ? [...c, o.value] : c.filter((r) => r !== o.value)))}
+                />
+                {o.label}
+              </label>
+            ))}
+          </fieldset>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={pending}>
+              {pending ? "Saving…" : "Save roles"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function GrantDialog({
   portal,
   orgId,
@@ -193,6 +271,8 @@ export function MemberActions({
   membershipId,
   name,
   role,
+  additionalRoles,
+  operatorProfile = false,
   roles,
   grants,
   assignable,
@@ -202,6 +282,9 @@ export function MemberActions({
   membershipId: string;
   name: string;
   role: MemberRole;
+  additionalRoles: MemberRole[];
+  /** Operator ID accounts only operate equipment, so they don't take other roles. */
+  operatorProfile?: boolean;
   roles: Opt<MemberRole>[];
   grants: { id: string; label: string }[];
   assignable: Opt<MemberGrant>[];
@@ -209,6 +292,7 @@ export function MemberActions({
   const router = useRouter();
   const [pending, start] = React.useTransition();
   const [grantOpen, setGrantOpen] = React.useState(false);
+  const [rolesOpen, setRolesOpen] = React.useState(false);
   const run = (fn: () => Promise<ClientActionState>) =>
     start(async () => {
       notify(await fn());
@@ -243,6 +327,11 @@ export function MemberActions({
                 </DropdownMenu.SubContent>
               </DropdownMenu.Portal>
             </DropdownMenu.Sub>
+            {operatorProfile ? null : (
+              <DropdownMenu.Item className="rounded-md px-2 py-2 outline-none data-[highlighted]:bg-surface-muted" onSelect={() => setRolesOpen(true)}>
+                Additional roles…
+              </DropdownMenu.Item>
+            )}
             {assignable.length ? (
               <DropdownMenu.Item className="rounded-md px-2 py-2 outline-none data-[highlighted]:bg-surface-muted" onSelect={() => setGrantOpen(true)}>
                 Assign grant…
@@ -288,6 +377,19 @@ Reason (for example "lost phone"):`,
       {assignable.length ? (
         <GrantDialog portal={portal} orgId={orgId} membershipId={membershipId} name={name} grants={assignable} open={grantOpen} onOpenChange={setGrantOpen} />
       ) : null}
+      {operatorProfile ? null : (
+        <AdditionalRolesDialog
+          portal={portal}
+          orgId={orgId}
+          membershipId={membershipId}
+          name={name}
+          mainRole={roles.find((r) => r.value === role)?.label ?? role}
+          options={roles.filter((r) => r.value !== role)}
+          current={additionalRoles}
+          open={rolesOpen}
+          onOpenChange={setRolesOpen}
+        />
+      )}
     </>
   );
 }

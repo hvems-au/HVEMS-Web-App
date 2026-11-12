@@ -144,7 +144,7 @@ export async function listMembers(db: HvemsClient, organisationId: string): Prom
   return unwrap<Membership[]>(
     (await db
       .from("org_memberships")
-      .select("id, organisation_id, user_id, role, status, created_at, profile:profiles!inner(full_name, email), grants:membership_grants(id, membership_id, grant_type, approval_limit_cents, competency_note, assigned_at, revoked_at)")
+      .select("id, organisation_id, user_id, role, additional_roles, status, created_at, profile:profiles!inner(full_name, email), grants:membership_grants(id, membership_id, grant_type, approval_limit_cents, competency_note, assigned_at, revoked_at)")
       .eq("organisation_id", organisationId)
       .neq("status", "removed")
       .order("created_at")) as unknown as { data: Membership[] | null; error: PostgrestError | null },

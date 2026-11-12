@@ -79,6 +79,8 @@ export interface Membership {
   organisation_id: UUID;
   user_id: UUID;
   role: MemberRole;
+  /** Roles held besides the main role; permissions are the union. */
+  additional_roles?: MemberRole[];
   status: MembershipStatus;
   created_at: ISODateTime;
   profile?: Pick<Profile, "full_name" | "email"> | null;
