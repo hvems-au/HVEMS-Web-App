@@ -8,7 +8,7 @@ Email buttons open HVEMS's own page, `{{ .SiteURL }}/continue?token_hash=…&typ
 - a link opened on another device still works (no browser-bound code);
 - link scanners (for example Microsoft 365 Safe Links) open the page, not the token, so links aren't used up early.
 
-**Site URL** (Authentication → URL Configuration) must be the company portal: `http://company.localhost:3000` while testing, `https://company.hvems.com.au` in production. Every portal's `/auth/callback` must be in the Redirect URLs list.
+**Site URL** (Authentication → URL Configuration) must be the company portal: `http://company.localhost:3000` while testing, `https://portal.hvems.com.au` in production (`https://dev-portal.hvems.com.au` on the development site). Every portal's `/auth/callback` must be in the Redirect URLs list.
 
 ## Changing a template
 1. Edit the wording in `scripts/email/build-templates.mjs`. Every template shares one layout.

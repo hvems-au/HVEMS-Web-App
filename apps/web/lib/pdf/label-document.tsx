@@ -9,7 +9,7 @@ export interface LabelData {
   description: string;
   shortCode: string;
   qrPng: string;
-  /** Operator portal address, e.g. https://driver.hvems.com.au (for phones without a camera). */
+  /** Operator portal address, e.g. https://operator.hvems.com.au (for phones without a camera). */
   portalUrl: string;
   /** The company’s own logo as a data URI (PNG or JPEG); the company name is shown when absent. */
   companyLogo?: PdfImage | null;

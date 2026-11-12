@@ -32,7 +32,7 @@ describe("portal hosts", () => {
 
   it("prints the live driver address on labels, never a local one", () => {
     process.env.DRIVER_HOST = "driver.localhost:3000";
-    expect(printedDriverUrl()).toBe("https://driver.hvems.com.au");
+    expect(printedDriverUrl()).toBe("https://operator.hvems.com.au");
     process.env.DRIVER_HOST = "drivers.example.com.au";
     expect(printedDriverUrl()).toBe("https://drivers.example.com.au");
   });

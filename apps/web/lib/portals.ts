@@ -50,8 +50,8 @@ export function portalOrigin(portal: PortalId): string {
   return `${local ? "http" : "https"}://${host}`;
 }
 
-/** The live driver portal, printed on equipment labels while testing locally. */
-export const LIVE_DRIVER_URL = "https://driver.hvems.com.au";
+/** The live operator portal (production), printed on equipment labels while testing locally. */
+export const LIVE_DRIVER_URL = "https://operator.hvems.com.au";
 
 /**
  * The driver portal address printed on QR labels. Labels outlive test builds,

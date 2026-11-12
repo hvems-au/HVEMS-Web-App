@@ -37,6 +37,7 @@ One Next.js app. `lib/portals.ts` maps the request host to a portal:
 - **Account types:** onboarding creates only the current portal's organisation kind (checked server-side). Email links (verification, reset, invitations) use the current portal's origin.
 
 ## Consequences
+- **Addresses (decided 12 Nov 2026):** the HVEMS website stays on `hvems.com.au`. Production: company `portal.hvems.com.au`, provider `provider.hvems.com.au`, operator `operator.hvems.com.au` (printed on QR labels), Super Admin `admin.hvems.com.au`, marketplace `market.hvems.com.au` (reserved for 2D). Development: the same with a `dev-` prefix (`dev-portal.hvems.com.au` …). See docs/operations/hosting.md.
 - **Deployment:** one deployment with five hostnames. Every host's `/auth/callback**` must be in the Supabase Auth redirect allow-list (email verification, password reset). The trailing `**` matters: the links carry `?next=…`, and an exact entry without it is rejected (checked 9 Nov 2026). The handoff doesn't use Supabase redirects.
 - **Secrets:** the service (secret) key is now required at runtime for handoffs. `PORTAL_HANDOFF_SECRET` is optional; without it a signing key is derived from the service key.
 - **Drivers:** the portal exists now, with a non-functional notice. PIN sessions arrive with driver profiles in 2B (short-lived token limited to permitted assets, not a Supabase user).
