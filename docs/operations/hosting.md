@@ -18,7 +18,7 @@ The HVEMS website stays on `hvems.com.au`. The app runs on Vercel (Sydney) as tw
 | Super Admin | `admin.hvems.com.au` | `dev-admin.hvems.com.au` | `ADMIN_HOST` |
 | Marketplace (2D, reserved) | `market.hvems.com.au` | `dev-market.hvems.com.au` | `MARKET_HOST` |
 
-QR labels always print the **production** operator address, even when printed from development, because labels outlive test builds.
+QR labels print the operator address of the site they are printed from: test labels from development point at `dev-operator.hvems.com.au` (their codes only exist in the development database). Print labels for real equipment from production. Labels printed on a local machine use the production address.
 
 ## DNS records (at whoever manages hvems.com.au)
 One `CNAME` per address, pointing to Vercel (Vercel shows the exact target when each domain is added; usually `cname.vercel-dns.com`):
