@@ -8,6 +8,7 @@ import { Logo } from "@/components/brand/logo";
 import { ICONS } from "@/components/shell/icons";
 import { IdleTimer } from "@/components/shell/idle-timer";
 import { ThemeSwitcher, useTheme, type ThemeChoice } from "@/components/theme/theme";
+import { NotificationTray } from "./notification-tray";
 import type { NavSection } from "@/lib/navigation";
 import { cn, initials } from "@/lib/utils";
 
@@ -29,7 +30,7 @@ export interface AppShellProps {
   contexts: ShellContext[];
   banner?: React.ReactNode;
   /** Where the bell goes and how many alerts are unread (company portal). */
-  alerts?: { href: string; unread: number };
+  alerts?: { href: string; unread: number; orgId?: string };
   children: React.ReactNode;
 }
 
@@ -320,6 +321,9 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
           </p>
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeSwitcher compact />
+            {alerts?.orgId ? (
+              <NotificationTray orgId={alerts.orgId} href={alerts.href} unread={alerts.unread} />
+            ) : (
             <Link
               href={alerts?.href ?? current.href.replace(/\/dashboard$/, "") + "/module/notifications"}
               className="relative rounded-full p-2 text-ink hover:bg-surface-muted"
@@ -332,6 +336,7 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
                 </span>
               ) : null}
             </Link>
+            )}
             <UserMenu user={user} />
           </div>
         </header>

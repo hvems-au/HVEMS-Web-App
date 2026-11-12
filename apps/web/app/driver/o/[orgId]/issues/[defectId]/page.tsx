@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
+import { IssueCategoryTag } from "@/features/operator/issue-category";
 import { notFound } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { formatDateAU, formatDateTimeAU } from "@hvems/domain";
@@ -31,9 +32,7 @@ export default async function MyIssue({
 
   return (
     <>
-      <Link href={`${base}/issues`} className="mb-2 inline-block text-[13px] font-medium text-ink-muted hover:text-link">
-        ← My reported issues
-      </Link>
+      <BackLink href={`${base}/issues`} label="My reported issues" />
       {justSent ? (
         <div role="status" className="mb-4 flex items-start gap-3 rounded-[12px] border-2 border-ok bg-ok-soft px-4 py-3.5 text-ok-ink">
           <CheckCircle2 className="size-6 shrink-0" aria-hidden />
@@ -73,6 +72,7 @@ export default async function MyIssue({
             className="grid-cols-1 sm:grid-cols-2"
             items={[
               { label: "Equipment", value: [d.asset?.asset_number, d.asset?.make, d.asset?.model].filter(Boolean).join(" ") },
+              { label: "Kind of issue", value: <IssueCategoryTag value={d.issue_category} source={d.source} /> },
               { label: "You said", value: d.reported_urgency ? URGENCY_LABEL[d.reported_urgency] : "—" },
               { label: "Details", value: d.description ?? "—" },
               { label: "Photos", value: d.evidence_paths?.length ? `${d.evidence_paths.length} attached` : "None" },

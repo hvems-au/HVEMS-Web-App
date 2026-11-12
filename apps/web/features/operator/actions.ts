@@ -6,6 +6,7 @@ import { errorState, type ActionState } from "@/lib/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const issueSchema = z.object({
+  category: z.enum(["breakdown", "engine", "brakes", "tyres", "electrical", "hydraulics", "leak", "damage", "safety_equipment", "other"], { message: "Choose what kind of issue it is" }),
   summary: z.string().trim().min(3, "Say in a few words what the issue is").max(200),
   description: z.string().trim().max(4000).optional(),
   urgency: z.enum(["stop", "soon", "not_urgent"], { message: "Say whether it is safe to keep using" }),
@@ -27,7 +28,8 @@ export async function reportIssueAction(orgId: string, assetId: string, input: u
   }
   try {
     const db = await createSupabaseServerClient();
-    const { data, error } = await (db as unknown as HvemsClient).rpc("report_issue", {
+    const { data, error } = await (db as unknown as HvemsClient).rpc("submit_issue_report", {
+      p_category: v.data.category,
       p_asset_id: assetId,
       p_summary: v.data.summary,
       p_description: v.data.description || null,

@@ -9,6 +9,12 @@ import { cn } from "@/lib/utils";
  * needed (Enter still works). Values go in the URL, so links, Back and refresh
  * keep them; empty values are left out. Hidden inputs carry the current tab.
  */
+/** Lets custom controls (searchable dropdowns) apply a value straight away. */
+const AutoFilterContext = React.createContext<((overrides?: Record<string, string>) => void) | null>(null);
+export function useAutoFilter() {
+  return React.useContext(AutoFilterContext);
+}
+
 export function AutoFilterForm({
   action,
   className,
@@ -30,13 +36,17 @@ export function AutoFilterForm({
   const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [pending, start] = React.useTransition();
 
-  const apply = React.useCallback(() => {
+  const apply = React.useCallback((overrides?: Record<string, string>) => {
     clearTimeout(timer.current);
     const form = ref.current;
     if (!form) return;
     const sp = new URLSearchParams();
     for (const [k, v] of new FormData(form)) {
       if (typeof v === "string" && v.trim() !== "") sp.set(k, v.trim());
+    }
+    for (const [k, v] of Object.entries(overrides ?? {})) {
+      if (v) sp.set(k, v);
+      else sp.delete(k);
     }
     const target = action ?? pathname;
     const qs = sp.toString();
@@ -58,13 +68,15 @@ export function AutoFilterForm({
       }}
       onChange={(e) => {
         const el = e.target as unknown as HTMLInputElement;
+        // Unnamed fields (e.g. the search box inside a searchable dropdown) aren't filters.
+        if (!el.name) return;
         const typed = el.tagName === "INPUT" && !["date", "checkbox", "radio", "hidden"].includes(el.type);
         clearTimeout(timer.current);
-        if (typed) timer.current = setTimeout(apply, delay);
+        if (typed) timer.current = setTimeout(() => apply(), delay);
         else apply();
       }}
     >
-      {children}
+      <AutoFilterContext.Provider value={apply}>{children}</AutoFilterContext.Provider>
     </form>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { CheckCircle2, OctagonAlert, TriangleAlert } from "lucide-react";
 import { getInspection } from "@hvems/api-client";
@@ -34,9 +34,7 @@ export default async function MyPrestart({
 
   return (
     <>
-      <Link href={`${base}/prestarts`} className="mb-2 inline-block text-[13px] font-medium text-ink-muted hover:text-link">
-        ← My pre-starts
-      </Link>
+      <BackLink href={`${base}/prestarts`} label="My pre-starts" />
       {justSubmitted ? (
         <div
           role="status"

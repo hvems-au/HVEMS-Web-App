@@ -132,3 +132,21 @@ export const DEFECT_STATUS_LABELS: Record<"open" | "closed" | "repaired" | "dism
   dismissed: "Dismissed",
   merged: "Merged",
 };
+
+/** Kinds of issue an operator can report (matches the defects.issue_category check). */
+export const ISSUE_CATEGORIES = [
+  { value: "breakdown", label: "Breakdown", help: "Won't start, won't move or has stopped working" },
+  { value: "engine", label: "Engine & mechanical", help: "Noise, smoke, overheating, power loss" },
+  { value: "brakes", label: "Brakes & steering", help: "Pulling, soft pedal, warning light" },
+  { value: "tyres", label: "Tyres & wheels", help: "Flat, damaged, loose wheel nuts" },
+  { value: "electrical", label: "Electrical & lights", help: "Lights, battery, gauges, beacons" },
+  { value: "hydraulics", label: "Hydraulics & attachments", help: "Hoses, rams, buckets, tipper" },
+  { value: "leak", label: "Leak", help: "Oil, fuel, coolant or hydraulic fluid" },
+  { value: "damage", label: "Body, cab & glass", help: "Dents, mirrors, windscreen, doors, steps" },
+  { value: "safety_equipment", label: "Safety equipment", help: "Seatbelt, extinguisher, alarms, cameras" },
+  { value: "other", label: "Something else", help: "Anything not listed" },
+] as const;
+export type IssueCategory = (typeof ISSUE_CATEGORIES)[number]["value"];
+export function issueCategoryLabel(value: string | null | undefined): string | null {
+  return ISSUE_CATEGORIES.find((c) => c.value === value)?.label ?? null;
+}

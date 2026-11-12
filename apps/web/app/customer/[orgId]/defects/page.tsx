@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { listActiveSafetyEvents, listDefects } from "@hvems/api-client";
-import { DEFECT_SEVERITY_EFFECT, DEFECT_STATUS_LABELS, formatDateAU, formatDateTimeAU, todayISO } from "@hvems/domain";
+import { ISSUE_CATEGORIES, DEFECT_SEVERITY_EFFECT, DEFECT_STATUS_LABELS, formatDateAU, formatDateTimeAU, todayISO } from "@hvems/domain";
 import { SeverityBadge } from "@/components/safety";
+import { AutoFilterForm } from "@/components/auto-filter-form";
+import { Select } from "@/components/ui/form";
+import { IssueCategoryTag } from "@/features/operator/issue-category";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, CardHeader, EmptyState, Table, TD, TH, THead, TR, STRETCHED_LINK } from "@/components/ui/primitives";
 import { loadOrgContext } from "@/lib/session";
@@ -14,14 +17,28 @@ export const metadata: Metadata = { title: "Defects & Safety" };
 const RANK = { critical: 0, minor: 1, advisory: 2 } as const;
 
 /** Open defects (most serious first) and closed ones (newest first). */
-export default async function DefectsPage({ params, searchParams }: { params: Promise<{ orgId: string }>; searchParams: Promise<{ view?: string }> }) {
-  const [{ orgId }, { view }] = await Promise.all([params, searchParams]);
+export default async function DefectsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orgId: string }>;
+  searchParams: Promise<{ view?: string; type?: string }>;
+}) {
+  const [{ orgId }, { view, type }] = await Promise.all([params, searchParams]);
   const ctx = await loadOrgContext(orgId, ["company"]);
   const db = await createSupabaseServerClient();
   const closed = view === "closed";
   const [all, safety] = await Promise.all([listDefects(db, { organisationId: orgId, limit: 300 }), listActiveSafetyEvents(db, { organisationId: orgId })]);
   const events = [
-    ...safety.breakdowns.map((b) => ({ id: b.id, assetId: b.asset_id, asset: b.asset?.asset_number, tone: "red" as const, label: "Breakdown", text: b.description, at: b.reported_at })),
+    ...safety.breakdowns.map((b) => ({
+      id: b.id,
+      assetId: b.asset_id,
+      asset: b.asset?.asset_number,
+      tone: "red" as const,
+      label: "Breakdown",
+      text: b.description,
+      at: b.reported_at,
+    })),
     ...safety.holds.map((h) => ({
       id: h.id,
       assetId: h.asset_id,
@@ -43,22 +60,45 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
   ];
   const open = all.filter((d) => d.status === "open").sort((a, b) => RANK[a.severity] - RANK[b.severity] || b.reported_at.localeCompare(a.reported_at));
   const done = all.filter((d) => d.status !== "open");
-  const rows = closed ? done : open;
+  const kind = type && (type === "prestart" || ISSUE_CATEGORIES.some((c) => c.value === type)) ? type : "";
+  const rows = (closed ? done : open).filter((d) => !kind || (kind === "prestart" ? d.source !== "operator_report" : d.issue_category === kind));
   const today = todayISO(ctx.timezone);
   const base = `/customer/${orgId}/defects`;
 
   return (
     <>
       <PageHeader title="Defects & Safety" description="Triage defects, mark repairs and return equipment to service" />
-      <div className="mb-4 flex gap-1 rounded-[8px] bg-surface-muted p-1 text-[14px] font-semibold sm:w-fit">
-        {[
-          { label: `Open (${open.length})`, href: base, on: !closed },
-          { label: `Closed (${done.length})`, href: `${base}?view=closed`, on: closed },
-        ].map((t) => (
-          <Link key={t.href} href={t.href} className={cn("rounded-[6px] px-4 py-1.5", t.on ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink")}>
-            {t.label}
-          </Link>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1 rounded-[8px] bg-surface-muted p-1 text-[14px] font-semibold sm:w-fit">
+          {[
+            { label: `Open (${open.length})`, href: base, on: !closed },
+            {
+              label: `Closed (${done.length})`,
+              href: `${base}?view=closed`,
+              on: closed,
+            },
+          ].map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={cn("rounded-[6px] px-4 py-1.5", t.on ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink")}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </div>
+        <AutoFilterForm action={base} className="w-full sm:w-64">
+          {closed ? <input type="hidden" name="view" value="closed" /> : null}
+          <Select name="type" defaultValue={kind} aria-label="Kind of issue" className="h-10">
+            <option value="">All kinds of issue</option>
+            <option value="prestart">Pre-start faults</option>
+            {ISSUE_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </AutoFilterForm>
       </div>
       {!closed && events.length ? (
         <Card className="mb-5">
@@ -79,12 +119,15 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
       ) : null}
       <Card>
         {rows.length === 0 ? (
-          <EmptyState title={closed ? "No closed defects yet" : "No open defects"}>Faults reported at pre-start appear here.</EmptyState>
+          <EmptyState title={kind ? "Nothing of that kind" : closed ? "No closed defects yet" : "No open defects"}>
+            Faults from pre-starts and issues reported by operators appear here.
+          </EmptyState>
         ) : (
           <Table>
             <THead>
               <tr>
                 <TH>Defect</TH>
+                <TH>Kind</TH>
                 <TH>Severity</TH>
                 <TH>Equipment</TH>
                 <TH>{closed ? "Outcome" : "Status"}</TH>
@@ -101,6 +144,9 @@ export default async function DefectsPage({ params, searchParams }: { params: Pr
                         {d.title}
                       </Link>
                       {d.description ? <span className="line-clamp-2 block text-[13px] text-ink-muted">“{d.description}”</span> : null}
+                    </TD>
+                    <TD className="text-[13px]">
+                      <IssueCategoryTag value={d.issue_category} source={d.source} />
                     </TD>
                     <TD>
                       <span title={DEFECT_SEVERITY_EFFECT[d.severity]}>

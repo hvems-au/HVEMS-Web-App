@@ -11,12 +11,12 @@ import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } fro
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
-import { ReviewMissedDialog } from "./missed-review";
+import { MissedBulkTable } from "./missed-bulk";
 
 export const metadata: Metadata = { title: "Inspections" };
 
 const dmy = (iso: string) => iso.split("-").reverse().join("/");
-const ISO = /^d{4}-d{2}-d{2}$/;
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const nextDay = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
 const CHECK = { daily: "Daily", weekly: "Weekly", custom: "Custom", not_required: "—" } as const;
 const OUTCOME = { not_used: { tone: "grey", text: "Not used" }, missed: { tone: "red", text: "Missed" }, open: { tone: "amber", text: "To review" } } as const;
@@ -44,11 +44,23 @@ export default async function InspectionsPage({
     from: ISO.test(firstParam(sp.from) ?? "") ? firstParam(sp.from)! : "",
     to: ISO.test(firstParam(sp.to) ?? "") ? firstParam(sp.to)! : "",
     check: (firstParam(sp.check) ?? "") as "" | "daily" | "weekly" | "custom",
+    q: (firstParam(sp.q) ?? "").trim().slice(0, 60),
   };
   if (!(f.result in INSPECTION_RESULT_LABELS)) f.result = "";
   if (!["daily", "weekly", "custom"].includes(f.check)) f.check = "";
   const db = await createSupabaseServerClient();
-  const missedFilter = { assetId: f.asset || undefined, frequency: f.check || undefined };
+  // Search: equipment by ID, make, model, rego or VIN (and, for pre-starts, the operator's name).
+  const term = f.q.replace(/[%_,()*"\\]/g, " ").trim();
+  const searchAssetIds = term
+    ? await db
+        .from("assets")
+        .select("id")
+        .eq("organisation_id", orgId)
+        .or(["asset_number", "make", "model", "registration_number", "vin"].map((c) => `${c}.ilike.*${term}*`).join(","))
+        .limit(500)
+        .then((r) => ((r.data ?? []) as { id: string }[]).map((a) => a.id))
+    : null;
+  const missedFilter = { assetId: f.asset || undefined, frequency: f.check || undefined, assetIds: searchAssetIds ?? undefined };
   const [rows, openCount, open, reviewed, assets, operatorIds] = await Promise.all([
     tab === "submitted"
       ? listInspections(db, {
@@ -58,6 +70,7 @@ export default async function InspectionsPage({
           result: f.result || undefined,
           from: f.from ? startOfDayInZone(f.from, ctx.timezone) : undefined,
           to: f.to ? startOfDayInZone(nextDay(f.to), ctx.timezone) : undefined,
+          search: term ? { text: term, assetIds: searchAssetIds ?? [] } : undefined,
           limit: 100,
         })
       : Promise.resolve([]),
@@ -95,7 +108,7 @@ export default async function InspectionsPage({
       {label}
     </Link>
   );
-  const missedTable = (items: typeof open, reviewedList: boolean) => (
+  const missedTable = (items: typeof open) => (
     <Table>
       <THead>
         <tr>
@@ -103,7 +116,7 @@ export default async function InspectionsPage({
           <TH>Equipment</TH>
           <TH>Check</TH>
           <TH>Status</TH>
-          {reviewedList ? <TH>Note</TH> : <TH className="text-right">Actions</TH>}
+          <TH>Note</TH>
         </tr>
       </THead>
       <tbody>
@@ -120,16 +133,10 @@ export default async function InspectionsPage({
             <TD>
               <Badge tone={OUTCOME[m.status].tone}>{OUTCOME[m.status].text}</Badge>
             </TD>
-            {reviewedList ? (
-              <TD className="max-w-[360px] text-ink-muted">
-                {m.review_note ?? "—"}
-                {m.reviewed_at ? <span className="block text-[12px] text-ink-subtle">{formatDateTimeAU(new Date(m.reviewed_at), ctx.timezone)}</span> : null}
-              </TD>
-            ) : (
-              <TD className="text-right">
-                <ReviewMissedDialog orgId={orgId} id={m.id} label={`${m.asset?.asset_number ?? "Equipment"}, ${dmy(m.period_start)}`} />
-              </TD>
-            )}
+            <TD className="max-w-[360px] text-ink-muted">
+              {m.review_note ?? "—"}
+              {m.reviewed_at ? <span className="block text-[12px] text-ink-subtle">{formatDateTimeAU(new Date(m.reviewed_at), ctx.timezone)}</span> : null}
+            </TD>
           </TR>
         ))}
       </tbody>
@@ -159,6 +166,7 @@ export default async function InspectionsPage({
         <Card>
           <FilterBar
             action={base}
+            search={{ value: f.q, placeholder: "Search equipment, rego or operator" }}
             fields={[
               { kind: "select", name: "asset", label: "Equipment", all: "All equipment", value: f.asset, options: equipmentOptions },
               { kind: "select", name: "operator", label: "Operator", all: "All operators", value: f.operator, options: operatorOptions },
@@ -250,11 +258,12 @@ export default async function InspectionsPage({
         </Card>
       ) : (
         <>
-          <p className="mb-4 text-[13.5px] text-ink-muted">Equipment that was due a pre-start and didn&apos;t get one. Mark each as not used or missed.</p>
+          <p className="mb-4 text-[13.5px] text-ink-muted">Equipment that was due a pre-start and didn&apos;t get one. Tick several to mark them not used or missed in one go, or review one at a time.</p>
           <Card>
             <FilterBar
               action={base}
               keep={{ tab: "missed" }}
+              search={{ value: f.q, placeholder: "Search equipment, make, model or rego" }}
               fields={[
                 { kind: "select", name: "asset", label: "Equipment", all: "All equipment", value: f.asset, options: equipmentOptions },
                 {
@@ -271,12 +280,30 @@ export default async function InspectionsPage({
                 },
               ]}
             />
-            {open.length === 0 ? <EmptyState title="Nothing to review">Every pre-start that was due has been done or reviewed.</EmptyState> : missedTable(open, false)}
+            {open.length === 0 ? (
+              filtered ? (
+                <EmptyState title="Nothing matches">Try a different search or filter.</EmptyState>
+              ) : (
+                <EmptyState title="Nothing to review">Every pre-start that was due has been done or reviewed.</EmptyState>
+              )
+            ) : (
+              <MissedBulkTable
+                orgId={orgId}
+                rows={open.map((m) => ({
+                  id: m.id,
+                  due: m.period_start === m.period_end ? dmy(m.period_start) : `${dmy(m.period_start)} – ${dmy(m.period_end)}`,
+                  assetId: m.asset_id,
+                  assetNumber: m.asset?.asset_number ?? "Equipment",
+                  makeModel: [m.asset?.make, m.asset?.model].filter(Boolean).join(" "),
+                  check: CHECK[m.frequency],
+                }))}
+              />
+            )}
           </Card>
           {reviewed.length ? (
             <Card className="mt-5">
               <div className="px-5 pt-4 pb-2 text-[15px] font-semibold text-ink">Reviewed</div>
-              {missedTable(reviewed, true)}
+              {missedTable(reviewed)}
             </Card>
           ) : null}
         </>

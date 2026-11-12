@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { IssueCategoryTag } from "@/features/operator/issue-category";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClipboardCheck, Pencil } from "lucide-react";
@@ -346,7 +347,10 @@ export default async function AssetPage({
                       <span className="min-w-0">
                         <span className="font-medium text-ink">{d.title}</span>
                         {d.description ? <span className="block text-[13px] text-ink-muted">“{d.description}”</span> : null}
-                        <span className="block text-[12px] text-ink-subtle">{formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}</span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-subtle">
+                          <IssueCategoryTag value={d.issue_category} source={d.source} className="text-[12px]" />
+                          {formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}
+                        </span>
                       </span>
                     </Link>
                   ))

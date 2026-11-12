@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { PhotoPicker } from "@/components/photo-picker";
 import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, Textarea } from "@/components/ui/form";
+import { ISSUE_CATEGORIES, type IssueCategory } from "@hvems/domain";
 import { cn } from "@/lib/utils";
+import { ISSUE_CATEGORY_ICON } from "./issue-category";
 import { reportIssueAction } from "./actions";
 
 type Urgency = "stop" | "soon" | "not_urgent";
@@ -19,6 +21,7 @@ export function IssueForm({ orgId, assetId, doneBase }: { orgId: string; assetId
   const router = useRouter();
   // One id per report: a retry after a network error never creates a second record.
   const [requestId] = React.useState(() => crypto.randomUUID());
+  const [category, setCategory] = React.useState<IssueCategory | null>(null);
   const [summary, setSummary] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [urgency, setUrgency] = React.useState<Urgency | null>(null);
@@ -36,16 +39,57 @@ export function IssueForm({ orgId, assetId, doneBase }: { orgId: string; assetId
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
+        if (!category) return setError("Choose what kind of issue it is.");
         if (!urgency) return setError("Say whether it is safe to keep using.");
         start(async () => {
-          const res = await reportIssueAction(orgId, assetId, { summary, description, urgency, evidence, requestId });
+          const res = await reportIssueAction(orgId, assetId, { category, summary, description, urgency, evidence, requestId });
           if (res.status === "error") return setError(res.message);
           if (res.status === "success" && res.data) router.push(`${doneBase}/${res.data.id}?submitted=1`);
         });
       }}
     >
       {error ? <FormAlert>{error}</FormAlert> : null}
-      <Field label="What's wrong?" htmlFor="issue-summary" required hint="A few words, e.g. Cracked left mirror">
+      <fieldset>
+        <legend className="mb-2 text-[14px] font-medium text-ink">
+          What kind of issue is it? <span className="text-danger">*</span>
+        </legend>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="What kind of issue is it?">
+          {ISSUE_CATEGORIES.map((c) => {
+            const Icon = ISSUE_CATEGORY_ICON[c.value]!;
+            const on = category === c.value;
+            const urgent = c.value === "breakdown";
+            return (
+              <label
+                key={c.value}
+                title={c.help}
+                className={cn(
+                  "flex cursor-pointer flex-col gap-1 rounded-[10px] border-2 px-3 py-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand",
+                  on ? (urgent ? "border-danger bg-danger-soft text-danger-ink" : "border-brand bg-brand-soft text-ink") : "border-stroke bg-surface text-ink hover:border-stroke-strong hover:bg-surface-hover",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="category"
+                  value={c.value}
+                  checked={on}
+                  onChange={() => {
+                    setCategory(c.value);
+                    // A breakdown usually means it can't be used; suggest that (they can change it).
+                    if (urgent && !urgency) setUrgency("stop");
+                  }}
+                  className="sr-only"
+                />
+                <span className="flex items-center gap-2 text-[14.5px] font-semibold">
+                  <Icon className={cn("size-[18px] shrink-0", on ? (urgent ? "text-danger-ink" : "text-brand-ink") : urgent ? "text-danger" : "text-ink-muted")} aria-hidden />
+                  {c.label}
+                </span>
+                <span className="text-[12px] leading-snug text-ink-muted">{c.help}</span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+      <Field label="Describe the problem" htmlFor="issue-summary" required hint="A short line, e.g. Front left tyre losing air">
         <Input id="issue-summary" value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={200} autoComplete="off" className="h-12 text-[16px]" />
       </Field>
       <Field label="More detail" htmlFor="issue-detail" hint={urgency === "stop" ? "Required: describe what is unsafe" : "Optional: where it is, when it started, how bad"}>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { IssueCategoryTag } from "@/features/operator/issue-category";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { formatDateTimeAU } from "@hvems/domain";
@@ -71,6 +72,7 @@ export default async function MyIssues({
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold text-ink">{d.title}</span>
                       <span className="block text-[13px] text-ink-muted">
+                        <IssueCategoryTag value={d.issue_category} source={d.source} className="mr-1.5 text-[13px]" />
                         {d.asset?.asset_number ?? "Equipment"} · {formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}
                       </span>
                     </span>

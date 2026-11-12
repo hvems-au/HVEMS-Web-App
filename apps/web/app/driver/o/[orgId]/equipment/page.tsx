@@ -6,6 +6,7 @@ import { ConditionBadge } from "@/components/condition";
 import { Card, EmptyState } from "@/components/ui/primitives";
 import { loadOperatorContext } from "@/features/operator/context";
 import { OperatorEquipmentSearch } from "@/features/operator/equipment-search";
+import { QrScanButton } from "@/features/operator/qr-scan";
 import { equipmentCodeFromText } from "@/lib/equipment-code";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { firstParam } from "@/lib/utils";
@@ -44,13 +45,22 @@ export default async function OperatorEquipment({
   const cls = firstParam(sp.class) ?? "";
   await loadOperatorContext(orgId, `${base}/equipment${purpose ? `?for=${purpose}` : ""}`);
   const db = await createSupabaseServerClient();
-  const target = (id: string) => (purpose === "prestart" ? `${base}/equipment/${id}/prestart` : purpose === "issue" ? `${base}/equipment/${id}/report` : `${base}/equipment/${id}`);
+  const target = (id: string) =>
+    purpose === "prestart" ? `${base}/equipment/${id}/prestart` : purpose === "issue" ? `${base}/equipment/${id}/report` : `${base}/equipment/${id}`;
 
   // A QR label code (typed, with or without dashes, or scanned): straight to that
   // equipment. RLS only returns codes for equipment this operator may use.
   if (code) {
     const match = [code.shortCode ? `short_code.eq.${code.shortCode}` : null, code.token ? `token.eq.${code.token}` : null].filter(Boolean).join(",");
-    const { data: hit } = await db.from("equipment_codes").select("asset_id, asset:assets!inner(archived_at)").eq("organisation_id", orgId).is("revoked_at", null).is("asset.archived_at", null).or(match).limit(1).maybeSingle();
+    const { data: hit } = await db
+      .from("equipment_codes")
+      .select("asset_id, asset:assets!inner(archived_at)")
+      .eq("organisation_id", orgId)
+      .is("revoked_at", null)
+      .is("asset.archived_at", null)
+      .or(match)
+      .limit(1)
+      .maybeSingle();
     if (hit?.asset_id) redirect(target(hit.asset_id as string));
   }
 
@@ -79,7 +89,10 @@ export default async function OperatorEquipment({
       .limit(2000)
       .then((r) => {
         const seen = new Map<string, string>();
-        for (const a of (r.data ?? []) as unknown as { asset_class_id: string; asset_class: { name: string } | null }[]) {
+        for (const a of (r.data ?? []) as unknown as {
+          asset_class_id: string;
+          asset_class: { name: string } | null;
+        }[]) {
           if (a.asset_class) seen.set(a.asset_class_id, a.asset_class.name);
         }
         return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
@@ -89,9 +102,12 @@ export default async function OperatorEquipment({
   const rows = ((data ?? []) as unknown as Row[]).sort((a, b) => rank(b, q) - rank(a, q));
   return (
     <>
-      <h1 className="text-[22px] font-bold text-ink">
-        {purpose === "prestart" ? "Start pre-start" : purpose === "issue" ? "Report an issue" : "Vehicles & equipment"}
-      </h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-[22px] font-bold text-ink">
+          {purpose === "prestart" ? "Start pre-start" : purpose === "issue" ? "Report an issue" : "Vehicles & equipment"}
+        </h1>
+        <QrScanButton searchPath={`${base}/equipment${purpose ? `?for=${purpose}` : ""}`} />
+      </div>
       <p className="mt-0.5 mb-4 text-[14px] text-ink-muted">
         {purpose ? "Choose the vehicle or machine." : "Find a vehicle or machine to do a pre-start or report an issue."}
       </p>
@@ -100,7 +116,9 @@ export default async function OperatorEquipment({
         {rows.length === 0 ? (
           q || cls ? (
             code ? (
-              <EmptyState title="No equipment for that code">The QR code may have been replaced, or the equipment isn&apos;t one you can use. Search by rego or equipment ID, or ask your manager.</EmptyState>
+              <EmptyState title="No equipment for that code">
+                The QR code may have been replaced, or the equipment isn&apos;t one you can use. Search by rego or equipment ID, or ask your manager.
+              </EmptyState>
             ) : (
               <EmptyState title="No equipment matches">Check the spelling, or search by rego, equipment ID or the code under the QR label.</EmptyState>
             )

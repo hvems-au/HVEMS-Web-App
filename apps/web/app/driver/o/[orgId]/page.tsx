@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cn } from "@/lib/utils";
+import { IssueCategoryTag } from "@/features/operator/issue-category";
 import Link from "next/link";
 import { ChevronRight, ClipboardCheck, ClipboardList, MessageSquareWarning, TriangleAlert } from "lucide-react";
 import { formatDateTimeAU } from "@hvems/domain";
@@ -52,18 +54,27 @@ export default async function OperatorHome({ params }: { params: Promise<{ orgId
           <Link
             key={href}
             href={href}
-            className={
+            className={cn(
+              "group flex items-center gap-4 rounded-[14px] px-5 py-4 shadow-card transition-all duration-150 hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none",
               primary
-                ? "flex items-center gap-4 rounded-[14px] bg-brand px-5 py-4 text-white shadow-card hover:bg-brand-hover"
-                : "flex items-center gap-4 rounded-[14px] border border-stroke bg-surface px-5 py-4 text-ink shadow-card hover:border-stroke-strong"
-            }
+                ? "bg-brand text-white hover:bg-brand-hover hover:shadow-[var(--elev-pop)] active:bg-brand-active"
+                : "border border-stroke bg-surface text-ink hover:border-brand hover:bg-brand-soft hover:shadow-[var(--elev-pop)]",
+            )}
           >
-            <Icon className="size-7 shrink-0" aria-hidden />
+            <span
+              className={cn(
+                "grid size-11 shrink-0 place-items-center rounded-[12px] transition-colors",
+                primary ? "bg-white/15 text-white" : "bg-brand-soft text-brand-ink group-hover:bg-brand group-hover:text-white",
+              )}
+              aria-hidden
+            >
+              <Icon className="size-6" />
+            </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[16px] font-semibold">{label}</span>
               <span className={primary ? "block text-[13px] text-white/85" : "block text-[13px] text-ink-muted"}>{help}</span>
             </span>
-            <ChevronRight className="size-5 shrink-0 opacity-70" aria-hidden />
+            <ChevronRight className={cn("size-5 shrink-0 transition-transform group-hover:translate-x-0.5", primary ? "opacity-80" : "text-ink-subtle group-hover:text-brand-ink")} aria-hidden />
           </Link>
         ))}
       </div>
@@ -117,7 +128,8 @@ export default async function OperatorHome({ params }: { params: Promise<{ orgId
                       <span className="min-w-0">
                         <span className="block truncate font-semibold text-ink">{d.title}</span>
                         <span className="block text-[13px] text-ink-muted">
-                          {d.asset?.asset_number ?? "Equipment"} · {formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}
+                          <IssueCategoryTag value={d.issue_category} source={d.source} className="mr-1.5 text-[13px]" />
+                        {d.asset?.asset_number ?? "Equipment"} · {formatDateTimeAU(new Date(d.reported_at), ctx.timezone)}
                         </span>
                       </span>
                       <Badge tone={p.tone}>{p.label}</Badge>

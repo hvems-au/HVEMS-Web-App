@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { IssueCategoryTag } from "@/features/operator/issue-category";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDefect, getOrganisation, listAuditEvents, listDefects, listMembers, signInspectionPhotos } from "@hvems/api-client";
@@ -123,12 +124,15 @@ export default async function DefectPage({ params }: { params: Promise<{ orgId: 
                 },
                 { label: "Reported", value: formatDateTimeAU(new Date(d.reported_at), tz) },
                 { label: "Reported by", value: nameOf(d.reported_by) },
+                { label: "Kind", value: <IssueCategoryTag value={d.issue_category} source={d.source} /> },
                 {
                   label: "Source",
                   value: d.inspection_id ? (
                     <Link href={`/customer/${orgId}/inspections/${d.inspection_id}`} className="text-link hover:underline">
                       Pre-start {d.item_code}
                     </Link>
+                  ) : d.source === "operator_report" ? (
+                    "Reported by an operator"
                   ) : (
                     "—"
                   ),

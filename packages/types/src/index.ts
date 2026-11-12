@@ -362,7 +362,10 @@ export interface Defect {
   status: DefectStatus;
   title: string;
   description: string | null;
-  source: "prestart";
+  source: "prestart" | "operator_report";
+  /** Operator reports: what they said about using it, and the kind of issue. */
+  reported_urgency: "stop" | "soon" | "not_urgent" | null;
+  issue_category: string | null;
   inspection_id: UUID | null;
   item_code: string | null;
   reported_by: UUID | null;

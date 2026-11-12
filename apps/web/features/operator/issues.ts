@@ -2,7 +2,7 @@ import type { BadgeTone } from "@/components/ui/primitives";
 
 /** The defect fields an operator's own report shows (no internal notes, costs or work order details). */
 export const ISSUE_COLUMNS =
-  "id, organisation_id, asset_id, title, description, status, severity, source, reported_urgency, reported_at, triaged_at, deferred_until, closed_at, evidence_paths, inspection_id, asset:assets(asset_number, make, model)";
+  "id, organisation_id, asset_id, title, description, status, severity, source, reported_urgency, issue_category, reported_at, triaged_at, deferred_until, closed_at, evidence_paths, inspection_id, asset:assets(asset_number, make, model)";
 
 export interface OperatorIssue {
   id: string;
@@ -14,6 +14,7 @@ export interface OperatorIssue {
   severity: "critical" | "minor" | "advisory";
   source: "prestart" | "operator_report";
   reported_urgency: "stop" | "soon" | "not_urgent" | null;
+  issue_category: string | null;
   reported_at: string;
   triaged_at: string | null;
   deferred_until: string | null;

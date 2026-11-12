@@ -1,4 +1,5 @@
 import * as React from "react";
+import { BackLink } from "@/components/back-link";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -17,9 +18,7 @@ export function PageHeader({
     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {breadcrumb ? (
-          <Link href={breadcrumb.href} className="mb-1.5 inline-flex items-center gap-1 text-[13px] font-medium text-ink-muted hover:text-link">
-            <span aria-hidden>←</span> {breadcrumb.label}
-          </Link>
+          <BackLink href={breadcrumb.href} label={breadcrumb.label} />
         ) : null}
         <h1 className="text-[24px] leading-tight font-bold break-words text-ink sm:text-[28px]">{title}</h1>
         {description ? <div className="mt-1 text-[14px] text-ink-muted">{description}</div> : null}

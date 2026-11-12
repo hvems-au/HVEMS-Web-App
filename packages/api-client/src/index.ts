@@ -610,6 +610,8 @@ export async function listInspections(
     /** Submitted at or after / before these instants. */
     from?: Date;
     to?: Date;
+    /** Free-text search: operator name, or equipment matching (ids found by the caller). */
+    search?: { text: string; assetIds: string[] };
     limit?: number;
   },
 ): Promise<InspectionListItem[]> {
@@ -624,6 +626,12 @@ export async function listInspections(
   if (filter.result) q = q.eq("result", filter.result);
   if (filter.from) q = q.gte("submitted_at", filter.from.toISOString());
   if (filter.to) q = q.lt("submitted_at", filter.to.toISOString());
+  if (filter.search) {
+    const t = filter.search.text.replace(/[%_,()*"\\]/g, " ").trim();
+    const parts = t ? [`header->>operator_name.ilike.*${t}*`] : [];
+    if (filter.search.assetIds.length) parts.push(`asset_id.in.(${filter.search.assetIds.join(",")})`);
+    if (parts.length) q = q.or(parts.join(","));
+  }
   return unwrap<InspectionListItem[]>(await q);
 }
 
@@ -1110,7 +1118,7 @@ export async function listMissedPrestarts(
   organisationId: string,
   status: "open" | "reviewed" = "open",
   limit = 200,
-  filter: { assetId?: string; frequency?: MissedPrestart["frequency"] } = {},
+  filter: { assetId?: string; frequency?: MissedPrestart["frequency"]; /** Only these equipment (from a search). */ assetIds?: string[] } = {},
 ): Promise<MissedPrestart[]> {
   let q = db
     .from("missed_prestarts")
@@ -1119,6 +1127,7 @@ export async function listMissedPrestarts(
   q = status === "open" ? q.eq("status", "open") : q.neq("status", "open");
   if (filter.assetId) q = q.eq("asset_id", filter.assetId);
   if (filter.frequency) q = q.eq("frequency", filter.frequency);
+  if (filter.assetIds) q = q.in("asset_id", filter.assetIds.length ? filter.assetIds : ["00000000-0000-0000-0000-000000000000"]);
   return unwrap(await q.order("period_start", { ascending: false }).limit(limit)) as unknown as MissedPrestart[];
 }
 

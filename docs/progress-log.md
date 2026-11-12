@@ -1,5 +1,14 @@
 # Development progress log
 
+## 2026-11-12 — Issue categories, live search everywhere, alert tray, bulk missed review
+**Done**
+- Migration  (applied by Claude):  (breakdown, engine, brakes, tyres, electrical, hydraulics, leak, damage, safety equipment, other) and  (category required);  still works and files under other. The category never changes severity; urgency does. pgTAP .
+- Report an issue: "What kind of issue is it?" picker (Breakdown suggests "stop using it"), "Describe the problem". The kind shows on Defects (new column and filter), the defect page, the equipment page and the operator's history.
+- Search and filters apply as you type everywhere (equipment, inspections, audit, operator lists); every filter dropdown can be typed into. Inspections: search on both Pre-starts (equipment, rego, operator) and Missed. Fixed the From/To date filters, which were being ignored.
+- Missed pre-starts: tick several (or all) and mark them not used or missed in one go (same note on each; each still checked by the database).
+- Bell opens a tray of the latest alerts (mark all read, see all). New back link style on every portal. Operator home: clearer hover on the action cards. Operator equipment search: orange Scan QR at the end of the title row; type the label code (with or without dashes) or scan to go straight to the equipment. Driver / Operator sign in opens on Email login.
+- Checked in the browser (phone and desktop, light and dark).
+
 ## 2026-11-12 — Operator workspace: direct sign-in, dashboard, issue reports, personal history
 **Done**
 - Migration `20261112143228 operator_workspace` (applied by Claude): company code (`organisations.operator_code`, generated) and the company setting `operators_any_equipment` (default on: operators may use any current equipment; off: only equipment ticked on their profile). `app.permitted_asset_ids()` is the single place that decides it. `operator_sign_in` (company code + Operator ID + PIN, server only, shares the PIN rules and lock-out of `driver_sign_in`; wrong code gets the same generic message). `report_issue` raises a defect from an operator (source `operator_report`; "stop using it" → critical, out of service, critical alert; "needs attention soon" → minor; "not urgent" → advisory), safe to retry (`client_request_id`). Operators can read defects they reported. pgTAP `300`.
