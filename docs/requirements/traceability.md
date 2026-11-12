@@ -23,7 +23,7 @@ Evidence paths are relative to the repository root. "pgTAP" = `supabase/tests/*.
 | CS-16 | Breakdowns and regulator defect notices | 2 / 2B | ⏳ | — |
 | CS-17 | Maintenance scheduling | 2 / 2C | ⏳ | overdue-service rule switch ✅ |
 | CS-18 | Work orders | 2 / 2C | ⏳ | — |
-| CS-19 | Workforce allocation and availability | 2 / 2C | ⏳ | — |
+| CS-19 | Workforce allocation and availability | 2 / 2C | ✅ | Profiles (trade, availability), qualifications with expiry alerts, leave; allocation warnings recorded on work orders (pgTAP 270) |
 | CS-20 | Parts requests, approvals, purchasing, receiving, usage | 2 / 2C | 🟡 | Approval Limit grant ✅ |
 | CS-21 | Inventory and purchase order documents | 4 | ➖ | Anticipated in schema design only |
 | CS-22 | Documents and files | 2 / 2C | ⏳ | — |

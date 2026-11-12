@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatWorkOrderNumber, getWorkOrder } from "@hvems/api-client";
-import { formatAud, formatDateTimeAU } from "@hvems/domain";
+import { QUALIFICATION_LABELS, formatAud, formatDateTimeAU } from "@hvems/domain";
+import { AlertTriangle } from "lucide-react";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/primitives";
@@ -48,6 +49,18 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
         breadcrumb={{ label: "Work Orders", href: `/customer/${orgId}/work-orders` }}
         actions={<WorkOrderStatusBadge status={w.status} />}
       />
+      {w.assignment_warnings?.length && !["closed", "cancelled"].includes(w.status) ? (
+        <div role="status" className="mb-5 rounded-[10px] border border-[#f0c37a] bg-warn-soft px-4 py-3 text-[13.5px] text-[#7a3d00]">
+          <p className="flex items-center gap-1.5 font-semibold">
+            <AlertTriangle className="size-4" aria-hidden /> Allocation warning for {who(w.assigned_to) ?? "the assignee"}
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {w.assignment_warnings.map((x) => (
+              <li key={x.code}>{x.message}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader title="Details" />
@@ -64,6 +77,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
               <Row label="Description" value={w.description ? <span className="whitespace-pre-wrap">{w.description}</span> : null} />
               <Row label="Done by" value={w.kind === "vendor" ? `Vendor: ${w.vendor_name}` : (who(w.assigned_to) ?? "Not assigned")} />
               <Row label="Priority" value={<PriorityBadge priority={w.priority} />} />
+              {w.required_qualification ? <Row label="Needs" value={QUALIFICATION_LABELS[w.required_qualification]} /> : null}
               <Row label="Due" value={w.due_on ? dmy(w.due_on) : null} />
               <Row label="Service plan" value={w.service_plan_id ? "Yes: closing records the service as done" : null} />
               <Row label="Started" value={when(w.started_at)} />

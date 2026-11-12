@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createServicePlan, createWorkOrder, setServicePlanActive, updateWorkOrderStatus, type WorkOrderAction } from "@hvems/api-client";
+import { createServicePlan, createWorkOrder, setServicePlanActive, setWorkOrderRequirement, updateWorkOrderStatus, type WorkOrderAction } from "@hvems/api-client";
+import { REQUIRABLE_QUALIFICATIONS } from "@hvems/domain";
 import { z } from "@hvems/validation";
 import { errorState, type ActionState } from "@/lib/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -69,6 +70,7 @@ const woSchema = z
     assigned_to: z.union([z.literal(""), z.string().uuid()]).optional(),
     due_on: date,
     service_plan_id: z.union([z.literal(""), z.string().uuid()]).optional(),
+    required_qualification: z.union([z.literal(""), z.enum(REQUIRABLE_QUALIFICATIONS as [string, ...string[]])]).optional(),
   })
   .refine((v) => v.kind !== "vendor" || (v.vendor_name ?? "").length > 0, { path: ["vendor_name"], message: "Name the vendor" });
 
@@ -84,6 +86,8 @@ export async function createWorkOrderAction(orgId: string, input: unknown): Prom
       assigned_to: v.data.assigned_to || null,
       service_plan_id: v.data.service_plan_id || null,
     });
+    // The qualification it needs; the database records any allocation warnings.
+    if (v.data.required_qualification) await setWorkOrderRequirement(db, res.id, v.data.required_qualification);
     paths(orgId);
     return { status: "success", message: "Work order created", data: { id: res.id } };
   } catch (e) {

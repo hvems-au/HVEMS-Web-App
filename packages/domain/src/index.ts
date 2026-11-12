@@ -5,3 +5,4 @@ export * from "./identity";
 export * from "./fleet";
 export * from "./csv";
 export * from "./drivers";
+export * from "./workforce";

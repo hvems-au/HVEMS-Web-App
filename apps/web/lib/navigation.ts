@@ -80,7 +80,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         { label: "Operators", href: `${base}/drivers`, icon: "drivers", capability: "drivers.manage" },
         { label: "Maintenance", href: `${base}/maintenance`, icon: "maintenance" },
         { label: "Work Orders", href: `${base}/work-orders`, icon: "workorders" },
-        { label: "Technicians", href: `${base}/module/technicians`, icon: "technicians", capability: "workforce.manage", increment: "2C" },
+        { label: "Technicians", href: `${base}/technicians`, icon: "technicians", capability: "workforce.manage" },
         { label: "Parts", href: `${base}/module/parts`, icon: "parts", increment: "2C" },
         { label: "Fuel & Usage", href: `${base}/module/fuel`, icon: "fuel", increment: "2C" },
         { label: "Documents", href: `${base}/module/documents`, icon: "documents", increment: "2C" },

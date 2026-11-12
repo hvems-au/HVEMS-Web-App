@@ -46,7 +46,7 @@ import type {
   StaffContext,
 } from "@hvems/types";
 import type { AssetFormValues, ClientFormValues, SiteFormValues } from "@hvems/validation";
-import type { AssetCondition, MeterType } from "@hvems/domain";
+import type { AllocationWarning, AssetCondition, LeaveKind, MeterType, QualificationKind } from "@hvems/domain";
 import type { MemberRole, OrganisationKind } from "@hvems/permissions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1159,6 +1159,10 @@ export interface WorkOrder {
   reopen_count: number;
   last_reopen_reason: string | null;
   cancel_reason: string | null;
+  /** Qualification the work needs (2C workforce). */
+  required_qualification: Exclude<QualificationKind, "other"> | null;
+  /** Recorded by the database whenever the person, due date or requirement changes. */
+  assignment_warnings: AllocationWarning[];
   created_at: string;
   asset?: { asset_number: string; make: string | null; model: string | null } | null;
 }
@@ -1301,4 +1305,128 @@ export async function getDashboardTodo(db: HvemsClient, organisationId: string) 
     count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).eq("status", "completed")),
   ]);
   return { criticalDefects, otherDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview };
+}
+
+// ---------------------------------------------------------------------------
+// Workforce (2C, CS-19)
+// ---------------------------------------------------------------------------
+
+export interface WorkforceProfile {
+  organisation_id: string;
+  user_id: string;
+  trade: string | null;
+  phone: string | null;
+  notes: string | null;
+  available: boolean;
+  updated_at: string;
+}
+export interface WorkforceQualification {
+  id: string;
+  organisation_id: string;
+  user_id: string;
+  kind: QualificationKind;
+  label: string | null;
+  number: string | null;
+  issued_by: string | null;
+  expires_on: string | null;
+  updated_at: string;
+}
+export interface WorkforceLeave {
+  id: string;
+  organisation_id: string;
+  user_id: string;
+  kind: LeaveKind;
+  starts_on: string;
+  ends_on: string;
+  note: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+}
+
+/** Profiles, qualifications, current and future leave, and open work orders for a company (or one person). */
+export async function getWorkforceData(db: HvemsClient, organisationId: string, opts: { userId?: string; today: string; allLeave?: boolean }) {
+  let profiles = raw(db).from("workforce_profiles").select("*").eq("organisation_id", organisationId);
+  let quals = raw(db).from("workforce_qualifications").select("*").eq("organisation_id", organisationId);
+  let leave = raw(db).from("workforce_leave").select("*").eq("organisation_id", organisationId);
+  let wos = raw(db).from("work_orders").select("id, number, title, status, due_on, assigned_to, asset:assets(asset_number)").eq("organisation_id", organisationId)
+    .in("status", ["open", "in_progress", "completed"]);
+  if (opts.userId) {
+    profiles = profiles.eq("user_id", opts.userId);
+    quals = quals.eq("user_id", opts.userId);
+    leave = leave.eq("user_id", opts.userId);
+    wos = wos.eq("assigned_to", opts.userId);
+  }
+  if (!opts.allLeave) leave = leave.is("cancelled_at", null).gte("ends_on", opts.today);
+  const [p, q, l, w] = await Promise.all([
+    profiles,
+    quals.order("expires_on", { ascending: true, nullsFirst: false }),
+    leave.order("starts_on", { ascending: !opts.allLeave }).limit(500),
+    wos.order("number", { ascending: false }).limit(500),
+  ]);
+  return {
+    profiles: (unwrap(p) ?? []) as WorkforceProfile[],
+    qualifications: (unwrap(q) ?? []) as WorkforceQualification[],
+    leave: (unwrap(l) ?? []) as WorkforceLeave[],
+    workOrders: (unwrap(w) ?? []) as unknown as { id: string; number: number; title: string; status: WorkOrder["status"]; due_on: string | null; assigned_to: string | null; asset: { asset_number: string } | null }[],
+  };
+}
+
+/** Create or update a person's profile. RLS: workforce.manage. */
+export async function saveWorkforceProfile(
+  db: HvemsClient,
+  organisationId: string,
+  userId: string,
+  v: { trade: string | null; phone: string | null; notes: string | null; available: boolean },
+): Promise<void> {
+  // Update first: an upsert would also try to update the key columns, which are not updatable.
+  const updated = unwrap(
+    await raw(db).from("workforce_profiles").update(v).eq("organisation_id", organisationId).eq("user_id", userId).select("user_id"),
+  ) as unknown[] | null;
+  if (!updated?.length) unwrap(await raw(db).from("workforce_profiles").insert({ organisation_id: organisationId, user_id: userId, ...v }));
+}
+
+export interface QualificationInput {
+  kind: QualificationKind;
+  label: string | null;
+  number: string | null;
+  issued_by: string | null;
+  expires_on: string | null;
+}
+export async function saveQualification(db: HvemsClient, input: QualificationInput & { organisationId: string; userId: string; id?: string }): Promise<void> {
+  const { organisationId, userId, id, ...values } = input;
+  if (id) unwrap(await raw(db).from("workforce_qualifications").update(values).eq("id", id).eq("organisation_id", organisationId));
+  else unwrap(await raw(db).from("workforce_qualifications").insert({ ...values, organisation_id: organisationId, user_id: userId }));
+}
+export async function deleteQualification(db: HvemsClient, organisationId: string, id: string): Promise<void> {
+  unwrap(await raw(db).from("workforce_qualifications").delete().eq("id", id).eq("organisation_id", organisationId));
+}
+
+export async function addLeave(
+  db: HvemsClient,
+  organisationId: string,
+  userId: string,
+  v: { kind: LeaveKind; starts_on: string; ends_on: string; note: string | null },
+): Promise<void> {
+  unwrap(await raw(db).from("workforce_leave").insert({ organisation_id: organisationId, user_id: userId, ...v }));
+}
+export async function cancelLeave(db: HvemsClient, id: string): Promise<void> {
+  unwrap(await raw(db).rpc("cancel_leave", { p_id: id }));
+}
+
+/** What the database would warn about if this person got the work (managers only). */
+export async function previewAllocationWarnings(
+  db: HvemsClient,
+  organisationId: string,
+  userId: string,
+  dueOn: string | null,
+  required: string | null,
+): Promise<AllocationWarning[]> {
+  return (unwrap(
+    await raw(db).rpc("allocation_warnings", { p_organisation_id: organisationId, p_user_id: userId, p_due_on: dueOn, p_required: required }),
+  ) ?? []) as AllocationWarning[];
+}
+
+/** Set the qualification a work order needs; returns the recorded warnings. */
+export async function setWorkOrderRequirement(db: HvemsClient, id: string, required: string | null): Promise<AllocationWarning[]> {
+  return (unwrap(await raw(db).rpc("set_work_order_requirement", { p_id: id, p_required: required })) ?? []) as AllocationWarning[];
 }

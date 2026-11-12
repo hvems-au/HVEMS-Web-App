@@ -1,9 +1,11 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Wrench } from "lucide-react";
+import { AlertTriangle, Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { WorkOrderAction } from "@hvems/api-client";
+import { QUALIFICATION_LABELS, REQUIRABLE_QUALIFICATIONS, type AllocationWarning } from "@hvems/domain";
+import { allocationWarningsAction } from "@/features/workforce/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
@@ -152,7 +154,23 @@ export function NewWorkOrderDialog({
     assigned_to: "",
     due_on: "",
     service_plan_id: preset?.service_plan_id ?? "",
+    required_qualification: "",
   });
+  // Allocation warnings from the database as the person, due date or requirement changes.
+  const [warnings, setWarnings] = React.useState<AllocationWarning[]>([]);
+  const who = f.v.kind === "internal" ? f.v.assigned_to : "";
+  React.useEffect(() => {
+    if (!open || !who) return;
+    let live = true;
+    const t = setTimeout(() => {
+      allocationWarningsAction(orgId, who, f.v.due_on, f.v.required_qualification).then((w) => live && setWarnings(w));
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [open, orgId, who, f.v.due_on, f.v.required_qualification]);
+  const shown = who ? warnings : [];
   return (
     <Dialog open={open} onOpenChange={(o) => (setOpen(o), o ? null : setError(null))}>
       <DialogTrigger asChild>
@@ -227,7 +245,32 @@ export function NewWorkOrderDialog({
             <Field label="Due" htmlFor="wo-due">
               <Input id="wo-due" type="date" value={f.v.due_on} onChange={f.set("due_on")} />
             </Field>
+            {f.v.kind === "internal" ? (
+              <Field label="Needs" htmlFor="wo-needs" hint="Qualification the work needs (optional)">
+                <Select id="wo-needs" value={f.v.required_qualification} onChange={f.set("required_qualification")}>
+                  <option value="">Nothing specific</option>
+                  {REQUIRABLE_QUALIFICATIONS.map((k) => (
+                    <option key={k} value={k}>
+                      {QUALIFICATION_LABELS[k]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : null}
           </div>
+          {shown.length ? (
+            <div role="status" className="rounded-[8px] border border-[#f0c37a] bg-warn-soft px-3 py-2.5 text-[13px] text-[#7a3d00]">
+              <p className="flex items-center gap-1.5 font-semibold">
+                <AlertTriangle className="size-4" aria-hidden /> Check before assigning
+              </p>
+              <ul className="mt-1 list-disc pl-5">
+                {shown.map((w) => (
+                  <li key={w.code}>{w.message}</li>
+                ))}
+              </ul>
+              <p className="mt-1 text-[12px]">You can still create it; the warning is saved with the work order.</p>
+            </div>
+          ) : null}
           <div className="flex justify-end">
             <Button type="submit" disabled={pending}>
               {pending ? "Creating…" : "Create work order"}
