@@ -224,7 +224,11 @@ export function NewWorkOrderDialog({
                 <Input id="wo-vendor" value={f.v.vendor_name} onChange={f.set("vendor_name")} maxLength={160} />
               </Field>
             ) : (
-              <Field label="Assigned to" htmlFor="wo-assignee">
+              <Field
+                label="Assigned to"
+                htmlFor="wo-assignee"
+                hint={people.length ? "Technicians only. Leave unassigned and any technician can pick it up." : "No technicians yet. Add one on the Team page, or leave it unassigned."}
+              >
                 <Select id="wo-assignee" value={f.v.assigned_to} onChange={f.set("assigned_to")}>
                   <option value="">Not assigned yet</option>
                   {people.map((o) => (
