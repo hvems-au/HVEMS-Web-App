@@ -138,10 +138,13 @@ export function AssetForm({
               invalid={!!err("asset_class")}
               value={classCode ?? ""}
               onChange={(v) => setValue("asset_class", v, { shouldValidate: true, shouldDirty: true })}
-              options={classes.map((c) => ({
-                value: c.code,
-                label: `${c.name} · ${c.organisation_id ? "your class" : c.category === "vehicle" ? "vehicle" : "equipment"}`,
-              }))}
+              options={[
+                ...classes.map((c) => ({
+                  value: c.code,
+                  label: `${c.name} · ${c.organisation_id ? "your class" : c.category === "vehicle" ? "vehicle" : "equipment"}`,
+                })),
+                ...(canManageClasses ? [{ value: NEW_CLASS, label: "+ Add a new class…" }] : []),
+              ]}
             />
           </Field>
           <Field label="Year" htmlFor="year" error={err("year")}>

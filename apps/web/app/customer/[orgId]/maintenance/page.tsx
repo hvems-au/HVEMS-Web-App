@@ -122,7 +122,7 @@ export default async function MaintenancePage({
           filtered ? (
             <EmptyState title="Nothing matches">Try a different search or filter.</EmptyState>
           ) : (
-            <EmptyState title="No service plans yet">Add one with Add service plan, or from an equipment's Maintenance section.</EmptyState>
+            <EmptyState title="No service plans yet">Add one with Add service plan, or from an equipment&apos;s Maintenance section.</EmptyState>
           )
         ) : (
           <Table>

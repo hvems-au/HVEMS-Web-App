@@ -85,7 +85,6 @@ export function SearchableSelect({
           <button
             type="button"
             id={id}
-            aria-invalid={invalid || undefined}
             aria-label={`${label}: ${selectedLabel}`}
             aria-haspopup="listbox"
             aria-expanded={open}
