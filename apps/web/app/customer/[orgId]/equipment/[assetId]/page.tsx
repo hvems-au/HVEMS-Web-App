@@ -15,6 +15,9 @@ import {
   listMeterReadings,
   listOpenConditionCauses,
   listReturnToServiceEvents,
+  listServiceSchedule,
+  listWorkOrders,
+  listServiceDueHistory,
 } from "@hvems/api-client";
 import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, prestartFrequencyText, formatDateAU, formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -31,6 +34,8 @@ import { MeterForm } from "./meter-form";
 import { ReturnToServiceDialog } from "./return-to-service";
 import { QrCard } from "./qr-card";
 import { SafetyPanel } from "./safety-panel";
+import { EquipmentMaintenance } from "@/features/maintenance/equipment-maintenance";
+import { maintenanceOptions } from "@/features/maintenance/options";
 
 export const metadata: Metadata = { title: "Equipment" };
 
@@ -112,6 +117,20 @@ export default async function AssetPage({
     listActiveSafetyEvents(db, { organisationId: orgId, assetId }),
     getEquipmentCode(db, assetId),
     getPersonNames(db, [asset.current_operator_id]),
+  ]);
+  // This equipment's maintenance (service plans, next due, recent work orders), for people who work on jobs.
+  const seesMaintenance = view === "overview" && (can(ctx.capabilities, "work_orders.manage") || can(ctx.capabilities, "work_orders.work"));
+  const manageMaintenance = can(ctx.capabilities, "work_orders.manage");
+  const [plans, assetWorkOrders, maintOpts] = seesMaintenance
+    ? await Promise.all([
+        listServiceSchedule(db, orgId, assetId),
+        listWorkOrders(db, orgId, { assetId, limit: 8 }),
+        manageMaintenance ? maintenanceOptions(db, orgId) : Promise.resolve(null),
+      ])
+    : [[], [], null];
+  const dueHistory = new Map(await Promise.all(plans.map(async (pl) => [pl.id, await listServiceDueHistory(db, pl.id, 5)] as const)));
+  const maintNames = await getPersonNames(db, [
+    ...new Set([...assetWorkOrders.map((w) => w.assigned_to), ...[...dueHistory.values()].flat().map((h) => h.set_by)].filter(Boolean) as string[]),
   ]);
   const operator = asset.current_operator_id ? (names.get(asset.current_operator_id) ?? "Former operator") : null;
   // Dates for the safety panel, formatted here in the company's timezone.
@@ -329,6 +348,21 @@ export default async function AssetPage({
                 removeOutOfService: can(ctx.capabilities, "holds.remove_out_of_service"),
                 report: can(ctx.capabilities, "defects.report"),
               }}
+            />
+          ) : null}
+
+          {seesMaintenance ? (
+            <EquipmentMaintenance
+              orgId={orgId}
+              assetId={assetId}
+              plans={plans}
+              history={dueHistory}
+              workOrders={assetWorkOrders}
+              manage={manageMaintenance}
+              equipment={(maintOpts?.equipment ?? []).filter((e) => e.value === assetId)}
+              people={maintOpts?.people ?? []}
+              names={maintNames}
+              jobBase={manageMaintenance ? `/customer/${orgId}/work-orders` : `/customer/${orgId}/my-work`}
             />
           ) : null}
 
