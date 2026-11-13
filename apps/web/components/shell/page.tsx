@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ChevronRight } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -50,17 +51,23 @@ export function StatCard({
     green: "bg-ok-soft text-ok-ink",
   }[tone];
   const body = (
-    <div className="card flex h-full items-center gap-4 px-4 py-4 transition-shadow hover:shadow-md">
+    <div
+      className={cn(
+        "card flex h-full items-center gap-4 px-4 py-4 transition-all duration-150",
+        href && "group-hover:-translate-y-px group-hover:border-brand/50 group-hover:shadow-[var(--elev-pop)]",
+      )}
+    >
       {icon ? <div className={cn("flex size-12 shrink-0 items-center justify-center rounded-[10px] [&_svg]:size-6", iconTone)}>{icon}</div> : null}
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="truncate text-[12.5px] font-medium text-ink-muted">{label}</p>
         <p className="mt-0.5 text-[24px] leading-tight font-bold text-ink">{value}</p>
         {sub ? <p className="mt-0.5 truncate text-[12px] text-ink-subtle">{sub}</p> : null}
       </div>
+      {href ? <ChevronRight className="size-4 shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-brand-ink" aria-hidden /> : null}
     </div>
   );
   return href ? (
-    <Link href={href} className="block rounded-[12px] focus-visible:outline-2">
+    <Link href={href} className="group block rounded-[12px] focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none">
       {body}
     </Link>
   ) : (

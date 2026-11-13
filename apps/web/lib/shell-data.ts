@@ -54,11 +54,16 @@ export function toShellContext(c: MyContext, current: PortalId): ShellContext {
 }
 
 /** Hide navigation the member can't use (presentation only — the database enforces access). */
-export function filterNav(nav: NavSection[], ctx: OrgContext): NavSection[] {
+export function filterNav(nav: NavSection[], ctx: OrgContext, roles: readonly string[] = [ctx.context.role]): NavSection[] {
+  // Technicians who only do jobs get a short menu: My Jobs, Equipment, Inspections.
+  const simple = isTechnicianOnly(ctx);
+  const technician = roles.includes("technician");
   return nav
     .map((s) => ({
       ...s,
-      items: s.items.filter((i) => (!i.capability || can(ctx.capabilities, i.capability)) && !(i.hideForTechnicians && isTechnicianOnly(ctx))),
+      items: s.items.filter(
+        (i) => (!i.capability || can(ctx.capabilities, i.capability)) && (!simple || i.forTechnicians) && (!i.technicianRole || technician),
+      ),
     }))
     .filter((s) => s.items.length > 0);
 }

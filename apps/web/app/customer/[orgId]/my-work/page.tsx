@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarClock, CheckCircle2, ChevronRight, ClipboardCheck, Hammer, MessageSquareWarning, Wrench } from "lucide-react";
+import { CalendarClock, CheckCircle2, ChevronRight, ClipboardList, ClipboardCheck, Hammer, MessageSquareWarning, Wrench } from "lucide-react";
 import { formatWorkOrderNumber, listMyJobs, listReportKinds, listUnassignedJobs, type WorkOrder } from "@hvems/api-client";
 import { formatDateTimeAU, todayISO } from "@hvems/domain";
 import { can } from "@hvems/permissions";
+import { Button } from "@/components/ui/button";
 import { Badge, Card, CardHeader, EmptyState } from "@/components/ui/primitives";
 import { PriorityBadge } from "@/features/maintenance/badges";
 import { STAGE_TEXT, jobStage, type JobStage } from "@/features/technician/job";
@@ -74,24 +75,29 @@ export default async function MyWorkPage({
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { label: "To do", value: active.length, tone: active.length ? "text-brand-ink" : "text-ink", Icon: Wrench },
-          { label: "Overdue", value: overdue, tone: overdue ? "text-danger-ink" : "text-ink", Icon: CalendarClock },
-          { label: "Waiting for review", value: review.length, tone: "text-ink", Icon: Hammer },
-          { label: "Completed this month", value: doneThisMonth, tone: "text-ok-ink", Icon: ClipboardCheck },
+          { label: "To do", value: active.length, tone: active.length ? "text-brand-ink" : "text-ink", Icon: Wrench, href: "#my-jobs" },
+          { label: "Overdue", value: overdue, tone: overdue ? "text-danger-ink" : "text-ink", Icon: CalendarClock, href: "#my-jobs" },
+          { label: "Waiting for review", value: review.length, tone: "text-ink", Icon: Hammer, href: review.length ? "#review" : "#my-jobs" },
+          { label: "Completed this month", value: doneThisMonth, tone: "text-ok-ink", Icon: ClipboardCheck, href: "#completed" },
         ].map((s) => (
-          <div key={s.label} className="flex items-center gap-3 rounded-[14px] border border-stroke bg-surface px-4 py-3.5 shadow-card">
-            <s.Icon className="size-5 shrink-0 text-ink-subtle" aria-hidden />
-            <div className="min-w-0">
+          <a
+            key={s.label}
+            href={s.href}
+            className="group flex items-center gap-3 rounded-[14px] border border-stroke bg-surface px-4 py-3.5 shadow-card transition-all duration-150 hover:-translate-y-px hover:border-brand/50 hover:shadow-[var(--elev-pop)] focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+          >
+            <s.Icon className="size-5 shrink-0 text-ink-subtle transition-colors group-hover:text-brand-ink" aria-hidden />
+            <div className="min-w-0 flex-1">
               <p className={cn("text-[22px] leading-none font-bold", s.tone)}>{s.value}</p>
               <p className="mt-1 truncate text-[12.5px] text-ink-muted">{s.label}</p>
             </div>
-          </div>
+            <ChevronRight className="size-4 shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </a>
         ))}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
         <div className="flex flex-col gap-5">
-          <Card>
+          <Card id="my-jobs" className="scroll-mt-20">
             <CardHeader title="My jobs" description="Most urgent first" />
             {active.length === 0 ? (
               <EmptyState title="Nothing assigned to you">New jobs appear here when a manager assigns them to you.</EmptyState>
@@ -105,7 +111,7 @@ export default async function MyWorkPage({
           </Card>
 
           {review.length ? (
-            <Card>
+            <Card id="review" className="scroll-mt-20">
               <CardHeader title="Waiting for review" description="Completed by you; a manager checks and closes them. You can still add invoices." />
               <ul className="divide-y divide-stroke">
                 {review.map((w) => (
@@ -115,7 +121,7 @@ export default async function MyWorkPage({
             </Card>
           ) : null}
 
-          <Card>
+          <Card id="completed" className="scroll-mt-20">
             <CardHeader title="Completed jobs" description="Your latest closed work" />
             {done.length === 0 ? (
               <EmptyState title="No completed jobs yet" />
@@ -188,9 +194,14 @@ export default async function MyWorkPage({
             </Card>
           ) : null}
           {can(ctx.capabilities, "work_orders.manage") ? (
-            <Link href={`/customer/${orgId}/work-orders`} className="px-1 text-[13px] font-medium text-link hover:underline">
-              All work orders →
-            </Link>
+            <Button asChild variant="secondary" className="w-full justify-between">
+              <Link href={`/customer/${orgId}/work-orders`}>
+                <span className="flex items-center gap-2">
+                  <ClipboardList /> All work orders
+                </span>
+                <ChevronRight />
+              </Link>
+            </Button>
           ) : null}
         </div>
       </div>
