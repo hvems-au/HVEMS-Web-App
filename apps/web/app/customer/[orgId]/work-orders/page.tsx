@@ -93,7 +93,7 @@ export default async function WorkOrdersPage({
                   <TH>Number</TH>
                   <TH>Equipment</TH>
                   <TH>Work</TH>
-                  <TH>Done by</TH>
+                  <TH>Assigned to</TH>
                   <TH>Priority</TH>
                   <TH>Due</TH>
                   <TH>Status</TH>

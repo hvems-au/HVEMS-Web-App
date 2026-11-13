@@ -75,7 +75,7 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
                 }
               />
               <Row label="Description" value={w.description ? <span className="whitespace-pre-wrap">{w.description}</span> : null} />
-              <Row label="Done by" value={w.kind === "vendor" ? `Vendor: ${w.vendor_name}` : (who(w.assigned_to) ?? "Not assigned")} />
+              <Row label="Assigned to" value={w.kind === "vendor" ? `Vendor: ${w.vendor_name}` : (who(w.assigned_to) ?? "Not assigned")} />
               <Row label="Priority" value={<PriorityBadge priority={w.priority} />} />
               {w.required_qualification ? <Row label="Needs" value={QUALIFICATION_LABELS[w.required_qualification]} /> : null}
               <Row label="Due" value={w.due_on ? dmy(w.due_on) : null} />
@@ -97,6 +97,11 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
         </Card>
         <Card className="self-start">
           <CardHeader title="Actions" description="Every change is recorded in the audit history." />
+          <div className="px-5 pb-1">
+            <Link href={`/customer/${orgId}/my-work/${w.id}`} className="text-[13px] font-medium text-link hover:underline">
+              Pre/post-work reports and invoices →
+            </Link>
+          </div>
           <CardBody>
             {w.status === "closed" && !manager ? (
               <p className="text-[13.5px] text-ink-muted">This work order is closed.</p>

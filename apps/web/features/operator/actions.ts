@@ -40,6 +40,7 @@ export async function reportIssueAction(orgId: string, assetId: string, input: u
     if (error) throw toAppError(error);
     const id = (data as { defect_id: string }).defect_id;
     revalidatePath(`/driver/o/${orgId}`);
+    revalidatePath(`/customer/${orgId}`, "layout");
     return { status: "success", data: { id } };
   } catch (e) {
     return errorState(e);

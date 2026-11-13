@@ -70,7 +70,12 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
   }
   // Grouped so the menu reads at a glance; empty groups are hidden (filterNav).
   return [
-    { items: [{ label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" }] },
+    {
+      items: [
+        { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
+        { label: "My Jobs", href: `${base}/my-work`, icon: "jobs", capability: "work_orders.work" },
+      ],
+    },
     {
       title: "Fleet",
       items: [

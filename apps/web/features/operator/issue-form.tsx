@@ -17,7 +17,7 @@ const URGENCY: { value: Urgency; title: string; help: string; tone: string }[] =
 ];
 
 /** Report an issue: a few words, optional detail and photos, and whether it's safe to keep using. */
-export function IssueForm({ orgId, assetId, doneBase }: { orgId: string; assetId: string; doneBase: string }) {
+export function IssueForm({ orgId, assetId, doneBase, returnTo }: { orgId: string; assetId: string; doneBase: string; /** Go back here after sending (e.g. the job page). */ returnTo?: string }) {
   const router = useRouter();
   // One id per report: a retry after a network error never creates a second record.
   const [requestId] = React.useState(() => crypto.randomUUID());
@@ -44,7 +44,8 @@ export function IssueForm({ orgId, assetId, doneBase }: { orgId: string; assetId
         start(async () => {
           const res = await reportIssueAction(orgId, assetId, { category, summary, description, urgency, evidence, requestId });
           if (res.status === "error") return setError(res.message);
-          if (res.status === "success" && res.data) router.push(`${doneBase}/${res.data.id}?submitted=1`);
+          if (res.status === "success" && res.data)
+            router.push(returnTo ? `${returnTo}${returnTo.includes("?") ? "&" : "?"}reported=${res.data.id}` : `${doneBase}/${res.data.id}?submitted=1`);
         });
       }}
     >

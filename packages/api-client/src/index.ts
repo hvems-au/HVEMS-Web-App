@@ -1165,6 +1165,8 @@ export interface ServiceScheduleRow {
   current_km: number | null;
   current_hours: number | null;
   status: ServiceStatus;
+  /** A technician chose the next due when the last job was done. */
+  next_due_chosen?: boolean;
 }
 
 export interface WorkOrder {
@@ -1200,6 +1202,10 @@ export interface WorkOrder {
   required_qualification: Exclude<QualificationKind, "other"> | null;
   /** Recorded by the database whenever the person, due date or requirement changes. */
   assignment_warnings: AllocationWarning[];
+  /** Next service due the technician chose in the post-work report (applied when closed). */
+  next_due_on: string | null;
+  next_due_km: number | null;
+  next_due_hours: number | null;
   created_at: string;
   asset?: { asset_number: string; make: string | null; model: string | null } | null;
 }
@@ -1467,4 +1473,148 @@ export async function previewAllocationWarnings(
 /** Set the qualification a work order needs; returns the recorded warnings. */
 export async function setWorkOrderRequirement(db: HvemsClient, id: string, required: string | null): Promise<AllocationWarning[]> {
   return (unwrap(await raw(db).rpc("set_work_order_requirement", { p_id: id, p_required: required })) ?? []) as AllocationWarning[];
+}
+
+// ---------------------------------------------------------------------------
+// Technician workspace: my jobs, pre/post reports, documents, next service due
+// ---------------------------------------------------------------------------
+export interface WorkOrderReport {
+  id: string;
+  work_order_id: string;
+  kind: "pre" | "post";
+  checks: Record<string, "ok" | "issue" | "na">;
+  notes: string;
+  photo_paths: string[];
+  odometer_km: number | null;
+  engine_hours: number | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkOrderFile {
+  id: string;
+  work_order_id: string;
+  kind: "invoice" | "receipt" | "quote" | "photo" | "other";
+  path: string;
+  file_name: string;
+  supplier: string | null;
+  reference: string | null;
+  amount_cents: number | null;
+  uploaded_by: string;
+  uploaded_at: string;
+}
+
+export interface ServiceDueChange {
+  id: string;
+  service_plan_id: string;
+  work_order_id: string | null;
+  next_due_on: string | null;
+  next_due_km: number | null;
+  next_due_hours: number | null;
+  set_by: string | null;
+  set_at: string;
+}
+
+/** Jobs assigned to one person (RLS: work_orders.work / manage). */
+export async function listMyJobs(db: HvemsClient, organisationId: string, userId: string, limit = 200): Promise<WorkOrder[]> {
+  return unwrap(
+    await raw(db).from("work_orders").select(WO_COLUMNS).eq("organisation_id", organisationId).eq("assigned_to", userId).order("number", { ascending: false }).limit(limit),
+  ) as WorkOrder[];
+}
+
+/** Open jobs nobody has taken yet (a technician starting one takes it). */
+export async function listUnassignedJobs(db: HvemsClient, organisationId: string, limit = 50): Promise<WorkOrder[]> {
+  return unwrap(
+    await raw(db)
+      .from("work_orders")
+      .select(WO_COLUMNS)
+      .eq("organisation_id", organisationId)
+      .is("assigned_to", null)
+      .eq("kind", "internal")
+      .eq("status", "open")
+      .order("number", { ascending: false })
+      .limit(limit),
+  ) as WorkOrder[];
+}
+
+export async function listWorkOrderReports(db: HvemsClient, workOrderId: string): Promise<WorkOrderReport[]> {
+  return unwrap(await raw(db).from("work_order_reports").select("*").eq("work_order_id", workOrderId)) as WorkOrderReport[];
+}
+
+/** Reports for several jobs at once (for list badges). */
+export async function listReportKinds(db: HvemsClient, workOrderIds: string[]): Promise<Map<string, Set<"pre" | "post">>> {
+  const out = new Map<string, Set<"pre" | "post">>();
+  if (!workOrderIds.length) return out;
+  const rows = unwrap(await raw(db).from("work_order_reports").select("work_order_id, kind").in("work_order_id", workOrderIds)) as { work_order_id: string; kind: "pre" | "post" }[];
+  for (const r of rows) out.set(r.work_order_id, (out.get(r.work_order_id) ?? new Set()).add(r.kind));
+  return out;
+}
+
+export async function listWorkOrderFiles(db: HvemsClient, workOrderId: string): Promise<WorkOrderFile[]> {
+  return unwrap(
+    await raw(db).from("work_order_files").select("*").eq("work_order_id", workOrderId).is("removed_at", null).order("uploaded_at", { ascending: false }),
+  ) as WorkOrderFile[];
+}
+
+export async function getServicePlanRow(db: HvemsClient, planId: string): Promise<ServiceScheduleRow | null> {
+  return (unwrap(await raw(db).from("service_schedule").select("*").eq("id", planId).maybeSingle()) as ServiceScheduleRow | null) ?? null;
+}
+
+export async function listServiceDueHistory(db: HvemsClient, planId: string, limit = 10): Promise<ServiceDueChange[]> {
+  return unwrap(
+    await raw(db).from("service_plan_due_history").select("*").eq("service_plan_id", planId).order("set_at", { ascending: false }).limit(limit),
+  ) as ServiceDueChange[];
+}
+
+export async function submitWorkOrderReport(
+  db: HvemsClient,
+  input: {
+    workOrderId: string;
+    kind: "pre" | "post";
+    notes: string;
+    checks?: Record<string, string>;
+    photos?: string[];
+    odometerKm?: number | null;
+    engineHours?: number | null;
+    nextDueOn?: string | null;
+    nextDueKm?: number | null;
+    nextDueHours?: number | null;
+  },
+): Promise<string> {
+  return unwrap(
+    await raw(db).rpc("submit_work_order_report", {
+      p_work_order_id: input.workOrderId,
+      p_kind: input.kind,
+      p_notes: input.notes,
+      p_checks: input.checks ?? {},
+      p_photos: input.photos ?? [],
+      p_odometer_km: input.odometerKm ?? null,
+      p_engine_hours: input.engineHours ?? null,
+      p_next_due_on: input.nextDueOn ?? null,
+      p_next_due_km: input.nextDueKm ?? null,
+      p_next_due_hours: input.nextDueHours ?? null,
+    }),
+  ) as string;
+}
+
+export async function addWorkOrderFile(
+  db: HvemsClient,
+  input: { workOrderId: string; kind: WorkOrderFile["kind"]; path: string; fileName: string; supplier?: string | null; reference?: string | null; amountCents?: number | null },
+): Promise<string> {
+  return unwrap(
+    await raw(db).rpc("add_work_order_file", {
+      p_work_order_id: input.workOrderId,
+      p_kind: input.kind,
+      p_path: input.path,
+      p_file_name: input.fileName,
+      p_supplier: input.supplier ?? null,
+      p_reference: input.reference ?? null,
+      p_amount_cents: input.amountCents ?? null,
+    }),
+  ) as string;
+}
+
+export async function removeWorkOrderFile(db: HvemsClient, fileId: string): Promise<void> {
+  unwrap(await raw(db).rpc("remove_work_order_file", { p_file_id: fileId }));
 }
