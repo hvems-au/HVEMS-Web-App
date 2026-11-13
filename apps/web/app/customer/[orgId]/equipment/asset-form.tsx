@@ -175,7 +175,7 @@ export function AssetForm({
       </Card>
 
       <Card>
-        <CardHeader title="Ownership, location and odometer / hour meter" />
+        <CardHeader title="Ownership, location and usage readings" />
         <CardBody className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Field label="Owner type" htmlFor="owner_type" error={err("owner_type")} required>
             <Select {...register("owner_type")}>
@@ -206,7 +206,13 @@ export function AssetForm({
               ))}
             </Select>
           </Field>
-          <Field label="Odometer / hour meter" htmlFor="meter_type" error={err("meter_type")} required hint="Odometer and hour meter readings are recorded on the equipment page.">
+          <Field
+            label="What does it measure usage by?"
+            htmlFor="meter_type"
+            error={err("meter_type")}
+            required
+            hint="Trucks and vehicles usually use kilometres on the odometer; machines use hours on the hour meter. Services and pre-starts use this. You record the actual readings later, on the equipment page."
+          >
             <Select {...register("meter_type")}>
               {Object.entries(METER_TYPE_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -314,7 +320,7 @@ function NewClassPanel({ orgId, onCancel, onCreated }: { orgId: string; onCancel
             <option value="equipment">Equipment (serial number)</option>
           </Select>
         </Field>
-        <Field label="Odometer / hour meter" htmlFor="new_class_meter">
+        <Field label="Usually measured by" htmlFor="new_class_meter" hint="New equipment of this type starts with this; you can change it per piece of equipment.">
           <Select id="new_class_meter" value={meter} onChange={(e) => setMeter(e.target.value as MeterType)}>
             {Object.entries(METER_TYPE_LABELS).map(([v, label]) => (
               <option key={v} value={v}>

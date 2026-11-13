@@ -54,10 +54,10 @@ export const SAFETY_FITTED_LABELS = {
 export type SafetyFittedField = keyof typeof SAFETY_FITTED_LABELS;
 
 export const METER_TYPE_LABELS: Record<MeterType, string> = {
-  none: "None",
-  kilometres: "Odometer (km)",
-  hours: "Hour meter (hours)",
-  both: "Odometer and hour meter",
+  none: "Nothing (no odometer or hour meter)",
+  kilometres: "Kilometres (odometer)",
+  hours: "Hours (hour meter)",
+  both: "Both kilometres and hours",
 };
 
 export const OWNER_TYPE_LABELS: Record<AssetOwnerType, string> = {

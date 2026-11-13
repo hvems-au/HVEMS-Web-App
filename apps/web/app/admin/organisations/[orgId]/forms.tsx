@@ -201,7 +201,7 @@ export function SupportAccessCard({
       <Field label="Minutes" htmlFor="sa-minutes">
         <select
           id="sa-minutes"
-          className="h-10 rounded-[6px] border border-stroke bg-surface px-2 text-[14px]"
+          className="select-chevron h-10 appearance-none rounded-[6px] border border-stroke bg-surface pr-9 pl-3 text-[14px]"
           value={minutes}
           onChange={(e) => setMinutes(Number(e.target.value))}
         >

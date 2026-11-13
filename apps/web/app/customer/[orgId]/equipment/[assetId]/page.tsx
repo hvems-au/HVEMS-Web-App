@@ -270,7 +270,7 @@ export default async function AssetPage({
                         value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null,
                       },
                       {
-                        label: "Odometer / hour meter",
+                        label: "Usage measured by",
                         value: METER_TYPE_LABELS[asset.meter_type],
                       },
                       {
