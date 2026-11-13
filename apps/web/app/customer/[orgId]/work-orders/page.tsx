@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatWorkOrderNumber, listWorkOrders } from "@hvems/api-client";
 import { can } from "@hvems/permissions";
+import { FilterBar } from "@/components/filter-bar";
 import { PageHeader } from "@/components/shell/page";
 import { Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { NewWorkOrderDialog } from "@/features/maintenance/controls";
@@ -32,6 +33,37 @@ export default async function WorkOrdersPage({
   const db = await createSupabaseServerClient();
   const [rows, opts] = await Promise.all([listWorkOrders(db, orgId, { open: !finished }), maintenanceOptions(db, orgId)]);
   const today = new Date().toLocaleDateString("en-CA", { timeZone: ctx.timezone });
+  // Search and filters (as you type / as soon as one changes).
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const f = {
+    q: (firstParam(sp.q) ?? "").trim().toLowerCase().slice(0, 60),
+    status: firstParam(sp.status) ?? "",
+    priority: firstParam(sp.priority) ?? "",
+    who: firstParam(sp.who) ?? "",
+    from: ISO.test(firstParam(sp.from) ?? "") ? firstParam(sp.from)! : "",
+    to: ISO.test(firstParam(sp.to) ?? "") ? firstParam(sp.to)! : "",
+  };
+  const filtered = Object.values(f).some(Boolean);
+  const shown = rows.filter((w) => {
+    const name = w.kind === "vendor" ? (w.vendor_name ?? "") : w.assigned_to ? (opts.nameOf.get(w.assigned_to) ?? "") : "";
+    if (f.q && ![formatWorkOrderNumber(w.number), w.title, w.description, w.asset?.asset_number, w.asset?.make, w.asset?.model, name].some((x) => (x ?? "").toLowerCase().includes(f.q))) return false;
+    if (f.status && w.status !== f.status) return false;
+    if (f.priority && w.priority !== f.priority) return false;
+    if (f.who === "unassigned" ? !!w.assigned_to || w.kind === "vendor" : f.who === "vendor" ? w.kind !== "vendor" : f.who && w.assigned_to !== f.who) return false;
+    if (f.from && (!w.due_on || w.due_on < f.from)) return false;
+    if (f.to && (!w.due_on || w.due_on > f.to)) return false;
+    return true;
+  });
+  const statusOptions = finished
+    ? [
+        { value: "closed", label: "Closed" },
+        { value: "cancelled", label: "Cancelled" },
+      ]
+    : [
+        { value: "open", label: "Open" },
+        { value: "in_progress", label: "In progress" },
+        { value: "completed", label: "To review" },
+      ];
   const base = `/customer/${orgId}/work-orders`;
   const tab = (on: boolean, href: string, label: string) => (
     <Link href={href} aria-current={on ? "page" : undefined} className={cn("-mb-px border-b-2 px-3 pb-2.5 text-[14px] font-medium", on ? "border-brand text-brand-ink" : "border-transparent text-ink-muted hover:text-ink")}>
@@ -51,15 +83,50 @@ export default async function WorkOrdersPage({
         {tab(finished, `${base}?view=finished`, "Closed and cancelled")}
       </nav>
       <Card>
-        {rows.length === 0 ? (
-          <EmptyState title={finished ? "No finished work orders yet" : "No open work orders"}>
-            {finished ? null : "Create one here, or from a service plan on the Maintenance page."}
-          </EmptyState>
+        <FilterBar
+          action={base}
+          keep={finished ? { view: "finished" } : {}}
+          search={{ value: f.q, placeholder: "Number, work, equipment or person" }}
+          fields={[
+            { kind: "select", name: "status", label: "Status", all: "Any status", value: f.status, options: statusOptions },
+            {
+              kind: "select",
+              name: "priority",
+              label: "Priority",
+              all: "Any priority",
+              value: f.priority,
+              options: [
+                { value: "urgent", label: "Urgent" },
+                { value: "high", label: "High" },
+                { value: "normal", label: "Normal" },
+                { value: "low", label: "Low" },
+              ],
+            },
+            {
+              kind: "select",
+              name: "who",
+              label: "Assigned to",
+              all: "Anyone",
+              value: f.who,
+              options: [{ value: "unassigned", label: "Not assigned" }, { value: "vendor", label: "Vendors" }, ...opts.people],
+            },
+            { kind: "date", name: "from", label: "Due from", value: f.from },
+            { kind: "date", name: "to", label: "Due to", value: f.to },
+          ]}
+        />
+        {shown.length === 0 ? (
+          filtered ? (
+            <EmptyState title="No work orders match">Try a different search or filter.</EmptyState>
+          ) : (
+            <EmptyState title={finished ? "No finished work orders yet" : "No open work orders"}>
+              {finished ? null : "Create one here, or from a service plan on an equipment's page."}
+            </EmptyState>
+          )
         ) : (
           <>
             {/* Phones: one card per work order. */}
             <ul className="divide-y divide-stroke sm:hidden">
-              {rows.map((w) => {
+              {shown.map((w) => {
                 const overdue = !!w.due_on && w.due_on < today && !finished;
                 return (
                   <li key={w.id} className="relative px-4 py-3 hover:bg-surface-hover">
@@ -100,7 +167,7 @@ export default async function WorkOrdersPage({
                 </tr>
               </THead>
               <tbody>
-                {rows.map((w) => (
+                {shown.map((w) => (
                   <TR key={w.id}>
                     <TD>
                       <Link href={`${base}/${w.id}`} className={cn("font-mono font-semibold text-link hover:underline", STRETCHED_LINK)}>

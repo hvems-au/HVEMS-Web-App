@@ -72,7 +72,13 @@ const FIELD_LABELS: Record<string, string> = {
   prestart_frequency: "Pre-start checks",
   prestart_every_days: "Pre-start checks",
 };
-const ACTION_WORDS: Record<string, string> = { update: "Changed", insert: "Added", delete: "Removed", generate_code: "New QR code", return_to_service: "Returned to service" };
+const ACTION_WORDS: Record<string, string> = {
+  update: "Changed",
+  insert: "Added",
+  delete: "Removed",
+  generate_code: "New QR code",
+  return_to_service: "Returned to service",
+};
 const METHOD_WORDS: Record<string, string> = { system: "Automatic", password: "Signed in" };
 const HIDDEN_FIELDS = /(_at|_since|_by)$/;
 const humanise = (v: string) => {
@@ -242,58 +248,76 @@ export default async function AssetPage({
       {view === "overview" ? (
         <>
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <Card className="xl:col-span-2">
-              <CardHeader title="Details" />
-              <CardBody>
-                <Dl
-                  className="lg:grid-cols-3"
-                  items={(
-                    [
-                      { label: "Asset number", value: asset.asset_number },
-                      { label: "Class", value: asset.asset_class?.name },
-                      { label: "Year", value: asset.year },
-                      { label: "Make", value: asset.make },
-                      { label: "Model", value: asset.model },
-                      { label: "Serial number", value: asset.serial_number },
-                      {
-                        label: "Registration",
-                        value: asset.registration_number ? `${asset.registration_number} ${asset.registration_state ?? ""}` : null,
-                      },
-                      { label: "VIN", value: asset.vin },
-                      {
-                        label: "Owner type",
-                        value: OWNER_TYPE_LABELS[asset.owner_type],
-                      },
-                      { label: "Client", value: asset.client?.name },
-                      {
-                        label: "Site",
-                        value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null,
-                      },
-                      {
-                        label: "Usage measured by",
-                        value: METER_TYPE_LABELS[asset.meter_type],
-                      },
-                      {
-                        label: "Current operator",
-                        value: operator ? `${operator} · ${formatDateAU(new Date(asset.current_operator_since!), ctx.timezone)}` : "No pre-start yet",
-                      },
-                      {
-                        label: "Pre-start checks",
-                        value: prestartFrequencyText(asset.prestart_frequency, asset.prestart_every_days) ?? "As per type",
-                      },
-                      {
-                        label: "Safety equipment fitted",
-                        value:
-                          [asset.rops_fitted && "ROPS", asset.fops_fitted && "FOPS", asset.fire_suppression_fitted && "Fire suppression"]
-                            .filter(Boolean)
-                            .join(", ") || "None",
-                      },
-                    ] as { label: string; value: React.ReactNode }[]
-                  ).filter((i) => i.value !== null && i.value !== undefined && i.value !== "")}
+            <div className="flex flex-col xl:col-span-2">
+              <Card>
+                <CardHeader title="Details" />
+                <CardBody>
+                  <Dl
+                    className="lg:grid-cols-3"
+                    items={(
+                      [
+                        { label: "Asset number", value: asset.asset_number },
+                        { label: "Class", value: asset.asset_class?.name },
+                        { label: "Year", value: asset.year },
+                        { label: "Make", value: asset.make },
+                        { label: "Model", value: asset.model },
+                        { label: "Serial number", value: asset.serial_number },
+                        {
+                          label: "Registration",
+                          value: asset.registration_number ? `${asset.registration_number} ${asset.registration_state ?? ""}` : null,
+                        },
+                        { label: "VIN", value: asset.vin },
+                        {
+                          label: "Owner type",
+                          value: OWNER_TYPE_LABELS[asset.owner_type],
+                        },
+                        { label: "Client", value: asset.client?.name },
+                        {
+                          label: "Site",
+                          value: asset.site ? `${asset.site.name}${asset.site.suburb ? `, ${asset.site.suburb}` : ""}` : null,
+                        },
+                        {
+                          label: "Usage measured by",
+                          value: METER_TYPE_LABELS[asset.meter_type],
+                        },
+                        {
+                          label: "Current operator",
+                          value: operator ? `${operator} · ${formatDateAU(new Date(asset.current_operator_since!), ctx.timezone)}` : "No pre-start yet",
+                        },
+                        {
+                          label: "Pre-start checks",
+                          value: prestartFrequencyText(asset.prestart_frequency, asset.prestart_every_days) ?? "As per type",
+                        },
+                        {
+                          label: "Safety equipment fitted",
+                          value:
+                            [asset.rops_fitted && "ROPS", asset.fops_fitted && "FOPS", asset.fire_suppression_fitted && "Fire suppression"]
+                              .filter(Boolean)
+                              .join(", ") || "None",
+                        },
+                      ] as { label: string; value: React.ReactNode }[]
+                    ).filter((i) => i.value !== null && i.value !== undefined && i.value !== "")}
+                  />
+                  {asset.notes ? <p className="mt-5 rounded-[8px] bg-surface-muted p-3 text-[14px] whitespace-pre-wrap text-ink-muted">{asset.notes}</p> : null}
+                </CardBody>
+              </Card>
+              {!asset.archived_at ? (
+                <SafetyPanel
+                  orgId={orgId}
+                  assetId={assetId}
+                  timezone={ctx.timezone}
+                  holds={safety.holds}
+                  breakdowns={safety.breakdowns}
+                  notices={safety.notices}
+                  formatWhen={when}
+                  can={{
+                    placeHold: can(ctx.capabilities, "holds.place"),
+                    removeOutOfService: can(ctx.capabilities, "holds.remove_out_of_service"),
+                    report: can(ctx.capabilities, "defects.report"),
+                  }}
                 />
-                {asset.notes ? <p className="mt-5 rounded-[8px] bg-surface-muted p-3 text-[14px] whitespace-pre-wrap text-ink-muted">{asset.notes}</p> : null}
-              </CardBody>
-            </Card>
+              ) : null}
+            </div>
 
             <div className="flex flex-col gap-5">
               <Card>
@@ -324,7 +348,9 @@ export default async function AssetPage({
                       last={{ km: asset.current_odometer_km, hours: asset.current_engine_hours }}
                     />
                   ) : !asset.archived_at ? (
-                    <p className="mt-3 border-t border-stroke pt-3 text-[12.5px] text-ink-muted">Readings are updated from pre-starts and completed work orders.</p>
+                    <p className="mt-3 border-t border-stroke pt-3 text-[12.5px] text-ink-muted">
+                      Readings are updated from pre-starts and completed work orders.
+                    </p>
                   ) : null}
                 </CardBody>
               </Card>
@@ -333,23 +359,6 @@ export default async function AssetPage({
               ) : null}
             </div>
           </div>
-
-          {!asset.archived_at ? (
-            <SafetyPanel
-              orgId={orgId}
-              assetId={assetId}
-              timezone={ctx.timezone}
-              holds={safety.holds}
-              breakdowns={safety.breakdowns}
-              notices={safety.notices}
-              formatWhen={when}
-              can={{
-                placeHold: can(ctx.capabilities, "holds.place"),
-                removeOutOfService: can(ctx.capabilities, "holds.remove_out_of_service"),
-                report: can(ctx.capabilities, "defects.report"),
-              }}
-            />
-          ) : null}
 
           {seesMaintenance ? (
             <EquipmentMaintenance
