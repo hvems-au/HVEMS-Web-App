@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getWorkforceData, listMembers } from "@hvems/api-client";
-import { LEAVE_LABELS, WORKFORCE_ROLES, credentialStatus, todayISO } from "@hvems/domain";
+import { LEAVE_LABELS, credentialStatus, todayISO } from "@hvems/domain";
 import { ROLE_LABELS } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
@@ -26,9 +26,9 @@ export default async function TechniciansPage({ params }: { params: Promise<{ or
   ]);
   const warnDays = Number(warnSetting.data?.value ?? 30) || 30;
   const people = members
-    .filter((m) => m.status === "active" && (WORKFORCE_ROLES as readonly string[]).includes(m.role))
-    // Technicians first, then by name.
-    .sort((a, b) => Number(b.role === "technician") - Number(a.role === "technician") || (a.profile?.full_name ?? "").localeCompare(b.profile?.full_name ?? ""));
+    // Technicians only (main or additional role), the same people work orders can be assigned to.
+    .filter((m) => m.status === "active" && (m.role === "technician" || (m.additional_roles ?? []).includes("technician")))
+    .sort((a, b) => (a.profile?.full_name ?? "").localeCompare(b.profile?.full_name ?? ""));
   const base = `/customer/${orgId}/technicians`;
 
   return (
@@ -36,7 +36,7 @@ export default async function TechniciansPage({ params }: { params: Promise<{ or
       <PageHeader title="Technicians" description="Who's available, their qualifications and their current work." />
       <Card>
         {people.length === 0 ? (
-          <EmptyState title="No technicians yet">Invite technicians from the Team page. They appear here with the Owner, Company Admins and Fleet Managers.</EmptyState>
+          <EmptyState title="No technicians yet">Invite technicians from the Team page. A manager who also does workshop jobs can be given Technician as an additional role.</EmptyState>
         ) : (
           <Table>
             <THead>
@@ -65,7 +65,7 @@ export default async function TechniciansPage({ params }: { params: Promise<{ or
                       <Link href={`${base}/${m.user_id}`} className="font-semibold text-link hover:underline">
                         {m.profile?.full_name || m.profile?.email}
                       </Link>
-                      <span className="block text-[12.5px] text-ink-subtle">{ROLE_LABELS[m.role]}</span>
+                      <span className="block text-[12.5px] text-ink-subtle">{m.role === "technician" ? ROLE_LABELS[m.role] : `${ROLE_LABELS[m.role]} · also Technician`}</span>
                     </TD>
                     <TD className="text-ink-muted">{profile?.trade ?? "—"}</TD>
                     <TD>
