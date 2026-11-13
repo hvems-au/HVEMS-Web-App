@@ -1,12 +1,12 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Power, Truck, UserPlus } from "lucide-react";
+import { KeyRound, Pencil, Power, Truck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input } from "@/components/ui/form";
-import { createDriverAction, finishDriverAccountAction, resetDriverPinAction, setDriverActiveAction, setDriverEquipmentAction } from "./actions";
+import { createDriverAction, finishDriverAccountAction, resetDriverPinAction, setDriverActiveAction, setDriverEquipmentAction, updateDriverAction } from "./actions";
 
 type Setup = { driverId: string; setupCode: string; expiresAt: string };
 
@@ -273,6 +273,67 @@ export function EquipmentAccessDialog({
             </div>
           </div>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Change an operator's name or phone number. Their Operator ID and PIN stay the same. */
+export function EditDriverDialog({ orgId, driverId, fullName, phone }: { orgId: string; driverId: string; fullName: string; phone: string | null }) {
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [name, setName] = React.useState(fullName);
+  const [tel, setTel] = React.useState(phone ?? "");
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, start] = React.useTransition();
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) {
+          setName(fullName);
+          setTel(phone ?? "");
+          setError(null);
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost">
+          <Pencil /> Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent title="Edit operator" description="Their Operator ID and PIN stay the same.">
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            start(async () => {
+              const res = await updateDriverAction(orgId, driverId, { fullName: name, phone: tel });
+              if (res.status === "error") return setError(res.message);
+              toast.success("Operator updated");
+              setOpen(false);
+              router.refresh();
+            });
+          }}
+        >
+          {error ? <FormAlert>{error}</FormAlert> : null}
+          <Field label="Full name" htmlFor="edit-driver-name" required>
+            <Input id="edit-driver-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoComplete="off" />
+          </Field>
+          <Field label="Phone" htmlFor="edit-driver-phone" hint="Optional, e.g. 0400 000 000">
+            <Input id="edit-driver-phone" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} maxLength={40} />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Back
+            </Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

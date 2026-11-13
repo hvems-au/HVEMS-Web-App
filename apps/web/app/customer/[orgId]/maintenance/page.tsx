@@ -64,7 +64,11 @@ export default async function MaintenancePage({
       (!f.from || (r.next_due_on ?? "") >= f.from) &&
       (!f.to || (r.next_due_on !== null && r.next_due_on <= f.to)),
   );
-  const counts = { overdue: all.filter((r) => r.status === "overdue").length, due_soon: all.filter((r) => r.status === "due_soon").length };
+  const counts = {
+    overdue: all.filter((r) => r.status === "overdue").length,
+    due_soon: all.filter((r) => r.status === "due_soon").length,
+    ok: all.filter((r) => r.status === "ok").length,
+  };
   const equipmentOptions = [...new Map(all.map((r) => [r.asset_id, r.asset?.asset_number ?? "—"])).entries()]
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => a.label.localeCompare(b.label));
@@ -82,6 +86,7 @@ export default async function MaintenancePage({
         {[
           { label: `Overdue (${counts.overdue})`, value: "overdue", tone: "border-danger/40 text-danger-ink" },
           { label: `Due soon (${counts.due_soon})`, value: "due_soon", tone: "border-warn-line text-warn-ink" },
+          { label: `OK (${counts.ok})`, value: "ok", tone: "border-ok/40 text-ok-ink" },
         ].map((c) => (
           <Link
             key={c.value}

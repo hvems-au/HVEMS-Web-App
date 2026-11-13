@@ -13,7 +13,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CredentialsDialog, type CredentialRow } from "./credentials-dialog";
 import { OperatorAccessCard } from "@/features/operator/access-card";
 import { portalOrigin } from "@/lib/portals";
-import { ActiveToggle, AddDriverDialog, EquipmentAccessDialog, FinishAccountButton, ResetPinDialog } from "./driver-controls";
+import { ActiveToggle, AddDriverDialog, EditDriverDialog, EquipmentAccessDialog, FinishAccountButton, ResetPinDialog } from "./driver-controls";
 
 export const metadata: Metadata = { title: "Operators" };
 
@@ -195,6 +195,7 @@ export default async function DriversPage({
                             {d.active ? <ResetPinDialog orgId={orgId} driverId={d.id} label={waiting || locked ? "New setup code" : "Reset PIN"} /> : null}
                           </>
                         )}
+                        <EditDriverDialog orgId={orgId} driverId={d.id} fullName={d.full_name} phone={d.phone} />
                         <CredentialsDialog orgId={orgId} driverId={d.id} name={d.full_name} credentials={creds} />
                         <ActiveToggle orgId={orgId} driverId={d.id} active={d.active} />
                       </div>

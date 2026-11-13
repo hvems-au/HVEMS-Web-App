@@ -9,6 +9,7 @@ import {
   saveDriverCredential,
   setDriverActive,
   setOperatorEquipment,
+  toAppError,
   type HvemsClient,
 } from "@hvems/api-client";
 import { CREDENTIAL_KINDS } from "@hvems/domain";
@@ -154,6 +155,35 @@ export async function deleteDriverCredentialAction(orgId: string, credentialId: 
     await deleteDriverCredential(db, orgId, credentialId);
     revalidatePath(`/customer/${orgId}/drivers`);
     return { status: "success", message: "Credential removed" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+const editSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter the operator's full name").max(120),
+  phone: z
+    .string()
+    .trim()
+    .max(40)
+    .regex(/^[0-9 +()-]*$/, "Use digits, spaces, + ( ) or -")
+    .optional(),
+});
+
+/** Change an operator's name and phone (drivers.manage; the database checks it and records the change). */
+export async function updateDriverAction(orgId: string, driverId: string, input: unknown): Promise<ActionState> {
+  const v = editSchema.safeParse(input);
+  if (!v.success) return { status: "error", code: "invalid", message: v.error.issues[0]?.message ?? "Check the details" };
+  try {
+    const db = await createSupabaseServerClient();
+    const { error } = await (db as unknown as HvemsClient).rpc("update_driver_profile", {
+      p_driver_id: z.string().uuid().parse(driverId),
+      p_full_name: v.data.fullName,
+      p_phone: v.data.phone || null,
+    });
+    if (error) throw toAppError(error);
+    revalidatePath(`/customer/${orgId}`, "layout");
+    return { status: "success", message: "Operator updated" };
   } catch (e) {
     return errorState(e);
   }
