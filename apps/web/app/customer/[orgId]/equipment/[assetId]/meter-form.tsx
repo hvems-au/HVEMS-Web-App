@@ -17,7 +17,20 @@ const UNIT = {
  * retry never records twice. A unit the asset doesn't track yet can be started
  * by manager roles only (canAddMeter), with an explicit tick.
  */
-export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { orgId: string; assetId: string; meterType: MeterType; canAddMeter?: boolean }) {
+export function MeterForm({
+  orgId,
+  assetId,
+  meterType,
+  canAddMeter = false,
+  last = {},
+}: {
+  orgId: string;
+  assetId: string;
+  meterType: MeterType;
+  canAddMeter?: boolean;
+  /** Current accepted readings: a lower value asks for a reason straight away. */
+  last?: Partial<Record<Unit, number | null>>;
+}) {
   const [ids, setIds] = React.useState(() => ({ km: crypto.randomUUID(), hours: crypto.randomUUID() }));
   const [values, setValues] = React.useState<Record<Unit, string>>({ km: "", hours: "" });
   const [state, action, pending] = React.useActionState(async (prev: ReadingsResult, form: FormData) => {
@@ -41,6 +54,9 @@ export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { 
     const on = tracked(u);
     const disabled = !on && !canAddMeter;
     const code = followUp(u);
+    const typed = values[u] === "" ? null : Number(values[u]);
+    const lastValue = last[u] ?? null;
+    const lower = on && typed !== null && Number.isFinite(typed) && lastValue !== null && typed < lastValue;
     return (
       <div className="flex min-w-0 flex-col gap-1.5">
         <label htmlFor={`reading-${u}`} className="text-[13px] font-medium text-ink">
@@ -68,8 +84,12 @@ export function MeterForm({ orgId, assetId, meterType, canAddMeter = false }: { 
             <p className="text-[12.5px] text-ink-muted">Not recorded for this equipment.</p>
           )
         ) : null}
-        {code === "lower_reading_reason_required" ? (
-          <Input name={`lower_reason_${u}`} placeholder="Why is it lower? e.g. replaced" aria-label={`Reason for a lower ${meta.noun} reading`} required />
+        {lastValue !== null && on ? <p className="text-[12px] text-ink-subtle">Last: {lastValue.toLocaleString("en-AU")} {meta.suffix}</p> : null}
+        {lower || code === "lower_reading_reason_required" ? (
+          <div className="flex flex-col gap-1 rounded-[8px] border border-warn-line bg-warn-soft p-2.5">
+            <p className="text-[12.5px] font-medium text-warn-ink">Lower than the last reading. Say why; a manager approves it before it counts.</p>
+            <Input name={`lower_reason_${u}`} placeholder="e.g. Instrument cluster replaced" aria-label={`Reason for a lower ${meta.noun} reading`} required autoFocus={code === "lower_reading_reason_required"} />
+          </div>
         ) : null}
         {code === "implausible_jump_confirmation_required" ? (
           <label className="flex items-center gap-2 text-[12.5px] font-medium text-warn-ink">

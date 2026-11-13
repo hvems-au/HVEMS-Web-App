@@ -1338,7 +1338,8 @@ export async function getDashboardTodo(db: HvemsClient, organisationId: string) 
     return error ? 0 : (n ?? 0);
   };
   const head = { count: "exact" as const, head: true };
-  const [criticalDefects, minorDefects, advisoryDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview] = await Promise.all([
+  const [pendingReadings, criticalDefects, minorDefects, advisoryDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview] = await Promise.all([
+    count(raw(db).from("meter_readings").select("id", head).eq("organisation_id", organisationId).eq("status", "pending_acceptance")),
     count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "critical")),
     count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "minor")),
     count(db.from("defects").select("id", head).eq("organisation_id", organisationId).eq("status", "open").eq("severity", "advisory")),
@@ -1348,7 +1349,7 @@ export async function getDashboardTodo(db: HvemsClient, organisationId: string) 
     count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).in("status", ["open", "in_progress"])),
     count(raw(db).from("work_orders").select("id", head).eq("organisation_id", organisationId).eq("status", "completed")),
   ]);
-  return { criticalDefects, minorDefects, advisoryDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview };
+  return { pendingReadings, criticalDefects, minorDefects, advisoryDefects, missedPrestarts, overdueServices, dueSoonServices, openWorkOrders, workOrdersToReview };
 }
 
 // ---------------------------------------------------------------------------
@@ -1617,4 +1618,39 @@ export async function addWorkOrderFile(
 
 export async function removeWorkOrderFile(db: HvemsClient, fileId: string): Promise<void> {
   unwrap(await raw(db).rpc("remove_work_order_file", { p_file_id: fileId }));
+}
+
+// ---------------------------------------------------------------------------
+// Readings awaiting a manager (lower than the last, or out of sequence)
+// ---------------------------------------------------------------------------
+export interface PendingReading {
+  id: string;
+  asset_id: string;
+  unit: "km" | "hours";
+  value: number;
+  read_at: string;
+  recorded_by: string | null;
+  lower_reading_reason: string | null;
+  out_of_sequence: boolean;
+  created_at: string;
+  asset: { asset_number: string; make: string | null; model: string | null; current_odometer_km: number | null; current_engine_hours: number | null } | null;
+}
+
+export async function listPendingReadings(db: HvemsClient, organisationId: string, assetId?: string): Promise<PendingReading[]> {
+  let q = raw(db)
+    .from("meter_readings")
+    .select("id, asset_id, unit, value, read_at, recorded_by, lower_reading_reason, out_of_sequence, created_at, asset:assets(asset_number, make, model, current_odometer_km, current_engine_hours)")
+    .eq("organisation_id", organisationId)
+    .eq("status", "pending_acceptance");
+  if (assetId) q = q.eq("asset_id", assetId);
+  return unwrap(await q.order("created_at", { ascending: true }).limit(200)) as unknown as PendingReading[];
+}
+
+export async function countPendingReadings(db: HvemsClient, organisationId: string): Promise<number> {
+  const { count, error } = await raw(db).from("meter_readings").select("id", { count: "exact", head: true }).eq("organisation_id", organisationId).eq("status", "pending_acceptance");
+  return error ? 0 : (count ?? 0);
+}
+
+export async function decideMeterReading(db: HvemsClient, readingId: string, accept: boolean, note?: string | null): Promise<void> {
+  unwrap(await db.rpc("decide_meter_reading", { p_reading_id: readingId, p_accept: accept, p_note: note ?? undefined }));
 }

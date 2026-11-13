@@ -296,7 +296,13 @@ export default async function AssetPage({
                     </div>
                   </div>
                   {canRecord ? (
-                    <MeterForm orgId={orgId} assetId={assetId} meterType={asset.meter_type} canAddMeter={can(ctx.capabilities, "meter_readings.accept")} />
+                    <MeterForm
+                      orgId={orgId}
+                      assetId={assetId}
+                      meterType={asset.meter_type}
+                      canAddMeter={can(ctx.capabilities, "meter_readings.accept")}
+                      last={{ km: asset.current_odometer_km, hours: asset.current_engine_hours }}
+                    />
                   ) : null}
                 </CardBody>
               </Card>

@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Popover as P } from "radix-ui";
-import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon } from "lucide-react";
+import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge } from "lucide-react";
 import type { AppNotification } from "@hvems/types";
 import { loadTrayAction, markTrayReadAction } from "@/features/alerts/tray-actions";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ const KIND: Record<string, { icon: LucideIcon; tone: string }> = {
   credential_expired: { icon: IdCard, tone: "text-danger" },
   support_access_started: { icon: LifeBuoy, tone: "text-info-ink" },
   prestart_missed: { icon: ClipboardX, tone: "text-warn-ink" },
+  meter_reading_review: { icon: Gauge, tone: "text-warn-ink" },
 };
 
 function ago(iso: string): string {
@@ -61,7 +62,9 @@ export function NotificationTray({ orgId, href, unread }: { orgId: string; href:
   }, [orgId]);
 
   const targetOf = (n: AppNotification) =>
-    n.inspection_id ? `/customer/${orgId}/inspections/${n.inspection_id}` : n.asset_id ? `/customer/${orgId}/equipment/${n.asset_id}` : href;
+    n.kind === "meter_reading_review"
+      ? `/customer/${orgId}/equipment/readings`
+      : n.inspection_id ? `/customer/${orgId}/inspections/${n.inspection_id}` : n.asset_id ? `/customer/${orgId}/equipment/${n.asset_id}` : href;
 
   const markAll = () => {
     setItems((xs) => (xs ?? []).map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));

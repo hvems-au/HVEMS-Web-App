@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus, Search, Upload, Download } from "lucide-react";
-import { getAssetConditionCounts, getPersonNames, listAssets } from "@hvems/api-client";
+import { Plus, Search, Upload, Download, Gauge } from "lucide-react";
+import { getAssetConditionCounts, getPersonNames, listAssets, countPendingReadings } from "@hvems/api-client";
 import type { AssetCondition } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
@@ -41,6 +41,7 @@ export default async function EquipmentPage({
   const page = Math.max(Number(firstParam(sp.page) ?? 1) || 1, 1);
 
   const db = await createSupabaseServerClient();
+  const pendingReadings = can(ctx.capabilities, "meter_readings.accept") ? await countPendingReadings(db, orgId) : 0;
   const [counts, { rows, total }] = await Promise.all([
     getAssetConditionCounts(db, orgId),
     listAssets(db, { organisationId: orgId, search: q, condition: tab.condition, status: tab.archived ? "archived" : "current", page, pageSize: PAGE_SIZE }),
@@ -75,6 +76,13 @@ export default async function EquipmentPage({
         description="All your vehicles and equipment"
         actions={
           <>
+            {pendingReadings ? (
+              <Button asChild variant="secondary" className="border-warn-line text-warn-ink">
+                <Link href={`${base}/readings`}>
+                  <Gauge /> Readings to approve ({pendingReadings})
+                </Link>
+              </Button>
+            ) : null}
             <Button asChild variant="secondary">
               <a href={exportHref} download>
                 <Download /> Export CSV

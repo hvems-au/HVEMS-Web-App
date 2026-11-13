@@ -37,6 +37,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     { n: todo.criticalDefects, label: "Critical defects", href: `/customer/${orgId}/defects`, tone: "red" as const },
     { n: todo.minorDefects, label: "Minor defects", href: `/customer/${orgId}/defects`, tone: "amber" as const },
     { n: todo.advisoryDefects, label: "Advisory defects", href: `/customer/${orgId}/defects`, tone: "blue" as const },
+    { n: can(ctx.capabilities, "meter_readings.accept") ? todo.pendingReadings : 0, label: "Readings to approve", href: `/customer/${orgId}/equipment/readings`, tone: "amber" as const },
     { n: todo.missedPrestarts, label: "Missed pre-starts to review", href: `/customer/${orgId}/inspections?tab=missed`, tone: "amber" as const },
     { n: todo.overdueServices, label: "Services overdue", href: `/customer/${orgId}/maintenance`, tone: "red" as const },
     { n: todo.dueSoonServices, label: "Services due soon", href: `/customer/${orgId}/maintenance`, tone: "amber" as const },

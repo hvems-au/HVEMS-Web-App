@@ -429,7 +429,8 @@ export type NotificationKind =
   | "credential_expiring"
   | "credential_expired"
   | "support_access_started"
-  | "prestart_missed";
+  | "prestart_missed"
+  | "meter_reading_review";
 
 export interface CriticalAlert {
   id: UUID;
