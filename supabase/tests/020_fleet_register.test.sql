@@ -102,18 +102,20 @@ reset role;
 insert into public.asset_operator_permissions (organisation_id, membership_id, asset_id) values (:'org', :'driver_m', :'truck');
 select tests.authenticate_as(:'driver');
 select is((select count(*)::int from public.assets), 1, 'a driver sees only the assets they are permitted to operate');
-select (public.record_meter_reading(:'truck', 'km', 150000, now() - interval '3 days', 'manual', 'aaaaaaaa-0000-4000-8000-000000000001')).id as r1 \gset
-select is((select (public.record_meter_reading(:'truck', 'km', 150000, now() - interval '3 days', 'manual', 'aaaaaaaa-0000-4000-8000-000000000001')).id),
+select is(tests.error_code(format($select public.record_meter_reading(%L, 'km', 150000, now() - interval '3 days', 'manual')$, :'truck')), 'forbidden',
+  'operators record readings in a pre-start, not directly');
+select (public.record_meter_reading(:'truck', 'km', 150000, now() - interval '3 days', 'inspection', 'aaaaaaaa-0000-4000-8000-000000000001')).id as r1 \gset
+select is((select (public.record_meter_reading(:'truck', 'km', 150000, now() - interval '3 days', 'inspection', 'aaaaaaaa-0000-4000-8000-000000000001')).id),
   :'r1'::uuid, 'retrying the same submission returns the original reading (idempotent)');
 select is(tests.error_code(format($$select public.record_meter_reading(%L, 'hours', 10)$$, :'truck')), 'meter_type_mismatch',
   'readings must match the asset''s meter type');
-select is(tests.error_code(format($$select public.record_meter_reading(%L, 'km', 160000, now() - interval '2 days')$$, :'truck')), 'implausible_jump_confirmation_required',
+select is(tests.error_code(format($$select public.record_meter_reading(%L, 'km', 160000, now() - interval '2 days', 'inspection')$$, :'truck')), 'implausible_jump_confirmation_required',
   'an implausible jump needs confirmation');
-select lives_ok(format($$select public.record_meter_reading(%L, 'km', 160000, now() - interval '2 days', 'manual', null, null, true)$$, :'truck'),
+select lives_ok(format($$select public.record_meter_reading(%L, 'km', 160000, now() - interval '2 days', 'inspection', null, null, true)$$, :'truck'),
   'a confirmed jump is accepted');
-select is(tests.error_code(format($$select public.record_meter_reading(%L, 'km', 159000, now() - interval '1 day')$$, :'truck')), 'lower_reading_reason_required',
+select is(tests.error_code(format($$select public.record_meter_reading(%L, 'km', 159000, now() - interval '1 day', 'inspection')$$, :'truck')), 'lower_reading_reason_required',
   'a lower reading needs a reason');
-select (public.record_meter_reading(:'truck', 'km', 159000, now() - interval '1 day', 'manual', null, 'Odometer replaced')).id as lower_r \gset
+select (public.record_meter_reading(:'truck', 'km', 159000, now() - interval '1 day', 'inspection', null, 'Odometer replaced')).id as lower_r \gset
 reset role;
 select is((select status::text from public.meter_readings where id = :'lower_r'), 'pending_acceptance', 'a lower reading waits for a manager');
 select is((select current_odometer_km from public.assets where id = :'truck'), 160000.0, 'pending readings never overwrite the current reading');
@@ -128,7 +130,7 @@ select is((select status::text from public.meter_readings where id = :'lower_r')
 select is((select amends_reading_id from public.meter_readings where id = :'amended'), :'lower_r'::uuid, 'the amendment references the original');
 select is((select current_odometer_km from public.assets where id = :'truck'), 159100.0, 'the asset shows the latest accepted reading');
 select tests.authenticate_as(:'driver');
-select (public.record_meter_reading(:'truck', 'km', 155000, now() - interval '36 hours')).out_of_sequence as oos \gset
+select (public.record_meter_reading(:'truck', 'km', 155000, now() - interval '36 hours', 'inspection')).out_of_sequence as oos \gset
 reset role;
 select ok(:'oos'::boolean, 'a reading that arrives out of sequence is kept and flagged');
 

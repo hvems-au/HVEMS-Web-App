@@ -129,8 +129,9 @@ export default async function AssetPage({
   );
   const manage = can(ctx.capabilities, "assets.manage") && !asset.archived_at;
   // Assets without a meter show the form only to managers, who can start tracking one.
-  const canRecord =
-    can(ctx.capabilities, "meter_readings.record") && !asset.archived_at && (asset.meter_type !== "none" || can(ctx.capabilities, "meter_readings.accept"));
+  // Direct readings: Owner, Company Admins and Fleet Managers (the database checks it). Technicians
+  // record readings in a work order, operators in a pre-start.
+  const canRecord = can(ctx.capabilities, "meter_readings.accept") && !asset.archived_at;
   const base = `/customer/${orgId}/equipment`;
 
   return (
@@ -303,6 +304,8 @@ export default async function AssetPage({
                       canAddMeter={can(ctx.capabilities, "meter_readings.accept")}
                       last={{ km: asset.current_odometer_km, hours: asset.current_engine_hours }}
                     />
+                  ) : !asset.archived_at ? (
+                    <p className="mt-3 border-t border-stroke pt-3 text-[12.5px] text-ink-muted">Readings are updated from pre-starts and completed work orders.</p>
                   ) : null}
                 </CardBody>
               </Card>

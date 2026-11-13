@@ -34,8 +34,10 @@ export interface AppShellProps {
   children: React.ReactNode;
 }
 
-// Which menu groups the person opened or closed (this browser only; a convenience).
-const NAV_KEY = "hvems.nav.groups";
+// Which menu groups are open, oldest first (this browser only; a convenience).
+// All start collapsed; at most three stay open (opening a fourth closes the oldest).
+const NAV_KEY = "hvems.nav.open";
+const NAV_MAX_OPEN = 3;
 const NAV_EVENT = "hvems-nav-groups";
 function subscribeNavGroups(onChange: () => void) {
   window.addEventListener("storage", onChange);
@@ -47,9 +49,9 @@ function subscribeNavGroups(onChange: () => void) {
 }
 function readNavGroups(): string {
   try {
-    return window.localStorage.getItem(NAV_KEY) ?? "{}";
+    return window.localStorage.getItem(NAV_KEY) ?? "[]";
   } catch {
-    return "{}";
+    return "[]";
   }
 }
 
@@ -59,24 +61,32 @@ function isActive(pathname: string, href: string) {
 
 function NavLinks({ nav, onNavigate }: { nav: NavSection[]; onNavigate?: () => void }) {
   const pathname = usePathname();
-  const raw = React.useSyncExternalStore(subscribeNavGroups, readNavGroups, () => "{}");
-  const chosen = React.useMemo<Record<string, boolean>>(() => {
+  const raw = React.useSyncExternalStore(subscribeNavGroups, readNavGroups, () => "[]");
+  const openList = React.useMemo<string[]>(() => {
     try {
-      return JSON.parse(raw) as Record<string, boolean>;
+      const v = JSON.parse(raw) as unknown;
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
     } catch {
-      return {};
+      return [];
     }
   }, [raw]);
-  // A group opens by itself when it holds the current page, unless the person closed it.
-  const isOpen = (s: NavSection) => !s.title || (chosen[s.title] ?? s.items.some((i) => isActive(pathname, i.href)));
-  const toggle = (title: string, open: boolean) => {
+  const save = React.useCallback((list: string[]) => {
     try {
-      window.localStorage.setItem(NAV_KEY, JSON.stringify({ ...chosen, [title]: !open }));
+      window.localStorage.setItem(NAV_KEY, JSON.stringify(list.slice(-NAV_MAX_OPEN)));
     } catch {
-      // Storage blocked: the group just won't remember.
+      // Storage blocked: the menu just won't remember.
     }
     window.dispatchEvent(new Event(NAV_EVENT));
-  };
+  }, []);
+  // The group holding the current page opens (and counts towards the three).
+  const activeTitle = nav.find((s) => s.title && s.items.some((i) => isActive(pathname, i.href)))?.title;
+  React.useEffect(() => {
+    if (activeTitle && !openList.includes(activeTitle)) save([...openList, activeTitle]);
+    // Only when the page changes, so closing the current group sticks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTitle, pathname]);
+  const isOpen = (s: NavSection) => !s.title || openList.includes(s.title);
+  const toggle = (title: string, open: boolean) => save(open ? openList.filter((t) => t !== title) : [...openList.filter((t) => t !== title), title]);
   return (
     <nav aria-label="Main" className="flex flex-col gap-1.5">
       {nav.map((section, i) => {
