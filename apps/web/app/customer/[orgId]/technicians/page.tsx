@@ -7,14 +7,17 @@ import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { loadOrgContext, requireCapability } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { FilterBar } from "@/components/filter-bar";
 
 export const metadata: Metadata = { title: "Technicians" };
 
 const dmy = (iso: string) => iso.split("-").reverse().join("/");
 
 /** The people who do work orders: availability, leave, qualifications and current work (CS-19). */
-export default async function TechniciansPage({ params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = await params;
+export default async function TechniciansPage({ params, searchParams }: { params: Promise<{ orgId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [{ orgId }, sp] = await Promise.all([params, searchParams]);
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+  const needle = one(sp.q).trim().toLowerCase();
   const ctx = await loadOrgContext(orgId, ["company"]);
   await requireCapability(ctx, "workforce.manage");
   const db = await createSupabaseServerClient();
@@ -29,12 +32,17 @@ export default async function TechniciansPage({ params }: { params: Promise<{ or
     // Technicians only (main or additional role), the same people work orders can be assigned to.
     .filter((m) => m.status === "active" && (m.role === "technician" || (m.additional_roles ?? []).includes("technician")))
     .sort((a, b) => (a.profile?.full_name ?? "").localeCompare(b.profile?.full_name ?? ""));
+  const profileOf = new Map(data.profiles.map((x) => [x.user_id, x]));
+  const shownPeople = people.filter(
+    (m) => !needle || [m.profile?.full_name, m.profile?.email, profileOf.get(m.user_id)?.trade].some((x) => (x ?? "").toLowerCase().includes(needle)),
+  );
   const base = `/customer/${orgId}/technicians`;
 
   return (
     <>
       <PageHeader title="Technicians" description="Who's available, their qualifications and their current work." />
       <Card>
+        {people.length ? <FilterBar action={`/customer/${orgId}/technicians`} search={{ value: needle, placeholder: "Name, trade or email" }} fields={[]} /> : null}
         {people.length === 0 ? (
           <EmptyState title="No technicians yet">Invite technicians from the Team page. A manager who also does workshop jobs can be given Technician as an additional role.</EmptyState>
         ) : (
@@ -49,7 +57,7 @@ export default async function TechniciansPage({ params }: { params: Promise<{ or
               </tr>
             </THead>
             <tbody>
-              {people.map((m) => {
+              {shownPeople.map((m) => {
                 const profile = data.profiles.find((p) => p.user_id === m.user_id) ?? null;
                 const quals = data.qualifications.filter((q) => q.user_id === m.user_id);
                 const statuses = quals.map((q) => credentialStatus(q.expires_on, today, warnDays));

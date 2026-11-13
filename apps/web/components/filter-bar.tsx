@@ -61,9 +61,11 @@ export function FilterBar({
           ) : (
             <span className="flex-1 sm:hidden" />
           )}
-          <Button type="button" variant="secondary" size="sm" className="h-10 sm:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="filter-fields">
-            <SlidersHorizontal /> Filters{applied ? ` (${applied})` : ""}
-          </Button>
+          {fields.length ? (
+            <Button type="button" variant="secondary" size="sm" className="h-10 sm:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="filter-fields">
+              <SlidersHorizontal /> Filters{applied ? ` (${applied})` : ""}
+            </Button>
+          ) : null}
           {anything ? (
             <Link href={clearHref} className="shrink-0 px-1 pb-2.5 text-[13px] font-medium text-link hover:underline sm:hidden">
               Reset

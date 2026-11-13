@@ -26,9 +26,12 @@ export default async function DefectsPage({
   searchParams,
 }: {
   params: Promise<{ orgId: string }>;
-  searchParams: Promise<{ view?: string; type?: string; q?: string }>;
+  searchParams: Promise<{ view?: string; type?: string; q?: string; from?: string; to?: string }>;
 }) {
-  const [{ orgId }, { view, type, q: rawQ }] = await Promise.all([params, searchParams]);
+  const [{ orgId }, { view, type, q: rawQ, from: rawFrom, to: rawTo }] = await Promise.all([params, searchParams]);
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const from = typeof rawFrom === "string" && ISO.test(rawFrom) ? rawFrom : "";
+  const to = typeof rawTo === "string" && ISO.test(rawTo) ? rawTo : "";
   const q = (typeof rawQ === "string" ? rawQ : "").trim().slice(0, 80);
   const ctx = await loadOrgContext(orgId, ["company"]);
   const db = await createSupabaseServerClient();
@@ -70,6 +73,10 @@ export default async function DefectsPage({
   const needle = q.toLowerCase();
   const rows = (closed ? done : open)
     .filter((d) => !kind || (kind === "prestart" ? d.source !== "operator_report" : d.issue_category === kind))
+    .filter((d) => {
+      const day = new Date(d.reported_at).toLocaleDateString("en-CA", { timeZone: ctx.timezone });
+      return (!from || day >= from) && (!to || day <= to);
+    })
     .filter((d) => !needle || [d.title, d.description, d.asset?.asset_number, d.asset?.make, d.asset?.model].some((x) => (x ?? "").toLowerCase().includes(needle)));
   // Bulk close: for people who can clear defects (the database checks each one again).
   const canBulk = !closed && (can(ctx.capabilities, "defects.clear_non_critical") || can(ctx.capabilities, "defects.clear_critical"));
@@ -121,6 +128,8 @@ export default async function DefectsPage({
               options={[{ value: "prestart", label: "Pre-start faults" }, ...ISSUE_CATEGORIES.map((c) => ({ value: c.value as string, label: c.label as string }))]}
             />
           </span>
+          <input type="date" name="from" defaultValue={from} aria-label="Reported from" title="Reported from" className="h-10 rounded-[8px] border border-stroke-strong bg-surface px-3 text-[13.5px] text-ink sm:w-40" />
+          <input type="date" name="to" defaultValue={to} aria-label="Reported to" title="Reported to" className="h-10 rounded-[8px] border border-stroke-strong bg-surface px-3 text-[13.5px] text-ink sm:w-40" />
         </AutoFilterForm>
       </div>
       {!closed && events.length ? (
@@ -142,7 +151,7 @@ export default async function DefectsPage({
       ) : null}
       <Card>
         {rows.length === 0 ? (
-          <EmptyState title={q || kind ? "No defects match" : closed ? "No closed defects yet" : "No open defects"}>
+          <EmptyState title={q || kind || from || to ? "No defects match" : closed ? "No closed defects yet" : "No open defects"}>
             Faults from pre-starts and issues reported by operators appear here.
           </EmptyState>
         ) : canBulk ? (

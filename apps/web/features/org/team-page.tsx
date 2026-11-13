@@ -8,8 +8,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { InviteDialog, MemberActions, RevokeInvitationButton } from "./team-controls";
 import { EndSupportButton } from "./support-sessions";
 import { MemberSignInLock } from "./unlock-button";
+import { FilterBar } from "@/components/filter-bar";
 
-export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "customer" | "provider" }) {
+export async function TeamPage({ ctx, portal, filter = { q: "", role: "" } }: { ctx: OrgContext; portal: "customer" | "provider"; filter?: { q: string; role: string } }) {
   const orgId = ctx.context.organisation_id;
   const kind = ctx.context.kind;
   const db = await createSupabaseServerClient();
@@ -25,6 +26,13 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
     iso ? new Date(iso).toLocaleTimeString("en-AU", { timeZone: ctx.timezone, hour: "numeric", minute: "2-digit" }) : null;
   const owner = OWNER_ROLE_BY_KIND[kind];
   const invitableRoles = ROLES_BY_KIND[kind].filter((r) => r !== owner);
+  // Search (as you type) and role filter; additional roles count.
+  const needle = filter.q.trim().toLowerCase();
+  const shownMembers = members.filter(
+    (m) =>
+      (!needle || [m.profile?.full_name, m.profile?.email].some((x) => (x ?? "").toLowerCase().includes(needle))) &&
+      (!filter.role || m.role === filter.role || ((m.additional_roles ?? []) as string[]).includes(filter.role)),
+  );
   const canGrant = can(ctx.capabilities, "org.grants.assign") && kind === "company";
 
   return (
@@ -78,6 +86,20 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
       ) : null}
       <Card>
         <CardHeader title={`Members (${members.length})`} />
+        <FilterBar
+          action={`/${portal}/${ctx.context.organisation_id}/team`}
+          search={{ value: filter.q, placeholder: "Name or email" }}
+          fields={[
+            {
+              kind: "select",
+              name: "role",
+              label: "Role",
+              all: "Any role",
+              value: filter.role,
+              options: ROLES_BY_KIND[kind].map((r) => ({ value: r, label: ROLE_LABELS[r] })),
+            },
+          ]}
+        />
         <CardBody className="px-0 pb-1">
           <Table>
             <THead>
@@ -90,7 +112,7 @@ export async function TeamPage({ ctx, portal }: { ctx: OrgContext; portal: "cust
               </tr>
             </THead>
             <tbody>
-              {members.map((m) => {
+              {shownMembers.map((m) => {
                 const grants = (m.grants ?? []).filter((g) => !g.revoked_at);
                 const isOwner = m.role === owner;
                 const self = m.user_id === ctx.user.id;

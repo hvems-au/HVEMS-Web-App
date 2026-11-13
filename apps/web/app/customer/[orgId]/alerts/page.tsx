@@ -12,9 +12,25 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { AcknowledgeButton } from "./acknowledge-button";
 import { MarkAllRead } from "./mark-all-read";
+import { FilterBar } from "@/components/filter-bar";
 
 export const metadata: Metadata = { title: "Alerts" };
 
+const KIND_LABEL: Record<NotificationKind, string> = {
+  critical_defect: "Critical defects",
+  minor_defect: "Minor defects",
+  operator_not_fit: "Operator not fit",
+  out_of_service_hold: "Out-of-service holds",
+  needs_attention_hold: "Needs-attention holds",
+  breakdown: "Breakdowns",
+  regulator_notice: "Defect notices",
+  alert_escalated: "Escalated alerts",
+  credential_expiring: "Expiring credentials",
+  credential_expired: "Expired credentials",
+  support_access_started: "Support access",
+  prestart_missed: "Missed pre-starts",
+  meter_reading_review: "Readings to approve",
+};
 const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }> = {
   critical_defect: { icon: OctagonAlert, tone: "text-danger" },
   minor_defect: { icon: TriangleAlert, tone: "text-warn-ink" },
@@ -37,8 +53,11 @@ const ESCALATION = ["", "Escalated: 30 min", "Escalated: 2 hours"] as const;
  * Owner, a Company Admin or a Fleet Manager; unacknowledged alerts escalate at
  * 30 minutes and 2 hours (settings). Below: this person's own alert feed.
  */
-export default async function AlertsPage({ params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = await params;
+export default async function AlertsPage({ params, searchParams }: { params: Promise<{ orgId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [{ orgId }, sp] = await Promise.all([params, searchParams]);
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const af = { q: one(sp.q).trim().toLowerCase(), kind: one(sp.kind), from: ISO.test(one(sp.from)) ? one(sp.from) : "", to: ISO.test(one(sp.to)) ? one(sp.to) : "", read: one(sp.read) };
   const ctx = await loadOrgContext(orgId, ["company"]);
   const db = await createSupabaseServerClient();
   const canAck = can(ctx.capabilities, "defects.triage");
@@ -48,6 +67,16 @@ export default async function AlertsPage({ params }: { params: Promise<{ orgId: 
     canAck ? listMembers(db, orgId).catch(() => []) : Promise.resolve([]),
   ]);
   const unread = rows.filter((r) => !r.read_at).length;
+  const shownAlerts = rows.filter((n) => {
+    const day = new Date(n.created_at).toLocaleDateString("en-CA", { timeZone: ctx.timezone });
+    return (
+      (!af.q || [n.title, n.body].some((x) => (x ?? "").toLowerCase().includes(af.q))) &&
+      (!af.kind || n.kind === af.kind) &&
+      (af.read !== "unread" || !n.read_at) &&
+      (!af.from || day >= af.from) &&
+      (!af.to || day <= af.to)
+    );
+  });
   const open = alerts.filter((a) => !a.acknowledged_at);
   const recent = alerts.filter((a) => a.acknowledged_at).slice(0, 10);
   const nameOf = (id: string | null) => members.find((m) => m.user_id === id)?.profile?.full_name || "—";
@@ -101,11 +130,21 @@ export default async function AlertsPage({ params }: { params: Promise<{ orgId: 
 
       <Card>
         <CardHeader title="Your alerts" />
-        {rows.length === 0 ? (
-          <EmptyState title="No alerts">You&apos;ll see faults, holds, breakdowns and defect notices here.</EmptyState>
+        <FilterBar
+          action={`/customer/${orgId}/alerts`}
+          search={{ value: af.q, placeholder: "Search alerts" }}
+          fields={[
+            { kind: "select", name: "kind", label: "Type", all: "All types", value: af.kind, options: Object.entries(KIND_LABEL).map(([value, label]) => ({ value, label })) },
+            { kind: "select", name: "read", label: "Read", all: "Read and unread", value: af.read, options: [{ value: "unread", label: "Unread only" }] },
+            { kind: "date", name: "from", label: "From", value: af.from },
+            { kind: "date", name: "to", label: "To", value: af.to },
+          ]}
+        />
+        {shownAlerts.length === 0 ? (
+          <EmptyState title={rows.length ? "No alerts match" : "No alerts"}>{rows.length ? "Try a different search or filter." : "You'll see faults, holds, breakdowns and defect notices here."}</EmptyState>
         ) : (
           <ul className="divide-y divide-stroke">
-            {rows.map((n) => {
+            {shownAlerts.map((n) => {
               const k = KIND[n.kind];
               return (
                 <li key={n.id} className={cn("flex items-start gap-3 px-5 py-3.5", !n.read_at && "bg-brand-soft")}>
