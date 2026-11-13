@@ -1,5 +1,17 @@
 # Development progress log
 
+## 2026-11-13 — Technician workspace; HVEMS dialogs everywhere
+**Done**
+- Migration `20261113042238 technician_workspace` (applied by Claude): only people who work on jobs can be assigned one; a technician starts or completes only their own (or unassigned) jobs; `work_order_reports` (pre/post: checks, notes, photos, readings) and a technician can't complete an internal job without both; `work_order_files` (invoices, receipts, quotes; private bucket `work-order-files`; amounts in cents; removing marks removed); next service due chosen in the post-work report becomes the plan's next due when the job is closed, kept in `service_plan_due_history`. pgTAP `320`; `250` updated.
+- Web: **My Jobs** (technicians land here): jobs to do with what's next, overdue, waiting for review, completed, unassigned jobs, Start pre-start, Report an issue. Job page: four-step progress, pre-work report (starts the job), post-work report with labour, costs and next service due (shows what was chosen before), invoices and documents, report an issue and return to the job. Managers open reports and invoices from the work order.
+- Work orders: "Done by" renamed "Assigned to" (it always showed the assignee; WO-0004 was assigned to the Finance user and completed by the technician). Assignee lists offer only people who work on jobs.
+- Every browser pop-up (confirm / prompt) replaced by one HVEMS dialog, including Review and close, Reopen and Cancel on work orders. Top bar says "Company Portal". Sites no longer show shift times.
+- Checked in the browser as Tech User: WO-0005 pre-work → post-work (next due 12/05/2027 · 18,300 km · 780 h) → invoice $312.40 → closed by the Company Admin; the plan's next due and history updated.
+
+**Limitations**
+- Report photos are counted on the job page, not shown.
+- A manager completing an internal job from Work Orders doesn't need the reports (the rule is for technicians).
+
 ## 2026-11-12 — Issue categories, live search everywhere, alert tray, bulk missed review
 **Done**
 - Migration `20261112154800 issue_categories` (applied by Claude): `defects.issue_category` (breakdown, engine, brakes, tyres, electrical, hydraulics, leak, damage, safety equipment, other) and `submit_issue_report` (category required); `report_issue` still works and files under other. The category never changes severity; urgency does. pgTAP `310`.
