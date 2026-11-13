@@ -173,7 +173,7 @@ function ContextSwitcher({ current, contexts }: { current: ShellContext; context
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-ink">{c.name}</span>
                   <span className="block truncate text-[11.5px] text-ink-subtle">
-                    {c.kindLabel} · {c.roleLabel}
+                    {c.kindLabel.startsWith(c.roleLabel) ? c.kindLabel : `${c.kindLabel} · ${c.roleLabel}`}
                   </span>
                 </span>
                 {c.id === current.id && c.portal === current.portal ? (

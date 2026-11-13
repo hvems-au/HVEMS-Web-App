@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { isTechnicianOnly } from "@/lib/shell-data";
 import { AlertOctagon, AlertTriangle, Building2, CheckCircle2, ChevronRight, MapPin, Plus, Truck, Upload, Users, Wrench } from "lucide-react";
 import { getAssetConditionCounts, getDashboardTodo, listAssets, listClients, listMembers, listSites } from "@hvems/api-client";
 import { fleetSubscriptionCents, formatAud, monthlyWaiverAllowance } from "@hvems/domain";
@@ -20,7 +21,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   const ctx = await loadOrgContext(orgId, ["company", "marketplace_customer"]);
   if (ctx.context.kind === "marketplace_customer") return <MarketplaceCustomerDashboard orgId={orgId} name={ctx.context.organisation_name} />;
   // Technicians start on their own jobs (managers keep the fleet dashboard; My Jobs is in the menu).
-  if (can(ctx.capabilities, "work_orders.work") && !can(ctx.capabilities, "work_orders.manage") && !can(ctx.capabilities, "assets.manage")) redirect(`/customer/${orgId}/my-work`);
+  if (isTechnicianOnly(ctx)) redirect(`/customer/${orgId}/my-work`);
 
   const db = await createSupabaseServerClient();
   const canAssets = can(ctx.capabilities, "assets.view") || can(ctx.capabilities, "assets.view_permitted");

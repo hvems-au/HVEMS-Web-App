@@ -37,6 +37,8 @@ export interface NavItem {
   icon: IconName;
   /** Shown only if the member holds this capability (UI only; the database enforces access). */
   capability?: Capability;
+  /** Hidden for technicians who only do jobs (they start on My Jobs). */
+  hideForTechnicians?: boolean;
   /** Stage 2 increment that delivers the module, when not yet built. */
   increment?: "2B" | "2C" | "2D";
 }
@@ -72,7 +74,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
   return [
     {
       items: [
-        { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
+        { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard", hideForTechnicians: true },
         { label: "My Jobs", href: `${base}/my-work`, icon: "jobs", capability: "work_orders.work" },
       ],
     },

@@ -3,7 +3,7 @@ import { providerNav } from "@/lib/navigation";
 import { getCurrentPortal } from "@/lib/current-portal";
 import { signOrganisationLogo } from "@hvems/api-client";
 import { loadOrgContext } from "@/lib/session";
-import { filterNav, toShellContext } from "@/lib/shell-data";
+import { currentShellContext, filterNav, toShellContext } from "@/lib/shell-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function ProviderLayout({ children, params }: { children: React.ReactNode; params: Promise<{ orgId: string }> }) {
@@ -14,7 +14,7 @@ export default async function ProviderLayout({ children, params }: { children: R
     <AppShell
       nav={filterNav(providerNav(orgId), ctx)}
       user={{ fullName: ctx.user.fullName, email: ctx.user.email }}
-      current={{ ...toShellContext(ctx.context, portal), logoUrl }}
+      current={{ ...currentShellContext(ctx, portal), logoUrl }}
       contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
       banner={
         ctx.context.status === "suspended" ? (
