@@ -59,6 +59,10 @@ select is(tests.error_code(format($$select public.update_work_order_status(%L, '
 reset role;
 select tests.authenticate_as(:'tech');
 select lives_ok(format($$select public.update_work_order_status(%L, 'start')$$, :'wo'::jsonb ->> 'id'), 'the technician starts it');
+select is(tests.error_code(format($$select public.update_work_order_status(%L, 'complete', 'Oil done')$$, :'wo'::jsonb ->> 'id')), 'reports_required',
+  'a technician needs the pre-work and post-work reports first');
+select lives_ok(format($$select public.submit_work_order_report(%L, 'pre', 'Leaking oil seal, otherwise good')$$, :'wo'::jsonb ->> 'id'), 'pre-work report');
+select lives_ok(format($$select public.submit_work_order_report(%L, 'post', 'Oil, filters and greasing done')$$, :'wo'::jsonb ->> 'id'), 'post-work report');
 select is(tests.error_code(format($$select public.update_work_order_status(%L, 'complete', '')$$, :'wo'::jsonb ->> 'id')), 'notes_required', 'completing needs notes');
 select lives_ok(format($$select public.update_work_order_status(%L, 'complete', 'Oil, filters and greasing done', null, 1012, 3.5, 48000)$$, :'wo'::jsonb ->> 'id'),
   'and completes it with hours, labour and cost');
