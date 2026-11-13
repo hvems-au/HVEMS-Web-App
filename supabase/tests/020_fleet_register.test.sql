@@ -102,7 +102,7 @@ reset role;
 insert into public.asset_operator_permissions (organisation_id, membership_id, asset_id) values (:'org', :'driver_m', :'truck');
 select tests.authenticate_as(:'driver');
 select is((select count(*)::int from public.assets), 1, 'a driver sees only the assets they are permitted to operate');
-select is(tests.error_code(format($select public.record_meter_reading(%L, 'km', 150000, now() - interval '3 days', 'manual')$, :'truck')), 'forbidden',
+select is(tests.error_code(format($$select public.record_meter_reading(%L, 'km', 150000, now() - interval '3 days', 'manual')$$, :'truck')), 'forbidden',
   'operators record readings in a pre-start, not directly');
 select (public.record_meter_reading(:'truck', 'km', 150000, now() - interval '3 days', 'inspection', 'aaaaaaaa-0000-4000-8000-000000000001')).id as r1 \gset
 select is((select (public.record_meter_reading(:'truck', 'km', 150000, now() - interval '3 days', 'inspection', 'aaaaaaaa-0000-4000-8000-000000000001')).id),
