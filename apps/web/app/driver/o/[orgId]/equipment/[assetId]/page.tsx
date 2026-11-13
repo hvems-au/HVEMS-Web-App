@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClipboardCheck, MessageSquareWarning, OctagonAlert, TriangleAlert } from "lucide-react";
+import { ClipboardCheck, MessageSquareWarning, OctagonAlert, TriangleAlert, UserRoundX } from "lucide-react";
+import { driverSignOutAction } from "@/app/driver/actions";
 import { getAsset, listDefects } from "@hvems/api-client";
 import { DEFECT_SEVERITY_LABELS } from "@hvems/domain";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,17 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Equipment" };
 
 /** The selected vehicle or machine: restrictions, what's already reported, and the two actions. */
-export default async function OperatorAsset({ params }: { params: Promise<{ orgId: string; assetId: string }> }) {
-  const { orgId, assetId } = await params;
+export default async function OperatorAsset({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orgId: string; assetId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ orgId, assetId }, sp] = await Promise.all([params, searchParams]);
+  // Came from scanning a QR label while already signed in (e.g. a shared site tablet).
+  const viaQr = sp.via === "qr";
+  const qrCode = typeof sp.code === "string" && /^[A-Za-z0-9_-]{6,40}$/.test(sp.code) ? sp.code : undefined;
   const base = `/driver/o/${orgId}`;
   const ctx = await loadOperatorContext(orgId, `${base}/equipment/${assetId}`);
   const db = await createSupabaseServerClient();
@@ -27,6 +37,18 @@ export default async function OperatorAsset({ params }: { params: Promise<{ orgI
 
   return (
     <>
+      {viaQr ? (
+        <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border-2 border-brand/50 bg-brand-soft px-4 py-3">
+          <p className="text-[14.5px] text-ink">
+            Signed in as <span className="font-semibold">{ctx.user.fullName || ctx.user.email}</span>. Everything you do here is recorded under this name.
+          </p>
+          <form action={driverSignOutAction.bind(null, qrCode)}>
+            <Button type="submit" variant="secondary" size="sm">
+              <UserRoundX /> Not you? Switch user
+            </Button>
+          </form>
+        </div>
+      ) : null}
       <OperatorAssetHeader asset={asset} />
       {restriction ? (
         <div

@@ -42,3 +42,17 @@ One Next.js app. `lib/portals.ts` maps the request host to a portal:
 - **Secrets:** the service (secret) key is now required at runtime for handoffs. `PORTAL_HANDOFF_SECRET` is optional; without it a signing key is derived from the service key.
 - **Drivers:** the portal exists now, with a non-functional notice. PIN sessions arrive with driver profiles in 2B (short-lived token limited to permitted assets, not a Supabase user).
 - **Later:** if HVEMS wants physically separate apps, the route groups can split without schema changes.
+
+## Amendment (13 Nov 2026, Ahmad): one sign-in for the whole company
+The company portal (`portal.hvems.com.au`) is now the single sign-in for everyone in a company. The separate operator portal is retired.
+- **Sign-in page:** email and password for staff, plus an "Operator or contractor?" option leading to Operator ID + PIN (company code), first-time setup, or a QR label.
+- **The view follows the role:**
+  - Owner, Company Admin, Fleet Manager and Finance get the company screens.
+  - Technicians who only do jobs get the simple Technician view (My Jobs, Equipment, Inspections).
+  - People who are only Operators get the operator view (`/driver/o/...`), including when they sign in by email.
+  - Mixed roles get the most senior view.
+- **Old operator address:** `operator.` (and `dev-operator.`) only redirects (308) to the same path on the company portal, so printed QR labels and bookmarks keep working. New labels print the company portal address.
+- **Shared site tablets:**
+  1. A QR scan while someone is already signed in shows "Signed in as …, not you? Switch user" before anything is recorded.
+  2. Operator screens sign out after `security.idle_timeout_minutes_operator` (20 minutes, a platform setting).
+- **Unchanged:** the Super Admin console (`admin.`) and the provider portal (`provider.`) stay separate, with their own sessions.

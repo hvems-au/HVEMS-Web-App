@@ -10,7 +10,7 @@
  */
 export const ACTIVITY_COOKIE = "hvems_last_active";
 export const IDLE_LIMIT_COOKIE = "hvems_idle_minutes";
-export const IDLE_DEFAULT_MINUTES = { portal: 180, console: 30 } as const;
+export const IDLE_DEFAULT_MINUTES = { portal: 180, console: 30, operator: 20 } as const;
 
 export function encodeActivity(sessionId: string, atSeconds: number): string {
   return `${sessionId}.${atSeconds}`;

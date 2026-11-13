@@ -1,4 +1,5 @@
 import { countUnreadNotifications } from "@hvems/api-client";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
 import { customerNav } from "@/lib/navigation";
 import { getCurrentPortal } from "@/lib/current-portal";
@@ -21,6 +22,8 @@ export default async function CustomerLayout({ children, params }: { children: R
     db.from("org_memberships").select("role, additional_roles").eq("organisation_id", orgId).eq("user_id", ctx.user.id).maybeSingle(),
   ]);
   const roles = [ctx.context.role as string, ...(((membership.data as { additional_roles?: string[] } | null)?.additional_roles) ?? [])];
+  // One sign-in portal: people who are only Operators get the operator view, not the company screens.
+  if (isCompany && roles.every((r) => r === "driver_operator")) redirect(`/driver/o/${orgId}`);
   return (
     <AppShell
       nav={filterNav(customerNav(orgId, ctx.context.kind), ctx, roles)}

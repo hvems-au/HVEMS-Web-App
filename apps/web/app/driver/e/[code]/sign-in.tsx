@@ -14,10 +14,10 @@ type Mode = "pin" | "setup" | "email";
  * in directly asks for the company code instead. `next` is where to go after
  * (an internal /driver path, checked by the caller).
  */
-export function DriverSignIn({ code, next }: { code?: string; next?: string }) {
+export function DriverSignIn({ code, next, initialMode = "pin" }: { code?: string; next?: string; /** Staff use the main sign-in page, so operator sign-in opens on the PIN. */ initialMode?: Mode }) {
   const [companyCode, setCompanyCode] = React.useState("");
   const router = useRouter();
-  const [mode, setMode] = React.useState<Mode>("email");
+  const [mode, setMode] = React.useState<Mode>(initialMode);
   const [driverId, setDriverId] = React.useState("");
   const [secret, setSecret] = React.useState("");
   const [pin1, setPin1] = React.useState("");
@@ -76,9 +76,9 @@ export function DriverSignIn({ code, next }: { code?: string; next?: string }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="flex gap-1 rounded-[8px] bg-surface-muted p-1">
-        {tab("email", "Email login")}
         {tab("pin", "Operator PIN")}
         {tab("setup", "First time")}
+        {tab("email", "Email login")}
       </div>
       {error ? <FormAlert>{error}</FormAlert> : null}
       {mode === "email" ? (

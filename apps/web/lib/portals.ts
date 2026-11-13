@@ -6,7 +6,9 @@
  *   company   company organisations; companies also reach the marketplace here
  *   market    marketplace-only customers (post jobs without a fleet)
  *   provider  service providers
- *   driver    drivers: equipment code + Driver ID + PIN (increment 2B)
+ *   driver    retired as a separate portal (13 Nov 2026): operators sign in on
+ *             the company portal (Operator ID + PIN, or a QR label); the old
+ *             operator host only redirects there, so printed labels keep working
  *
  * Supabase session cookies are host-only, so each portal has its own session
  * (spec §2.5 "separate sessions"); moving between portals uses a single-use
@@ -50,16 +52,17 @@ export function portalOrigin(portal: PortalId): string {
   return `${local ? "http" : "https"}://${host}`;
 }
 
-/** The live operator portal (production), printed on equipment labels while testing locally. */
-export const LIVE_DRIVER_URL = "https://operator.hvems.com.au";
+/** The live portal (production), printed on equipment labels while testing locally. */
+export const LIVE_PORTAL_URL = "https://portal.hvems.com.au";
 
 /**
- * The driver portal address printed on QR labels. Labels outlive test builds,
- * so a local development host is never printed: the live address is used instead.
+ * The address printed on QR labels (operators sign in on the company portal).
+ * Labels outlive test builds, so a local development host is never printed:
+ * the live address is used instead.
  */
 export function printedDriverUrl(): string {
-  const origin = portalOrigin("driver");
-  return origin.startsWith("http://") ? LIVE_DRIVER_URL : origin;
+  const origin = portalOrigin("company");
+  return origin.startsWith("http://") ? LIVE_PORTAL_URL : origin;
 }
 
 /** Which portal an organisation of each kind is used in. */
@@ -98,7 +101,9 @@ export const PORTAL_INFO: Record<PortalId, PortalInfo> = {
     loginSubtitle: "Your fleet, inspections, defects and maintenance in one place.",
     orgKinds: ["company"],
     signUp: true,
-    prefixes: ["/customer", "/onboarding", "/select-context", "/account"],
+    // One sign-in for everyone in a company: staff by email, operators by
+    // Operator ID + PIN or a QR label (the operator view lives under /driver).
+    prefixes: ["/customer", "/onboarding", "/select-context", "/account", "/driver"],
     home: "/select-context",
   },
   market: {

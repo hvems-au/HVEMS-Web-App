@@ -11,7 +11,7 @@ import { driverSignOutAction } from "./actions";
 import { CodeForm } from "./code-form";
 import { DriverSignIn } from "./e/[code]/sign-in";
 
-export const metadata: Metadata = { title: "Driver / Operator sign in" };
+export const metadata: Metadata = { title: "Operator sign in" };
 
 /**
  * Driver / Operator sign in (bookmarkable). Signed in: straight to the operator
@@ -64,13 +64,13 @@ export default async function DriverPortalPage({ searchParams }: { searchParams:
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-[26px] leading-tight font-bold text-ink">Driver / Operator sign in</h1>
+      <h1 className="text-[26px] leading-tight font-bold text-ink">Operator sign in</h1>
       <p className="mt-1 mb-5 text-[15px] text-ink-muted">
-        {next ? "Sign in to continue." : "Do pre-starts, report issues and see your history."}
+        {next ? "Sign in to continue." : "For operators and contractors: do pre-starts, report issues and see your history."}
       </p>
       <Card>
         <CardBody>
-          <DriverSignIn next={next} />
+          <DriverSignIn next={next} initialMode={firstParam(sp.mode) === "email" ? "email" : "pin"} />
         </CardBody>
       </Card>
       <details className="card group mt-4">
@@ -83,6 +83,12 @@ export default async function DriverPortalPage({ searchParams }: { searchParams:
           <CodeForm />
         </div>
       </details>
+      <p className="mt-5 text-center text-[13.5px] text-ink-muted">
+        Office or workshop staff?{" "}
+        <Link href="/login" className="font-semibold text-link hover:underline">
+          Sign in with email
+        </Link>
+      </p>
     </div>
   );
 }

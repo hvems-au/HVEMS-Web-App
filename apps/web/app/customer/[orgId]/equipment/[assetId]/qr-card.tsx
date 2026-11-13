@@ -9,7 +9,7 @@ import { portalOrigin } from "@/lib/portals";
 import { GenerateCodeButton, ReplaceCodeButton } from "./code-buttons";
 
 export function equipmentCodeUrl(token: string) {
-  return `${portalOrigin("driver")}/driver/e/${token}`;
+  return `${portalOrigin("company")}/driver/e/${token}`;
 }
 
 /**

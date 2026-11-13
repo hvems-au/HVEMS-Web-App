@@ -10,7 +10,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
           <a href="/driver" className="w-28" aria-label="Operator home">
             <Logo variant="horizontal" priority />
           </a>
-          <span className="text-[13px] font-semibold text-ink-muted">Driver / Operator</span>
+          <span className="text-[13px] font-semibold text-ink-muted">Operator</span>
           <ThemeSwitcher compact className="ml-auto" />
         </div>
       </header>

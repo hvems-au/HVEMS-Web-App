@@ -90,7 +90,7 @@ export default async function DriversPage({
         orgId={orgId}
         companyCode={access?.operator_code ?? null}
         anyEquipment={access?.operators_any_equipment ?? true}
-        signInUrl={portalOrigin("driver").replace(/^https?:\/\//, "")}
+        signInUrl={`${portalOrigin("company").replace(/^https?:\/\//, "")}/driver`}
       />
       <Card>
         {drivers.length ? (

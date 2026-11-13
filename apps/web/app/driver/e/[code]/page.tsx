@@ -87,7 +87,7 @@ export default async function ScannedEquipmentPage({ params }: { params: Promise
   // Signed in and allowed to use this equipment: open its screen in the operator
   // workspace (pre-start or report an issue), with the scanned equipment selected.
   const visible = await getAsset(db, eq.asset_id).catch(() => null);
-  if (visible && !visible.archived_at) redirect(`/driver/o/${eq.organisation_id}/equipment/${eq.asset_id}`);
+  if (visible && !visible.archived_at) redirect(`/driver/o/${eq.organisation_id}/equipment/${eq.asset_id}?via=qr&code=${encodeURIComponent(code)}`);
 
   const signOut = (
     <form action={driverSignOutAction.bind(null, code)}>

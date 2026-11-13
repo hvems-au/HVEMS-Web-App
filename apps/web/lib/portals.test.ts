@@ -30,11 +30,11 @@ describe("portal hosts", () => {
     expect(portalOrigin("provider")).toBe("http://provider.localhost:3000");
   });
 
-  it("prints the live driver address on labels, never a local one", () => {
-    process.env.DRIVER_HOST = "driver.localhost:3000";
-    expect(printedDriverUrl()).toBe("https://operator.hvems.com.au");
-    process.env.DRIVER_HOST = "drivers.example.com.au";
-    expect(printedDriverUrl()).toBe("https://drivers.example.com.au");
+  it("prints the live portal address on labels, never a local one", () => {
+    process.env.COMPANY_HOST = "company.localhost:3000";
+    expect(printedDriverUrl()).toBe("https://portal.hvems.com.au");
+    process.env.COMPANY_HOST = "portal.example.com.au";
+    expect(printedDriverUrl()).toBe("https://portal.example.com.au");
   });
 
   it("keeps companies (with their marketplace) separate from marketplace-only customers", () => {
