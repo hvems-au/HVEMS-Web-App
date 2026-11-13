@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input } from "@/components/ui/form";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { redeemRecoveryCodeAction } from "./actions";
+import { confirmDialog } from "@/components/ui/confirm";
 
 async function loadPhase(): Promise<Phase> {
   const auth = getSupabaseBrowserClient().auth;
@@ -263,8 +264,13 @@ function RecoveryCodesStatus({ onCreated }: { onCreated: (codes: string[]) => vo
     };
   }, []);
 
-  const create = () => {
-    if (status && status.remaining > 0 && !window.confirm("Create a new set of recovery codes? Your current codes will stop working.")) return;
+  const create = async () => {
+    if (
+      status &&
+      status.remaining > 0 &&
+      !(await confirmDialog({ title: "Create new recovery codes?", description: "Your current recovery codes will stop working.", confirmLabel: "Create new codes" }))
+    )
+      return;
     start(async () => {
       try {
         onCreated(await generateMfaRecoveryCodes(getSupabaseBrowserClient()));

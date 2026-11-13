@@ -8,6 +8,7 @@ import { idleState, type ClientActionState } from "@/lib/client-state";
 import { TimezoneSelect } from "@/components/timezone-select";
 import { SignInLock } from "@/components/sign-in-lock";
 import { adminResetUserMfaAction, adminUnlockSignInAction, endSupportAccessAction, setSuspendedAction, startSupportAccessAction, updateOrganisationAction } from "./actions";
+import { confirmDialog, promptDialog } from "@/components/ui/confirm";
 
 function useToastAction(action: (prev: ClientActionState, form: FormData) => Promise<ClientActionState>, onSuccess?: () => void) {
   const [state, run, pending] = React.useActionState(async (prev: ClientActionState, form: FormData) => {
@@ -92,10 +93,17 @@ export function SuspensionForm({ org }: { org: Organisation }) {
           type="submit"
           variant={suspended ? "primary" : "danger"}
           disabled={a.pending}
-          onClick={(e) => {
-            if (!suspended && !window.confirm(`De-activate ${org.name}? Its members can still sign in for safety records, but can't add equipment or members.`)) {
-              e.preventDefault();
-            }
+          onClick={async (e) => {
+            if (suspended) return;
+            e.preventDefault();
+            const form = e.currentTarget.form;
+            const ok = await confirmDialog({
+              title: `De-activate ${org.name}?`,
+              description: "Its members can still sign in for safety records, but can't add equipment or members.",
+              confirmLabel: "De-activate",
+              danger: true,
+            });
+            if (ok) form?.requestSubmit();
           }}
         >
           {a.pending ? "Saving…" : suspended ? "Reinstate organisation" : "De-activate organisation"}
@@ -113,12 +121,14 @@ export function ResetMfaButton({ orgId, userId, name }: { orgId: string; userId:
       variant="ghost"
       size="sm"
       disabled={pending}
-      onClick={() => {
-        const reason = window.prompt(
-          `Reset multi-factor authentication for ${name}? Their authenticator app and recovery codes stop working, and they set up a new one at their next sign-in.
-
-How did you confirm who they are? (at least 10 characters)`,
-        );
+      onClick={async () => {
+        const reason = await promptDialog({
+          title: `Reset multi-factor authentication for ${name}?`,
+          description: "Their authenticator app and recovery codes stop working, and they set up a new one at their next sign-in.",
+          input: { label: "How did you confirm who they are?", hint: "At least 10 characters", required: true },
+          confirmLabel: "Reset MFA",
+          danger: true,
+        });
         if (!reason) return;
         start(async () => {
           const res = await adminResetUserMfaAction(orgId, userId, reason);

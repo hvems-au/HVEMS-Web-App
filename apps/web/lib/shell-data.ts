@@ -1,5 +1,12 @@
 import "server-only";
-import { KIND_LABELS, ROLE_LABELS, can } from "@hvems/permissions";
+import { ROLE_LABELS, can, type OrganisationKind } from "@hvems/permissions";
+
+/** What the top bar and account switcher call each kind of account. */
+const PORTAL_LABELS: Record<OrganisationKind, string> = {
+  company: "Company Portal",
+  marketplace_customer: "Marketplace",
+  provider: "Provider Portal",
+};
 import type { MyContext } from "@hvems/types";
 import type { ShellContext } from "@/components/shell/app-shell";
 import type { NavSection } from "@/lib/navigation";
@@ -12,7 +19,7 @@ export function toShellContext(c: MyContext, current: PortalId): ShellContext {
   return {
     id: c.organisation_id,
     name: c.organisation_name,
-    kindLabel: KIND_LABELS[c.kind],
+    kindLabel: PORTAL_LABELS[c.kind],
     portal: c.kind === "provider" ? "provider" : "customer",
     roleLabel: ROLE_LABELS[c.role],
     href: contextHref(c, current),

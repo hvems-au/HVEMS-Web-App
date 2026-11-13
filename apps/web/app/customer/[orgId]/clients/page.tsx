@@ -47,7 +47,7 @@ export default async function ClientsPage({
   const siteAddress = (x: (typeof sites)[number]) =>
     [x.address_line1, x.address_line2, [x.suburb, x.state, x.postcode].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const clientName = new Map(clients.map((c) => [c.id, c.name]));
-  const shownSites = sites.filter((x) => hit(x.name, siteAddress(x), x.client_id ? clientName.get(x.client_id) : "Own site", x.contact_name, x.shift_times));
+  const shownSites = sites.filter((x) => hit(x.name, siteAddress(x), x.client_id ? clientName.get(x.client_id) : "Own site", x.contact_name));
   const base = `/customer/${orgId}/clients`;
   const canEditClients = can(ctx.capabilities, "clients.manage");
   const canEditSites = can(ctx.capabilities, "sites.manage");
@@ -164,7 +164,7 @@ export default async function ClientsPage({
           )
         ) : sites.length === 0 ? (
           <EmptyState icon={<MapPin />} title="No sites yet">
-            Record depots, workshops and client sites with their timezone, shift times and access and safety instructions.
+            Record depots, workshops and client sites with their address, timezone, contact and access and safety instructions.
           </EmptyState>
         ) : shownSites.length === 0 ? (
           <EmptyState title="No sites match">Try part of the site name, address, client or contact.</EmptyState>
@@ -175,7 +175,6 @@ export default async function ClientsPage({
                 <TH>Site</TH>
                 <TH>Client</TH>
                 <TH>Location</TH>
-                <TH>Shift times</TH>
                 <TH>Contact</TH>
                 <TH>Equipment</TH>
                 {canEditSites ? <TH className="w-24" /> : null}
@@ -190,7 +189,6 @@ export default async function ClientsPage({
                     {siteAddress(s) || "—"}
                     <span className="block text-[12px] text-ink-subtle">{s.timezone.replace("Australia/", "")} time</span>
                   </TD>
-                  <TD className="max-w-[220px] truncate">{s.shift_times ?? "—"}</TD>
                   <TD>{s.contact_name ?? "—"}</TD>
                   <TD>{equipmentFor("site_id", s.id)}</TD>
                   {canEditSites ? (

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select } from "@/components/ui/form";
 import { Badge } from "@/components/ui/primitives";
 import { deleteDriverCredentialAction, saveDriverCredentialAction } from "./actions";
+import { confirmDialog } from "@/components/ui/confirm";
 
 export type CredentialRow = DriverCredential & { status: CredentialStatus; expiresText: string | null };
 
@@ -43,8 +44,8 @@ export function CredentialsDialog({ orgId, driverId, name, credentials }: { orgI
       router.refresh();
     });
 
-  const remove = (c: CredentialRow) => {
-    if (!window.confirm(`Remove ${credentialTitle(c)} (${c.number}) from ${name}?`)) return;
+  const remove = async (c: CredentialRow) => {
+    if (!(await confirmDialog({ title: `Remove ${credentialTitle(c)} (${c.number})?`, description: `It's removed from ${name}'s credentials.`, confirmLabel: "Remove", danger: true }))) return;
     start(async () => {
       const res = await deleteDriverCredentialAction(orgId, c.id);
       if (res.status === "error") toast.error(res.message);

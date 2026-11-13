@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/primitives";
+import { confirmDialog } from "@/components/ui/confirm";
 
 type Result = { status: "idle" } | { status: "success"; message?: string } | { status: "error"; message: string };
 
@@ -37,8 +38,8 @@ export function SignInLock({
         type="button"
         disabled={pending}
         className="text-[12.5px] font-semibold text-link hover:underline disabled:opacity-50"
-        onClick={() => {
-          if (!window.confirm(`Unlock sign-in for ${name}? Their wrong-password count is cleared and they can sign in straight away.`)) return;
+        onClick={async () => {
+          if (!(await confirmDialog({ title: `Unlock sign-in for ${name}?`, description: "Their wrong-password count is cleared and they can sign in straight away.", confirmLabel: "Unlock" }))) return;
           start(async () => {
             const res = await unlock();
             if (res.status === "success") toast.success(res.message ?? "Unlocked");

@@ -2,6 +2,7 @@
 import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { ConfirmHost } from "@/components/ui/confirm";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(
@@ -11,6 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       {children}
       <Toaster position="top-right" richColors closeButton />
+      <ConfirmHost />
     </QueryClientProvider>
   );
 }

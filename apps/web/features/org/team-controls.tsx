@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
 import { idleState, type ClientActionState } from "@/lib/client-state";
+import { confirmDialog, promptDialog } from "@/components/ui/confirm";
 import {
   assignGrantAction,
   changeRoleAction,
@@ -341,9 +342,14 @@ export function MemberActions({
               <DropdownMenu.Item
                 key={g.id}
                 className="rounded-md px-2 py-2 outline-none data-[highlighted]:bg-surface-muted"
-                onSelect={() => {
-                  const reason = window.prompt(`Reason for revoking ${g.label} from ${name}?`);
-                  if (reason && reason.trim().length >= 3) run(() => revokeGrantAction(portal, orgId, g.id, reason.trim()));
+                onSelect={async () => {
+                  const reason = await promptDialog({
+                    title: `Revoke ${g.label} from ${name}?`,
+                    input: { label: "Reason", required: true },
+                    confirmLabel: "Revoke",
+                    danger: true,
+                  });
+                  if (reason) run(() => revokeGrantAction(portal, orgId, g.id, reason));
                 }}
               >
                 Revoke {g.label}
@@ -351,13 +357,15 @@ export function MemberActions({
             ))}
             <DropdownMenu.Item
               className="rounded-md px-2 py-2 outline-none data-[highlighted]:bg-surface-muted"
-              onSelect={() => {
-                const reason = window.prompt(
-                  `Reset multi-factor authentication for ${name}? Their authenticator app and recovery codes stop working, and they set up a new one at their next sign-in.
-
-Reason (for example "lost phone"):`,
-                );
-                if (reason && reason.trim().length >= 3) run(() => resetMemberMfaAction(portal, orgId, membershipId, reason.trim()));
+              onSelect={async () => {
+                const reason = await promptDialog({
+                  title: `Reset multi-factor authentication for ${name}?`,
+                  description: "Their authenticator app and recovery codes stop working, and they set up a new one at their next sign-in.",
+                  input: { label: "Reason", hint: 'For example "lost phone"', required: true },
+                  confirmLabel: "Reset MFA",
+                  danger: true,
+                });
+                if (reason) run(() => resetMemberMfaAction(portal, orgId, membershipId, reason));
               }}
             >
               Reset MFA…
@@ -365,8 +373,9 @@ Reason (for example "lost phone"):`,
             <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
             <DropdownMenu.Item
               className="rounded-md px-2 py-2 text-danger outline-none data-[highlighted]:bg-danger-soft"
-              onSelect={() => {
-                if (window.confirm(`Remove ${name}? Their records and history are kept.`)) run(() => removeMemberAction(portal, orgId, membershipId));
+              onSelect={async () => {
+                if (await confirmDialog({ title: `Remove ${name}?`, description: "Their records and history are kept.", confirmLabel: "Remove member", danger: true }))
+                  run(() => removeMemberAction(portal, orgId, membershipId));
               }}
             >
               Remove member

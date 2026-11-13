@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
 import type { ActionState } from "@/lib/actions";
 import { addLeaveAction, cancelLeaveAction, deleteQualificationAction, saveProfileAction, saveQualificationAction } from "./actions";
+import { confirmDialog } from "@/components/ui/confirm";
 
 /** Runs a server action, shows the result and refreshes the page. */
 function useRun() {
@@ -155,8 +156,8 @@ export function DeleteQualificationButton({ orgId, userId, id, title }: { orgId:
       size="sm"
       aria-label={`Remove ${title}`}
       disabled={pending}
-      onClick={() => {
-        if (!window.confirm(`Remove ${title}?`)) return;
+      onClick={async () => {
+        if (!(await confirmDialog({ title: `Remove ${title}?`, confirmLabel: "Remove", danger: true }))) return;
         start(async () => {
           const res = await deleteQualificationAction(orgId, userId, id);
           if (res.status === "error") toast.error(res.message);
@@ -231,8 +232,8 @@ export function CancelLeaveButton({ orgId, userId, id, label }: { orgId: string;
       variant="ghost"
       size="sm"
       disabled={pending}
-      onClick={() => {
-        if (!window.confirm(`Cancel ${label}? It stays in the history.`)) return;
+      onClick={async () => {
+        if (!(await confirmDialog({ title: `Cancel ${label}?`, description: "It stays in the history.", confirmLabel: "Cancel leave", danger: true }))) return;
         start(async () => {
           const res = await cancelLeaveAction(orgId, userId, id);
           if (res.status === "error") toast.error(res.message);

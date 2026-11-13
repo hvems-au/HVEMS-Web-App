@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
 import { createServicePlanAction, createWorkOrderAction, setServicePlanActiveAction, workOrderStatusAction } from "./actions";
+import { confirmDialog } from "@/components/ui/confirm";
 
 type Opt = { value: string; label: string };
 
@@ -110,8 +111,8 @@ export function RemovePlanButton({ orgId, id, name }: { orgId: string; id: strin
       size="sm"
       variant="ghost"
       disabled={pending}
-      onClick={() => {
-        if (!window.confirm(`Remove "${name}" from the schedule? Its history stays in the audit records.`)) return;
+      onClick={async () => {
+        if (!(await confirmDialog({ title: `Remove "${name}" from the schedule?`, description: "Its history stays in the audit records.", confirmLabel: "Remove", danger: true }))) return;
         start(async () => {
           const res = await setServicePlanActiveAction(orgId, id, false);
           if (res.status === "error") toast.error(res.message);
@@ -301,10 +302,6 @@ export function WorkOrderActions({ orgId, id, status, manager, meters }: { orgId
       setCompleteOpen(false);
       router.refresh();
     });
-  const ask = (action: "reopen" | "cancel", q: string) => {
-    const reason = window.prompt(q);
-    if (reason && reason.trim().length >= 3) run(action, { notes: reason.trim() });
-  };
   return (
     <div className="flex flex-wrap gap-2">
       {status === "open" ? (
@@ -360,20 +357,121 @@ export function WorkOrderActions({ orgId, id, status, manager, meters }: { orgId
         </Dialog>
       ) : null}
       {manager && status === "completed" ? (
-        <Button size="sm" disabled={pending} onClick={() => run("close", { notes: window.prompt("Review note (optional)") ?? undefined })}>
-          Review and close
-        </Button>
+        <NoteActionDialog
+          trigger={<Button size="sm">Review and close</Button>}
+          title="Review and close"
+          description="Check the work recorded, then close the work order. Closing a service work order records the service as done."
+          label="Review note"
+          hint="Optional, e.g. Checked; invoice matches quote"
+          submitLabel="Close work order"
+          onSubmit={(notes) => workOrderStatusAction(orgId, id, "close", { notes: notes || undefined })}
+        />
       ) : null}
       {manager && (status === "completed" || status === "closed") ? (
-        <Button size="sm" variant="secondary" disabled={pending} onClick={() => ask("reopen", "Why is this work order being reopened?")}>
-          Reopen
-        </Button>
+        <NoteActionDialog
+          trigger={
+            <Button size="sm" variant="secondary">
+              Reopen
+            </Button>
+          }
+          title="Reopen work order"
+          description="It goes back to in progress so the work can be finished or corrected."
+          label="Why is it being reopened?"
+          required
+          submitLabel="Reopen"
+          onSubmit={(notes) => workOrderStatusAction(orgId, id, "reopen", { notes })}
+        />
       ) : null}
       {manager && status !== "closed" && status !== "cancelled" ? (
-        <Button size="sm" variant="ghost" disabled={pending} onClick={() => ask("cancel", "Why is this work order being cancelled?")}>
-          Cancel work order
-        </Button>
+        <NoteActionDialog
+          trigger={
+            <Button size="sm" variant="ghost">
+              Cancel work order
+            </Button>
+          }
+          title="Cancel work order"
+          description="The work order is kept in the history as cancelled."
+          label="Why is it being cancelled?"
+          required
+          danger
+          submitLabel="Cancel work order"
+          onSubmit={(notes) => workOrderStatusAction(orgId, id, "cancel", { notes })}
+        />
       ) : null}
     </div>
+  );
+}
+
+/** A note-and-confirm dialog in the HVEMS style (replaces browser pop-ups). */
+function NoteActionDialog({
+  trigger,
+  title,
+  description,
+  label,
+  hint,
+  required = false,
+  danger = false,
+  submitLabel,
+  onSubmit,
+}: {
+  trigger: React.ReactNode;
+  title: string;
+  description: string;
+  label: string;
+  hint?: string;
+  required?: boolean;
+  danger?: boolean;
+  submitLabel: string;
+  onSubmit: (notes: string) => Promise<{ status: string; message?: string }>;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [notes, setNotes] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, start] = React.useTransition();
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) {
+          setNotes("");
+          setError(null);
+        }
+      }}
+    >
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent title={title} description={description}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            if (required && notes.trim().length < 3) return setError("Add a short note (at least 3 characters).");
+            start(async () => {
+              const res = await onSubmit(notes.trim());
+              if (res.status === "error") return setError(res.message ?? "Something went wrong");
+              toast.success(res.message ?? "Saved");
+              setOpen(false);
+              setNotes("");
+              router.refresh();
+            });
+          }}
+        >
+          {error ? <FormAlert>{error}</FormAlert> : null}
+          <Field label={label} htmlFor="note-action" required={required} hint={hint}>
+            <Textarea id="note-action" rows={3} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} autoFocus />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Back
+            </Button>
+            <Button type="submit" variant={danger ? "danger" : "primary"} disabled={pending}>
+              {pending ? "Saving…" : submitLabel}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

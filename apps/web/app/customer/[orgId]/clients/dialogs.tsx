@@ -166,9 +166,6 @@ function SiteFields({ d, clients, site }: { d: DialogState; clients: Client[]; s
       <Field label="Contact phone" htmlFor="s-phone" error={d.fe("contact_phone")}>
         <Input id="s-phone" name="contact_phone" type="tel" defaultValue={site?.contact_phone ?? ""} />
       </Field>
-      <Field label="Shift times" htmlFor="s-shift" error={d.fe("shift_times")}>
-        <Input id="s-shift" name="shift_times" defaultValue={site?.shift_times ?? ""} placeholder="e.g. Day 06:00–18:00, Night 18:00–06:00" />
-      </Field>
       <Field label="Access instructions" htmlFor="s-access" error={d.fe("access_instructions")} className="sm:col-span-2">
         <Textarea id="s-access" name="access_instructions" rows={2} defaultValue={site?.access_instructions ?? ""} />
       </Field>
