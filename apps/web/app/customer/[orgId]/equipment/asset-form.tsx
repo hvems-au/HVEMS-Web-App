@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
 import { Card, CardBody, CardHeader } from "@/components/ui/primitives";
 import { createAssetClassAction, saveAssetAction } from "./actions";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { createServicePlanAction } from "@/features/maintenance/actions";
 
 const NEW_CLASS = "__new__";
 
@@ -60,6 +62,8 @@ export function AssetForm({
   const classCode = useWatch({ control, name: "asset_class" });
   const ownerType = useWatch({ control, name: "owner_type" });
   const frequency = useWatch({ control, name: "prestart_frequency" });
+  const clientId = useWatch({ control, name: "client_id" });
+  const siteId = useWatch({ control, name: "site_id" });
   const cls = classes.find((c) => c.code === classCode);
   const required = new Set<string>((cls?.required_fields ?? []).filter((f) => !f.includes("|")));
   // Either-or rules, e.g. a registration or a VIN (AST-01).
@@ -76,12 +80,29 @@ export function AssetForm({
     }
   }, [cls, assetId, setValue]);
 
+  // Optional first service plan (new equipment only); saved straight after the equipment.
+  const [plan, setPlan] = React.useState({ name: "", interval_days: "", interval_km: "", interval_hours: "", last_done_on: "" });
+  const [planError, setPlanError] = React.useState<string | null>(null);
+  const planWanted = !assetId && plan.name.trim() !== "";
+  const setPlanField = (k: keyof typeof plan) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setPlan((x) => ({ ...x, [k]: k === "name" || k === "last_done_on" ? e.target.value : e.target.value.replace(/[^\d.]/g, "") }));
+
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
+    setPlanError(null);
+    if (planWanted && !plan.interval_days && !plan.interval_km && !plan.interval_hours) {
+      setPlanError("Set how often the service is due (days, km or hours), or clear the service name.");
+      return;
+    }
     const res = await saveAssetAction(orgId, assetId ?? null, values as AssetFormInput);
     if (res.status === "success" && res.data) {
       toast.success(res.message ?? "Saved");
-      router.push(`/customer/${orgId}/equipment/${res.data.id}`);
+      if (planWanted) {
+        const p2 = await createServicePlanAction(orgId, { asset_id: res.data.id, ...plan });
+        if (p2.status === "error") toast.warning(`Equipment saved, but the service plan wasn't: ${p2.message}. Add it in the Maintenance section.`);
+        else toast.success("Service plan added");
+      }
+      router.push(`/customer/${orgId}/equipment/${res.data.id}${planWanted ? "#maintenance" : ""}`);
       router.refresh();
       return;
     }
@@ -108,28 +129,20 @@ export function AssetForm({
             <Input {...register("asset_number")} />
           </Field>
           <Field label="Asset class" htmlFor="asset_class" error={err("asset_class")} required>
-            <Select {...register("asset_class")}>
-              <option value="">Choose a class</option>
-              {(
-                [
-                  ["Vehicles", classes.filter((c) => !c.organisation_id && c.category === "vehicle")],
-                  ["Equipment", classes.filter((c) => !c.organisation_id && c.category === "equipment")],
-                  ["Your company's classes", classes.filter((c) => c.organisation_id)],
-                ] as const
-              ).map(([label, list]) =>
-                list.length ? (
-                  <optgroup key={label} label={label}>
-                    {list.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name}
-                        {c.organisation_id ? ` (${c.category})` : ""}
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null,
-              )}
-              {canManageClasses ? <option value={NEW_CLASS}>+ Add a new class…</option> : null}
-            </Select>
+            <SearchableSelect
+              id="asset_class"
+              name="asset_class"
+              label="Asset class"
+              all="Choose a class"
+              allowEmpty={false}
+              invalid={!!err("asset_class")}
+              value={classCode ?? ""}
+              onChange={(v) => setValue("asset_class", v, { shouldValidate: true, shouldDirty: true })}
+              options={classes.map((c) => ({
+                value: c.code,
+                label: `${c.name} · ${c.organisation_id ? "your class" : c.category === "vehicle" ? "vehicle" : "equipment"}`,
+              }))}
+            />
           </Field>
           <Field label="Year" htmlFor="year" error={err("year")}>
             <Input inputMode="numeric" maxLength={4} {...register("year")} />
@@ -187,24 +200,27 @@ export function AssetForm({
             </Select>
           </Field>
           <Field label="Client" htmlFor="client_id" error={err("client_id")} required={ownerType === "client_owned"} hint={clients.length === 0 ? "Add clients under Clients & Sites." : undefined}>
-            <Select {...register("client_id")}>
-              <option value="">No client</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+            <SearchableSelect
+              id="client_id"
+              name="client_id"
+              label="Client"
+              all="No client"
+              invalid={!!err("client_id")}
+              value={clientId ?? ""}
+              onChange={(v) => setValue("client_id", v, { shouldValidate: true, shouldDirty: true })}
+              options={clients.map((c) => ({ value: c.id, label: c.name }))}
+            />
           </Field>
           <Field label="Site" htmlFor="site_id" error={err("site_id")}>
-            <Select {...register("site_id")}>
-              <option value="">No site</option>
-              {sites.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
+            <SearchableSelect
+              id="site_id"
+              name="site_id"
+              label="Site"
+              all="No site"
+              value={siteId ?? ""}
+              onChange={(v) => setValue("site_id", v, { shouldValidate: true, shouldDirty: true })}
+              options={sites.map((x) => ({ value: x.id, label: x.name }))}
+            />
           </Field>
           <Field
             label="What does it measure usage by?"
@@ -271,6 +287,31 @@ export function AssetForm({
         </CardBody>
       </Card>
 
+      {!assetId ? (
+        <Card>
+          <CardHeader title="Service plan (optional)" description="Set up its regular service now, or later in the equipment's Maintenance section." />
+          <CardBody className="flex flex-col gap-4">
+            {planError ? <FormAlert>{planError}</FormAlert> : null}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <Field label="Service" htmlFor="plan_name" hint="e.g. 250-hour service, 6-monthly oil change">
+                <Input id="plan_name" value={plan.name} onChange={setPlanField("name")} maxLength={120} />
+              </Field>
+              <Field label="Every (days)" htmlFor="plan_days" hint="e.g. 180">
+                <Input id="plan_days" inputMode="numeric" value={plan.interval_days} onChange={setPlanField("interval_days")} disabled={!plan.name.trim()} />
+              </Field>
+              <Field label="Every (km)" htmlFor="plan_km" hint="Kilometres between services">
+                <Input id="plan_km" inputMode="decimal" value={plan.interval_km} onChange={setPlanField("interval_km")} disabled={!plan.name.trim()} />
+              </Field>
+              <Field label="Every (hours)" htmlFor="plan_hours" hint="Hour meter hours between services">
+                <Input id="plan_hours" inputMode="decimal" value={plan.interval_hours} onChange={setPlanField("interval_hours")} disabled={!plan.name.trim()} />
+              </Field>
+              <Field label="Last serviced on" htmlFor="plan_last" hint="Leave blank if not known; it counts from today">
+                <Input id="plan_last" type="date" value={plan.last_done_on} onChange={setPlanField("last_done_on")} disabled={!plan.name.trim()} />
+              </Field>
+            </div>
+          </CardBody>
+        </Card>
+      ) : null}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancel

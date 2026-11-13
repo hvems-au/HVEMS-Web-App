@@ -7,6 +7,8 @@ import { can } from "@hvems/permissions";
 import { FilterBar } from "@/components/filter-bar";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { AddServicePlanDialog, NewWorkOrderDialog } from "@/features/maintenance/controls";
+import { maintenanceOptions } from "@/features/maintenance/options";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
@@ -45,7 +47,8 @@ export default async function MaintenancePage({
   const ctx = await loadOrgContext(orgId, ["company"]);
   if (!can(ctx.capabilities, "work_orders.manage") && !can(ctx.capabilities, "work_orders.work")) notFound();
   const db = await createSupabaseServerClient();
-  const all = await listServiceSchedule(db, orgId);
+  const manager = can(ctx.capabilities, "work_orders.manage");
+  const [all, opts] = await Promise.all([listServiceSchedule(db, orgId), manager ? maintenanceOptions(db, orgId) : Promise.resolve(null)]);
   const f = {
     q: (firstParam(sp.q) ?? "").trim().toLowerCase().slice(0, 60),
     status: ["overdue", "due_soon", "ok"].includes(firstParam(sp.status) ?? "") ? (firstParam(sp.status) as ServiceScheduleRow["status"]) : "",
@@ -72,7 +75,8 @@ export default async function MaintenancePage({
     <>
       <PageHeader
         title="Maintenance"
-        description={`Service schedule for the whole fleet: ${counts.overdue} overdue, ${counts.due_soon} due soon. Add or change service plans on each equipment's page.`}
+        description={`Service schedule for the whole fleet: ${counts.overdue} overdue, ${counts.due_soon} due soon. Each plan also shows on its equipment's page.`}
+        actions={opts ? <AddServicePlanDialog orgId={orgId} equipment={opts.equipment} /> : null}
       />
       <div className="mb-4 flex flex-wrap gap-2">
         {[
@@ -118,7 +122,7 @@ export default async function MaintenancePage({
           filtered ? (
             <EmptyState title="Nothing matches">Try a different search or filter.</EmptyState>
           ) : (
-            <EmptyState title="No service plans yet">Open a piece of equipment and add its service plans in the Maintenance section.</EmptyState>
+            <EmptyState title="No service plans yet">Add one with Add service plan, or from an equipment's Maintenance section.</EmptyState>
           )
         ) : (
           <Table>
@@ -129,9 +133,7 @@ export default async function MaintenancePage({
                 <TH>Every</TH>
                 <TH>Next due</TH>
                 <TH>Status</TH>
-                <TH className="w-px">
-                  <span className="sr-only">Open</span>
-                </TH>
+                <TH className="text-right">{opts ? "Actions" : <span className="sr-only">Open</span>}</TH>
               </tr>
             </THead>
             <tbody>
@@ -152,7 +154,20 @@ export default async function MaintenancePage({
                     <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].text}</Badge>
                   </TD>
                   <TD className="text-right">
-                    <ChevronRight className="size-4 text-ink-subtle" aria-hidden />
+                    {opts ? (
+                      <span className="relative z-10 inline-flex">
+                        <NewWorkOrderDialog
+                          orgId={orgId}
+                          equipment={opts.equipment}
+                          people={opts.people}
+                          preset={{ asset_id: r.asset_id, title: r.name, service_plan_id: r.id }}
+                          label="Work order"
+                          variant="secondary"
+                        />
+                      </span>
+                    ) : (
+                      <ChevronRight className="size-4 text-ink-subtle" aria-hidden />
+                    )}
                   </TD>
                 </TR>
               ))}

@@ -9,9 +9,10 @@ export type SearchableOption = { value: string; label: string };
 
 /**
  * A dropdown you can type into: the list narrows as you type (anywhere in the
- * label, any case), arrow keys move, Enter picks. Inside an AutoFilterForm the
- * choice applies straight away. The value is submitted as a hidden input, so it
- * also works in a plain form.
+ * label, any case), arrow keys move, Enter picks. Use it for any list that can
+ * grow (equipment, people, clients, sites, types). In a filter bar the choice
+ * applies straight away; in a form, pass onChange (controlled) or rely on the
+ * hidden input (plain forms).
  */
 export function SearchableSelect({
   name,
@@ -20,14 +21,24 @@ export function SearchableSelect({
   options,
   label,
   className,
+  onChange,
+  id,
+  allowEmpty = true,
+  invalid,
 }: {
   name: string;
   value?: string;
-  /** Text for "no filter", e.g. "All equipment". */
+  /** Text for the empty choice, e.g. "All equipment" or "Choose…". */
   all: string;
   options: SearchableOption[];
   label: string;
   className?: string;
+  /** Form use: called with the chosen value (instead of applying a filter). */
+  onChange?: (value: string) => void;
+  id?: string;
+  /** Offer the empty choice in the list (off for required form fields). */
+  allowEmpty?: boolean;
+  invalid?: boolean;
 }) {
   const apply = useAutoFilter();
   const [current, setCurrent] = React.useState(value ?? "");
@@ -45,14 +56,16 @@ export function SearchableSelect({
 
   const all_: SearchableOption = { value: "", label: all };
   const q = query.trim().toLowerCase();
-  const shown = [all_, ...options].filter((o) => !q || o.value === "" || o.label.toLowerCase().includes(q)).slice(0, 200);
+  // While typing, only matches (Enter picks the first one); otherwise the empty choice first.
+  const shown = (q ? options.filter((o) => o.label.toLowerCase().includes(q)) : [...(allowEmpty ? [all_] : []), ...options]).slice(0, 200);
   const selectedLabel = options.find((o) => o.value === current)?.label ?? all;
 
   const choose = (v: string) => {
     setCurrent(v);
     setOpen(false);
     setQuery("");
-    apply?.({ [name]: v });
+    if (onChange) onChange(v);
+    else apply?.({ [name]: v });
   };
 
   return (
@@ -71,12 +84,17 @@ export function SearchableSelect({
         <P.Trigger asChild>
           <button
             type="button"
+            id={id}
+            aria-invalid={invalid || undefined}
             aria-label={`${label}: ${selectedLabel}`}
             aria-haspopup="listbox"
             aria-expanded={open}
             className={cn(
               "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-[8px] border border-stroke-strong bg-surface px-3 text-left text-[14px] text-ink transition-colors hover:border-ink-subtle focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:outline-none",
-              current && "border-brand/60 bg-brand-soft/40",
+              !onChange && current && "border-brand/60 bg-brand-soft/40",
+              onChange && "h-11",
+              invalid && "border-danger",
+              !current && onChange && "text-ink-subtle",
               className,
             )}
           >
@@ -124,7 +142,7 @@ export function SearchableSelect({
               />
             </div>
             <ul id={listId} role="listbox" aria-label={label} className="max-h-64 overflow-y-auto py-1">
-              {shown.length <= 1 && q ? <li className="px-3 py-2.5 text-[13.5px] text-ink-muted">No matches</li> : null}
+              {shown.length === 0 && q ? <li className="px-3 py-2.5 text-[13.5px] text-ink-muted">No matches</li> : null}
               {shown.map((o, i) => (
                 <li
                   key={o.value || "__all"}

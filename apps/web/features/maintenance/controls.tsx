@@ -9,6 +9,7 @@ import { allocationWarningsAction } from "@/features/workforce/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createServicePlanAction, createWorkOrderAction, setServicePlanActiveAction, workOrderStatusAction } from "./actions";
 import { confirmDialog } from "@/components/ui/confirm";
 
@@ -17,7 +18,9 @@ type Opt = { value: string; label: string };
 function useForm<T extends Record<string, string>>(initial: T) {
   const [v, setV] = React.useState<T>(initial);
   const set = (k: keyof T) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setV((s) => ({ ...s, [k]: e.target.value }));
-  return { v, set, reset: () => setV(initial) };
+  // For searchable dropdowns, which hand back the chosen value.
+  const pick = (k: keyof T) => (value: string) => setV((s) => ({ ...s, [k]: value }));
+  return { v, set, pick, reset: () => setV(initial) };
 }
 
 /** Add a service plan: every N days, kilometres and/or hours, from the last service. */
@@ -52,14 +55,7 @@ export function AddServicePlanDialog({ orgId, equipment, assetId }: { orgId: str
           {error ? <FormAlert>{error}</FormAlert> : null}
           {assetId ? null : (
             <Field label="Equipment" htmlFor="sp-asset" required>
-              <Select id="sp-asset" value={f.v.asset_id} onChange={f.set("asset_id")}>
-                <option value="">Choose…</option>
-                {equipment.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
+              <SearchableSelect id="sp-asset" name="asset_id" label="Equipment" all="Choose…" options={equipment} value={f.v.asset_id} onChange={f.pick("asset_id")} allowEmpty={false} />
             </Field>
           )}
           <Field label="Service" htmlFor="sp-name" required hint="e.g. 250-hour service, Annual inspection, 15,000 km service">
@@ -196,14 +192,7 @@ export function NewWorkOrderDialog({
           {error ? <FormAlert>{error}</FormAlert> : null}
           {preset ? null : (
             <Field label="Equipment" htmlFor="wo-asset" required>
-              <Select id="wo-asset" value={f.v.asset_id} onChange={f.set("asset_id")}>
-                <option value="">Choose…</option>
-                {equipment.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
+              <SearchableSelect id="wo-asset" name="asset_id" label="Equipment" all="Choose…" options={equipment} value={f.v.asset_id} onChange={f.pick("asset_id")} allowEmpty={false} />
             </Field>
           )}
           <Field label="Title" htmlFor="wo-title" required>
@@ -229,14 +218,7 @@ export function NewWorkOrderDialog({
                 htmlFor="wo-assignee"
                 hint={people.length ? "Technicians only. Leave unassigned and any technician can pick it up." : "No technicians yet. Add one on the Team page, or leave it unassigned."}
               >
-                <Select id="wo-assignee" value={f.v.assigned_to} onChange={f.set("assigned_to")}>
-                  <option value="">Not assigned yet</option>
-                  {people.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
+                <SearchableSelect id="wo-assignee" name="assigned_to" label="Technician" all="Not assigned yet" options={people} value={f.v.assigned_to} onChange={f.pick("assigned_to")} />
               </Field>
             )}
             <Field label="Priority" htmlFor="wo-priority">

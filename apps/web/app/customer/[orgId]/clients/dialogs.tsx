@@ -10,6 +10,7 @@ import { Field, FormAlert, Input, Select, Textarea } from "@/components/ui/form"
 import { idleState, type ClientActionState } from "@/lib/client-state";
 import { TimezoneSelect } from "@/components/timezone-select";
 import { createClientAction, createSiteAction, updateClientAction, updateSiteAction } from "./actions";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 function useDialogAction(action: (prev: ClientActionState, form: FormData) => Promise<ClientActionState>) {
   const [open, setOpen] = React.useState(false);
@@ -127,14 +128,8 @@ function SiteFields({ d, clients, site }: { d: DialogState; clients: Client[]; s
         <Input id="s-name" name="name" defaultValue={site?.name ?? ""} placeholder="e.g. Brendale depot" />
       </Field>
       <Field label="Client" htmlFor="s-client" error={d.fe("client_id")}>
-        <Select id="s-client" name="client_id" defaultValue={site?.client_id ?? ""}>
-          <option value="">Our own site</option>
-          {clients.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+        {/* Searchable; submitted through its hidden input. */}
+        <SearchableSelect id="s-client" name="client_id" label="Client" all="Our own site" value={site?.client_id ?? ""} options={clients.map((c) => ({ value: c.id, label: c.name }))} onChange={() => {}} />
       </Field>
       <Field label="Address" htmlFor="s-addr" error={d.fe("address_line1")} className="sm:col-span-2">
         <Input id="s-addr" name="address_line1" autoComplete="street-address" defaultValue={site?.address_line1 ?? ""} />
