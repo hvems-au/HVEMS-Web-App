@@ -14,7 +14,7 @@ select tests.add_member(:'org', :'tech', 'technician');
 select tests.add_member(:'org', :'tech2', 'technician');
 select tests.add_member(:'org', :'fin', 'finance');
 insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, meter_type)
-values (:'org', 'TK-1', tests.class_id('excavator'), 'Isuzu', 'FVZ', 'km') returning id as asset \gset
+values (:'org', 'TK-1', tests.class_id('excavator'), 'Isuzu', 'FVZ', 'kilometres') returning id as asset \gset
 insert into public.service_plans (organisation_id, asset_id, name, interval_days, last_done_on)
 values (:'org', :'asset', '6-monthly service', 180, current_date - 170) returning id as plan \gset
 
