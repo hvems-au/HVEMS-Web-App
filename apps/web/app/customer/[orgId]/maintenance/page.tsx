@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { listServiceSchedule, type ServiceScheduleRow } from "@hvems/api-client";
 import { can } from "@hvems/permissions";
+import { ConditionBadge } from "@/components/condition";
 import { FilterBar } from "@/components/filter-bar";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
@@ -49,7 +50,19 @@ export default async function MaintenancePage({
   const db = await createSupabaseServerClient();
   const manager = can(ctx.capabilities, "work_orders.manage");
   const [all, opts] = await Promise.all([listServiceSchedule(db, orgId), manager ? maintenanceOptions(db, orgId) : Promise.resolve(null)]);
+  // The equipment's overall condition (from defects, holds, breakdowns and notices), shown
+  // beside the service status so a broken vehicle never looks fine here.
+  const assetIds = [...new Set(all.map((r) => r.asset_id))];
+  const conditionOf = new Map(
+    assetIds.length
+      ? (((await db.from("assets").select("id, condition").in("id", assetIds)).data ?? []) as { id: string; condition: "active" | "needs_attention" | "out_of_service" }[]).map(
+          (a) => [a.id, a.condition] as const,
+        )
+      : [],
+  );
+  const CONDITIONS = ["active", "needs_attention", "out_of_service"] as const;
   const f = {
+    condition: (CONDITIONS as readonly string[]).includes(firstParam(sp.condition) ?? "") ? (firstParam(sp.condition) as (typeof CONDITIONS)[number]) : "",
     q: (firstParam(sp.q) ?? "").trim().toLowerCase().slice(0, 60),
     status: ["overdue", "due_soon", "ok"].includes(firstParam(sp.status) ?? "") ? (firstParam(sp.status) as ServiceScheduleRow["status"]) : "",
     asset: firstParam(sp.asset) ?? "",
@@ -60,6 +73,7 @@ export default async function MaintenancePage({
     (r) =>
       (!f.q || [r.name, r.asset?.asset_number, r.notes].some((x) => (x ?? "").toLowerCase().includes(f.q))) &&
       (!f.status || r.status === f.status) &&
+      (!f.condition || conditionOf.get(r.asset_id) === f.condition) &&
       (!f.asset || r.asset_id === f.asset) &&
       (!f.from || (r.next_due_on ?? "") >= f.from) &&
       (!f.to || (r.next_due_on !== null && r.next_due_on <= f.to)),
@@ -79,7 +93,7 @@ export default async function MaintenancePage({
     <>
       <PageHeader
         title="Maintenance"
-        description={`Service schedule for the whole fleet: ${counts.overdue} overdue, ${counts.due_soon} due soon. Each plan also shows on its equipment's page.`}
+        description={`Service schedule for the whole fleet: ${counts.overdue} overdue, ${counts.due_soon} due soon. Service status says whether a service is due; Condition is the equipment's overall state from defects, holds and breakdowns.`}
         actions={opts ? <AddServicePlanDialog orgId={orgId} equipment={opts.equipment} /> : null}
       />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -109,13 +123,25 @@ export default async function MaintenancePage({
             {
               kind: "select",
               name: "status",
-              label: "Status",
-              all: "Any status",
+              label: "Service status",
+              all: "Any service status",
               value: f.status,
               options: [
                 { value: "overdue", label: "Overdue" },
                 { value: "due_soon", label: "Due soon" },
                 { value: "ok", label: "OK" },
+              ],
+            },
+            {
+              kind: "select",
+              name: "condition",
+              label: "Condition",
+              all: "Any condition",
+              value: f.condition,
+              options: [
+                { value: "active", label: "Active" },
+                { value: "needs_attention", label: "Needs attention" },
+                { value: "out_of_service", label: "Broken / Out of service" },
               ],
             },
             { kind: "select", name: "asset", label: "Equipment", all: "All equipment", value: f.asset, options: equipmentOptions },
@@ -137,7 +163,8 @@ export default async function MaintenancePage({
                 <TH>Service</TH>
                 <TH>Every</TH>
                 <TH>Next due</TH>
-                <TH>Status</TH>
+                <TH title="Whether the service is due, from the plan">Service status</TH>
+                <TH title="The equipment's overall condition, from defects, holds, breakdowns and notices">Condition</TH>
                 <TH className="text-right">{opts ? "Actions" : <span className="sr-only">Open</span>}</TH>
               </tr>
             </THead>
@@ -158,6 +185,7 @@ export default async function MaintenancePage({
                   <TD>
                     <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].text}</Badge>
                   </TD>
+                  <TD>{conditionOf.get(r.asset_id) ? <ConditionBadge condition={conditionOf.get(r.asset_id)!} /> : "—"}</TD>
                   <TD className="text-right">
                     {opts ? (
                       <span className="relative z-10 inline-flex">
