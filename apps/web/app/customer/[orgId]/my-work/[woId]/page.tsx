@@ -9,9 +9,14 @@ import {
   getWorkOrder,
   listServiceDueHistory,
   listWorkOrderFiles,
+  listCostLines,
+  listFittableLines,
+  listPartsRequests,
+  listPartsUsage,
   listWorkOrderReports,
   type WorkOrderReport,
 } from "@hvems/api-client";
+import { JobParts } from "@/features/parts/job-parts";
 import { formatDateTimeAU, todayISO } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { BackLink } from "@/components/back-link";
@@ -48,12 +53,16 @@ export default async function JobPage({
   const db = await createSupabaseServerClient();
   const w = await getWorkOrder(db, orgId, woId);
   if (!w) notFound();
-  const [reports, files, asset, plan, history] = await Promise.all([
+  const [reports, files, asset, plan, history, partsRequests, fittable, partsUsage, partsCosts] = await Promise.all([
     listWorkOrderReports(db, woId),
     listWorkOrderFiles(db, woId),
     db.from("assets").select("meter_type").eq("id", w.asset_id).maybeSingle(),
     w.service_plan_id ? getServicePlanRow(db, w.service_plan_id) : Promise.resolve(null),
     w.service_plan_id ? listServiceDueHistory(db, w.service_plan_id) : Promise.resolve([]),
+    listPartsRequests(db, orgId, { workOrderId: woId }).catch(() => []),
+    listFittableLines(db, orgId, woId).catch(() => []),
+    listPartsUsage(db, woId).catch(() => []),
+    listCostLines(db, { workOrderId: woId }).catch(() => []),
   ]);
   const names = await getPersonNames(db, [
     ...new Set([w.assigned_to, ...reports.map((r) => r.created_by), ...files.map((f) => f.uploaded_by), ...history.map((h) => h.set_by)].filter(Boolean) as string[]),
@@ -175,6 +184,19 @@ export default async function JobPage({
             </Card>
           ) : null}
           {post ? <ReportSummary title="Post-work report" r={post} checks={POST_CHECKS} who={who(post.created_by)} when={formatDateTimeAU(new Date(post.updated_at), tz)} /> : null}
+
+          <JobParts
+            orgId={orgId}
+            workOrderId={woId}
+            assetId={w.asset_id}
+            requests={partsRequests}
+            fittable={fittable}
+            usage={partsUsage}
+            costs={partsCosts}
+            canRequest={can(ctx.capabilities, "parts.request") && w.status !== "closed" && w.status !== "cancelled"}
+            canFit={canWork && w.status !== "closed" && w.status !== "cancelled"}
+            returnTo={`/customer/${orgId}/my-work/${woId}`}
+          />
 
           <Card>
             <CardHeader title="Invoices and documents" description="Parts invoices, receipts and quotes for this job." />

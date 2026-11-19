@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX, Gauge } from "lucide-react";
+import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX, Gauge, PackageCheck } from "lucide-react";
 import { listCriticalAlerts, listMembers, listMyNotifications } from "@hvems/api-client";
 import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -30,6 +30,8 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   support_access_started: "Support access",
   prestart_missed: "Missed pre-starts",
   meter_reading_review: "Readings to approve",
+  parts_approval: "Parts to approve",
+  parts_decision: "Parts decisions",
 };
 const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }> = {
   critical_defect: { icon: OctagonAlert, tone: "text-danger" },
@@ -45,6 +47,8 @@ const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }
   support_access_started: { icon: LifeBuoy, tone: "text-info-ink" },
   prestart_missed: { icon: ClipboardX, tone: "text-warn-ink" },
   meter_reading_review: { icon: Gauge, tone: "text-warn-ink" },
+  parts_approval: { icon: PackageCheck, tone: "text-warn-ink" },
+  parts_decision: { icon: PackageCheck, tone: "text-info-ink" },
 };
 const ESCALATION = ["", "Escalated: 30 min", "Escalated: 2 hours"] as const;
 

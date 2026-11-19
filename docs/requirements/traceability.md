@@ -24,7 +24,7 @@ Evidence paths are relative to the repository root. "pgTAP" = `supabase/tests/*.
 | CS-17 | Maintenance scheduling | 2 / 2C | ⏳ | overdue-service rule switch ✅ |
 | CS-18 | Work orders | 2 / 2C | ⏳ | — |
 | CS-19 | Workforce allocation and availability | 2 / 2C | ✅ | Profiles (trade, availability), qualifications with expiry alerts, leave; allocation warnings recorded on work orders (pgTAP 270) |
-| CS-20 | Parts requests, approvals, purchasing, receiving, usage | 2 / 2C | 🟡 | Approval Limit grant ✅ |
+| CS-20 | Parts requests, approvals, purchasing, receiving, usage | 2 / 2C | ✅ | PRT-01..07: multi-line requests (equipment / work order, urgency, needed by, delivery site, photos), one approval level by Approval Limit (auto within limit, routed otherwise, reject with reason), orders with 10% re-approval, partial receiving, substitutes and returns, fitting to work orders (from deliveries or bought on the spot) with one cost line per fit and reversing returns; supplier list and catalogue; technicians never see prices or cost lines (pgTAP 330) |
 | CS-21 | Inventory and purchase order documents | 4 | ➖ | Anticipated in schema design only |
 | CS-22 | Documents and files | 2 / 2C | ⏳ | — |
 | CS-23 | Expenditure, fuel and usage | 2 / 2C | ⏳ | — |

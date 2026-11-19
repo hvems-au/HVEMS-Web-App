@@ -62,7 +62,11 @@ export function filterNav(nav: NavSection[], ctx: OrgContext, roles: readonly st
     .map((s) => ({
       ...s,
       items: s.items.filter(
-        (i) => (!i.capability || can(ctx.capabilities, i.capability)) && (!simple || i.forTechnicians) && (!i.technicianRole || technician),
+        (i) =>
+          (!i.capability || can(ctx.capabilities, i.capability)) &&
+          (!i.anyCapability || i.anyCapability.some((c) => can(ctx.capabilities, c))) &&
+          (!simple || i.forTechnicians) &&
+          (!i.technicianRole || technician),
       ),
     }))
     .filter((s) => s.items.length > 0);

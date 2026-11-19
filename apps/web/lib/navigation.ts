@@ -37,6 +37,8 @@ export interface NavItem {
   icon: IconName;
   /** Shown only if the member holds this capability (UI only; the database enforces access). */
   capability?: Capability;
+  /** Shown if the member holds any of these (UI only; the database enforces access). */
+  anyCapability?: Capability[];
   /** Part of the simple technician menu (people who only do jobs see just these). */
   forTechnicians?: boolean;
   /** Only for people with the Technician role (main or additional). */
@@ -102,7 +104,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         { label: "Maintenance", href: `${base}/maintenance`, icon: "maintenance" },
         { label: "Work Orders", href: `${base}/work-orders`, icon: "workorders" },
         { label: "Technicians", href: `${base}/technicians`, icon: "technicians", capability: "workforce.manage" },
-        { label: "Parts", href: `${base}/module/parts`, icon: "parts", increment: "2C" },
+        { label: "Parts", href: `${base}/parts`, icon: "parts", anyCapability: ["parts.request", "parts.approve", "parts.manage"], forTechnicians: true },
         { label: "Marketplace", href: `${base}/module/marketplace`, icon: "marketplace", capability: "marketplace.post", increment: "2D" },
       ],
     },

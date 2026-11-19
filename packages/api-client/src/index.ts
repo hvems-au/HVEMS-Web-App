@@ -1654,3 +1654,286 @@ export async function countPendingReadings(db: HvemsClient, organisationId: stri
 export async function decideMeterReading(db: HvemsClient, readingId: string, accept: boolean, note?: string | null): Promise<void> {
   unwrap(await db.rpc("decide_meter_reading", { p_reading_id: readingId, p_accept: accept, p_note: note ?? undefined }));
 }
+
+// ---------------------------------------------------------------------------
+// Parts: requests, approval, orders, receiving, fitting (CS-20)
+// ---------------------------------------------------------------------------
+export type PartsRequestStatus = "draft" | "submitted" | "approved" | "rejected" | "ordered" | "partially_received" | "received" | "closed" | "cancelled";
+
+export interface PartsRequest {
+  id: string;
+  organisation_id: string;
+  number: number;
+  asset_id: string;
+  work_order_id: string | null;
+  site_id: string | null;
+  urgency: "normal" | "urgent";
+  needed_by: string | null;
+  notes: string | null;
+  status: PartsRequestStatus;
+  requested_by: string;
+  submitted_at: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  auto_approved: boolean;
+  reapproval_reason: string | null;
+  reject_reason: string | null;
+  cancel_reason: string | null;
+  closed_at: string | null;
+  created_at: string;
+  asset?: { asset_number: string; make: string | null; model: string | null } | null;
+  work_order?: { number: number; title: string } | null;
+  site?: { name: string } | null;
+}
+
+export interface PartsLine {
+  id: string;
+  request_id: string;
+  line_no: number;
+  catalogue_id: string | null;
+  description: string;
+  part_number: string | null;
+  specification: string | null;
+  quantity: number;
+  unit: string;
+  est_unit_cost_cents: number;
+  preferred_supplier_id: string | null;
+  photo_paths: string[];
+  supplier_id: string | null;
+  order_ref: string | null;
+  ordered_on: string | null;
+  expected_on: string | null;
+  received_qty: number;
+  returned_to_supplier_qty: number;
+  fitted_qty: number;
+  cancelled_at: string | null;
+}
+
+export interface PartsLinePrice {
+  line_id: string;
+  approved_unit_cost_cents: number | null;
+  actual_unit_cost_cents: number | null;
+}
+
+export interface PartsReceipt {
+  id: string;
+  line_id: string;
+  kind: "receipt" | "return_to_supplier";
+  quantity: number;
+  received_on: string;
+  substitute_reason: string | null;
+  return_reason: string | null;
+  recorded_by: string;
+  created_at: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  abn: string | null;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  account_number: string | null;
+  notes: string | null;
+  archived_at: string | null;
+}
+
+export interface CatalogueItem {
+  id: string;
+  part_number: string | null;
+  description: string;
+  unit: string;
+  default_unit_cost_cents: number | null;
+  supplier_id: string | null;
+  archived_at: string | null;
+}
+
+export interface PartsUsage {
+  id: string;
+  work_order_id: string;
+  line_id: string | null;
+  kind: "fit" | "return";
+  description: string;
+  quantity: number;
+  unit: string;
+  supplier_name: string | null;
+  reverses_id: string | null;
+  reason: string | null;
+  recorded_by: string;
+  created_at: string;
+}
+
+export interface CostLine {
+  id: string;
+  source_id: string;
+  kind: string;
+  description: string;
+  amount_cents: number;
+  created_at: string;
+}
+
+const PR_COLUMNS = "*, asset:assets(asset_number, make, model), work_order:work_orders(number, title), site:sites(name)";
+
+/** "PR-0007" */
+export function formatPartsRequestNumber(n: number): string {
+  return `PR-${String(n).padStart(4, "0")}`;
+}
+
+export async function listPartsRequests(
+  db: HvemsClient,
+  organisationId: string,
+  filter: { workOrderId?: string; assetId?: string; limit?: number } = {},
+): Promise<PartsRequest[]> {
+  let q = raw(db).from("parts_requests").select(PR_COLUMNS).eq("organisation_id", organisationId);
+  if (filter.workOrderId) q = q.eq("work_order_id", filter.workOrderId);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  return unwrap(await q.order("number", { ascending: false }).limit(filter.limit ?? 300)) as PartsRequest[];
+}
+
+export async function getPartsRequest(db: HvemsClient, organisationId: string, id: string) {
+  const request = unwrap(await raw(db).from("parts_requests").select(PR_COLUMNS).eq("organisation_id", organisationId).eq("id", id).maybeSingle()) as PartsRequest | null;
+  if (!request) return null;
+  const lines = unwrap(await raw(db).from("parts_request_lines").select("*").eq("request_id", id).is("removed_at", null).order("line_no")) as PartsLine[];
+  const ids = lines.map((l) => l.id);
+  const prices: PartsLinePrice[] = ids.length
+    ? (unwrap(await raw(db).from("parts_line_prices").select("line_id, approved_unit_cost_cents, actual_unit_cost_cents").in("line_id", ids)) as PartsLinePrice[])
+    : [];
+  const receipts: PartsReceipt[] = ids.length
+    ? (unwrap(await raw(db).from("parts_receipts").select("*").in("line_id", ids).order("created_at")) as PartsReceipt[])
+    : [];
+  return { request, lines, prices: new Map(prices.map((p) => [p.line_id, p])), receipts };
+}
+
+/** Received parts on a work order's requests that aren't fitted yet. */
+export async function listFittableLines(db: HvemsClient, organisationId: string, workOrderId: string): Promise<(PartsLine & { request_number: number })[]> {
+  const reqs = unwrap(
+    await raw(db)
+      .from("parts_requests")
+      .select("id, number")
+      .eq("organisation_id", organisationId)
+      .eq("work_order_id", workOrderId)
+      .in("status", ["ordered", "partially_received", "received"]),
+  ) as { id: string; number: number }[];
+  if (!reqs.length) return [];
+  const num = new Map(reqs.map((r) => [r.id, r.number]));
+  const lines = unwrap(
+    await raw(db)
+      .from("parts_request_lines")
+      .select("*")
+      .in(
+        "request_id",
+        reqs.map((r) => r.id),
+      )
+      .is("removed_at", null)
+      .is("cancelled_at", null),
+  ) as PartsLine[];
+  return lines
+    .filter((l) => Number(l.received_qty) - Number(l.returned_to_supplier_qty) - Number(l.fitted_qty) > 0)
+    .map((l) => ({ ...l, request_number: num.get(l.request_id) ?? 0 }));
+}
+
+export async function listPartsUsage(db: HvemsClient, workOrderId: string): Promise<PartsUsage[]> {
+  return unwrap(await raw(db).from("parts_usage").select("*").eq("work_order_id", workOrderId).order("created_at")) as PartsUsage[];
+}
+
+/** Cost lines (cost readers only; empty for everyone else, by RLS). */
+export async function listCostLines(db: HvemsClient, filter: { workOrderId?: string; assetId?: string }): Promise<CostLine[]> {
+  let q = raw(db).from("cost_lines").select("id, source_id, kind, description, amount_cents, created_at");
+  if (filter.workOrderId) q = q.eq("work_order_id", filter.workOrderId);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  return unwrap(await q.order("created_at")) as CostLine[];
+}
+
+export async function listSuppliers(db: HvemsClient, organisationId: string, includeArchived = false): Promise<Supplier[]> {
+  let q = raw(db).from("suppliers").select("*").eq("organisation_id", organisationId);
+  if (!includeArchived) q = q.is("archived_at", null);
+  return unwrap(await q.order("name")) as Supplier[];
+}
+
+export async function listCatalogue(db: HvemsClient, organisationId: string, includeArchived = false): Promise<CatalogueItem[]> {
+  let q = raw(db).from("parts_catalogue").select("*").eq("organisation_id", organisationId);
+  if (!includeArchived) q = q.is("archived_at", null);
+  return unwrap(await q.order("description")) as CatalogueItem[];
+}
+
+export async function saveSupplier(
+  db: HvemsClient,
+  organisationId: string,
+  id: string | null,
+  values: Omit<Supplier, "id" | "archived_at">,
+  archived = false,
+): Promise<void> {
+  const row = { ...values, archived_at: archived ? new Date().toISOString() : null };
+  if (id) unwrap(await raw(db).from("suppliers").update(row).eq("id", id).eq("organisation_id", organisationId));
+  else unwrap(await raw(db).from("suppliers").insert({ ...row, organisation_id: organisationId }));
+}
+
+export async function saveCatalogueItem(
+  db: HvemsClient,
+  organisationId: string,
+  id: string | null,
+  values: Omit<CatalogueItem, "id" | "archived_at">,
+  archived = false,
+): Promise<void> {
+  const row = { ...values, archived_at: archived ? new Date().toISOString() : null };
+  if (id) unwrap(await raw(db).from("parts_catalogue").update(row).eq("id", id).eq("organisation_id", organisationId));
+  else unwrap(await raw(db).from("parts_catalogue").insert({ ...row, organisation_id: organisationId }));
+}
+
+export interface PartsLineInput {
+  description: string;
+  part_number?: string | null;
+  specification?: string | null;
+  quantity: number;
+  unit?: string;
+  est_unit_cost_cents: number;
+  catalogue_id?: string | null;
+  preferred_supplier_id?: string | null;
+  photo_paths?: string[];
+}
+
+export async function savePartsRequest(
+  db: HvemsClient,
+  input: {
+    organisationId: string;
+    requestId?: string | null;
+    assetId: string;
+    workOrderId?: string | null;
+    urgency: "normal" | "urgent";
+    neededBy?: string | null;
+    siteId?: string | null;
+    notes?: string | null;
+    lines: PartsLineInput[];
+    submit: boolean;
+  },
+): Promise<{ id: string; status: PartsRequestStatus; auto_approved?: boolean }> {
+  return unwrap(
+    await raw(db).rpc("save_parts_request", {
+      p_organisation_id: input.organisationId,
+      p_request_id: input.requestId ?? null,
+      p_asset_id: input.assetId,
+      p_work_order_id: input.workOrderId ?? null,
+      p_urgency: input.urgency,
+      p_needed_by: input.neededBy ?? null,
+      p_site_id: input.siteId ?? null,
+      p_notes: input.notes ?? null,
+      p_lines: input.lines,
+      p_submit: input.submit,
+    }),
+  ) as { id: string; status: PartsRequestStatus; auto_approved?: boolean };
+}
+
+export type PartsRpc =
+  | "submit_parts_request"
+  | "decide_parts_request"
+  | "record_parts_order"
+  | "receive_parts"
+  | "fit_parts"
+  | "return_fitted_part"
+  | "cancel_parts_request";
+
+/** The parts workflow steps (each checked by the database). */
+export async function partsRpc(db: HvemsClient, fn: PartsRpc, args: Record<string, unknown>): Promise<unknown> {
+  return unwrap(await raw(db).rpc(fn, args));
+}
