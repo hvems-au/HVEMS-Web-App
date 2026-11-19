@@ -7,7 +7,7 @@ import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /** Full export of the company's records as a zip of CSVs (SoW 3.8); audited. Owner and Company Admin only. */
 export async function GET(_request: Request, { params }: { params: Promise<{ orgId: string }> }) {

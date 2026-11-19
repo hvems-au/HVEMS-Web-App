@@ -2524,7 +2524,9 @@ export type MarketplaceRpc =
   | "submit_marketplace_proposal"
   | "withdraw_marketplace_proposal"
   | "provider_proposal_block"
-  | "marketplace_thread_providers";
+  | "marketplace_thread_providers"
+  | "convert_to_company"
+  | "convert_job_asset";
 
 export async function marketplaceRpc<T = unknown>(db: HvemsClient, fn: MarketplaceRpc, args: Record<string, unknown>): Promise<T> {
   return unwrap(await raw(db).rpc(fn, args)) as T;

@@ -6,23 +6,23 @@ Evidence paths are relative to the repository root. "pgTAP" = `supabase/tests/*.
 | ID | Scope item | Stage / increment | Status | Evidence / notes |
 |---|---|---|---|---|
 | CS-01 | Customer Portal: company organisations, members, roles and grants | 2 / 2A | ✅ | identity migration; Team page; pgTAP 010 (roles, grants, competency note, eligibility, invitations, 5-login limit) |
-| CS-02 | Marketplace-only customer accounts | 2 / 2A (+2D jobs) | 🟡 | Account type, Account Owner/Job Manager roles, onboarding, dashboard; jobs in 2D |
-| CS-03 | Provider Portal: provider accounts and teams | 2 / 2A (+2D) | 🟡 | Provider account with ABN, Owner/Manager/Technician, Team page; profile, verification and work in 2D |
-| CS-04 | HVEMS administration console | 2 / 2A (+2D) | 🟡 | Separate host (ADR-007), staff + MFA, support access RPCs, org list, settings view; verification, cases, billing, moderation in 2D |
+| CS-02 | Marketplace-only customer accounts | 2 / 2A (+2D jobs) | ✅ | Account type, Account Owner/Job Manager roles, onboarding; dashboard with open jobs, engagements and work to confirm; posting, proposals and engagements (pgTAP 380/390) |
+| CS-03 | Provider Portal: provider accounts and teams | 2 / 2A (+2D) | 🟡 | Provider account with ABN, Owner/Manager/Technician, Team; profile and verification, job search, proposals, engagements (pgTAP 370–390). Provider subscription with billing |
+| CS-04 | HVEMS administration console | 2 / 2A (+2D) | 🟡 | Separate host (ADR-007), staff + MFA, support access, organisations; verification queue, regions, cases, moderation, settings changes with history, platform dashboard with marketplace figures (pgTAP 370/390/400). Billing adjustments and helpdesk form (ADM-06/10) with billing |
 | CS-05 | Sign-in, security, more than one portal or company | 2 / 2A | ✅ | Auth pages, TOTP MFA, MFA rule §2.5 (DB + UI), context switcher; account closure in 2D |
-| CS-06 | Privacy between organisations; engagement record | 2 / 2A (+2D) | 🟡 | RLS + composite FKs + pgTAP isolation tests; engagement copy-on-confirm in 2D |
+| CS-06 | Privacy between organisations; engagement record | 2 / 2A (+2D) | 🟡 | RLS + composite FKs + pgTAP isolation tests; marketplace: public job view by function only, private details released to the engaged provider only, the exact accepted proposal version kept (pgTAP 380/390). T-01 suite at Stage 2 completion |
 | CS-07 | Equipment register, asset categories, clients and sites | 2 / 2A | ✅ | fleet migration; Equipment and Clients & Sites pages; pgTAP 020 |
-| CS-08 | Meter readings, asset page, archiving and sale | 2 / 2A (+2C) | 🟡 | Meter rules, amendments, archive/sale ✅; service history pack PDF in 2C; acceptance queue UI 2B |
-| CS-09 | Asset import; conversion of marketplace-only customers | 2 / 2A (+2D) | 🟡 | `import_assets()` + wizard ✅; conversion in 2D |
-| CS-10 | Driver access, driver profiles, equipment codes | 2 / 2B | 🟡 | Permitted operators (`asset_operator_permissions`) and driver role ✅; profiles, PIN, codes/QR in 2B (domain rules tested) |
-| CS-11 | Pre-start, inspection, condition and vehicle forms; templates | 2 / 2B | ⏳ | — |
-| CS-12 | Inspection frequency, missed inspections, review, amendments | 2 / 2B | ⏳ | — |
-| CS-13 | Defects, severity rules, triage, holds, deferral | 2 / 2B | 🟡 | Severity/deferral rules in `@hvems/domain/safety` (Vitest); hold causes in engine |
+| CS-08 | Meter readings, asset page, archiving and sale | 2 / 2A (+2C) | ✅ | Meter rules, lower-reading reasons and approvals, amendments, archive/sale; service history pack PDF (2C) |
+| CS-09 | Asset import; conversion of marketplace-only customers | 2 / 2A (+2D) | ✅ | `import_assets()` + wizard; conversion keeps the organisation (jobs, engagements and history stay), Account Owner → Owner, Job Managers → Fleet Managers with Marketplace Buyer; job equipment converts to managed assets keeping its jobs (pgTAP 400). Spec ACC asks for a new organisation; same organisation chosen so nothing has to move (same outcome for users) |
+| CS-10 | Driver access, driver profiles, equipment codes | 2 / 2B | ✅ | Permitted operators, operator profiles and credentials, PIN sign-in, equipment codes and QR labels, operator workspace (pgTAP 100/160/300) |
+| CS-11 | Pre-start, inspection, condition and vehicle forms; templates | 2 / 2B | 🟡 | Pre-starts with templates per class, custom pre-start items, photos, PDF; operator issue reports (pgTAP 070/260/310). Other inspection and condition form types to confirm against the form register |
+| CS-12 | Inspection frequency, missed inspections, review, amendments | 2 / 2B | ✅ | Frequency per equipment, missed periods with review (not used / missed, in bulk), inspections search and filters (pgTAP 240) |
+| CS-13 | Defects, severity rules, triage, holds, deferral | 2 / 2B | ✅ | Triage, severity changes, holds, deferral with approver recorded, bulk close, issue categories (pgTAP 080/090/310/360) |
 | CS-14 | Asset condition | 2 / 2A–2B | ✅ engine | Condition engine, history, column lock, API lock (pgTAP 020); defect UI 2B |
-| CS-15 | Authorised clearance (two steps) | 2 / 2B | 🟡 | Awaiting-RTS cause and `can_return_to_service` (pgTAP); Clearance Authority grant ✅ |
-| CS-16 | Breakdowns and regulator defect notices | 2 / 2B | ⏳ | — |
-| CS-17 | Maintenance scheduling | 2 / 2C | ⏳ | overdue-service rule switch ✅ |
-| CS-18 | Work orders | 2 / 2C | ⏳ | — |
+| CS-15 | Authorised clearance (two steps) | 2 / 2B | ✅ | Repair clearance then return to service with evidence; Clearance Authority grant (pgTAP 080) |
+| CS-16 | Breakdowns and regulator defect notices | 2 / 2B | ✅ | Breakdowns, regulator notices with clearance, critical alerts with escalation (pgTAP 090) |
+| CS-17 | Maintenance scheduling | 2 / 2C | ✅ | Service plans by date, km and hours, due soon / overdue, overdue-service rule switch, next due chosen at completion with history (pgTAP 250/320) |
+| CS-18 | Work orders | 2 / 2C | ✅ | Internal, vendor and marketplace work orders, assignment to technicians, pre/post-work reports, review, close, reopen, costs on close, PDF (pgTAP 250/320/350) |
 | CS-19 | Workforce allocation and availability | 2 / 2C | ✅ | Profiles (trade, availability), qualifications with expiry alerts, leave; allocation warnings recorded on work orders (pgTAP 270) |
 | CS-20 | Parts requests, approvals, purchasing, receiving, usage | 2 / 2C | ✅ | PRT-01..07: multi-line requests (equipment / work order, urgency, needed by, delivery site, photos), one approval level by Approval Limit (auto within limit, routed otherwise, reject with reason), orders with 10% re-approval, partial receiving, substitutes and returns, fitting to work orders (from deliveries or bought on the spot) with one cost line per fit and reversing returns; supplier list and catalogue; technicians never see prices or cost lines (pgTAP 330) |
 | CS-21 | Inventory and purchase order documents | 4 | ➖ | Anticipated in schema design only |

@@ -6,6 +6,7 @@ import {
   formatWorkOrderNumber,
   getMarketplaceJob,
   getPersonNames,
+  listAssetClasses,
   listEngagements,
   listJobProposals,
   listMarketplaceJobFiles,
@@ -18,6 +19,7 @@ import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, CardBody, CardHeader, EmptyState } from "@/components/ui/primitives";
+import { ConvertJobAssetDialog } from "@/features/marketplace/convert-button";
 import { AcceptProposalButton, JobControls } from "@/features/marketplace/job-controls";
 import { JobSummary } from "@/features/marketplace/job-summary";
 import { BADGE_LABELS, ENGAGEMENT_STATUS, PROPOSAL_STATUS, aud, availabilityText, dmy, priceText } from "@/features/marketplace/labels";
@@ -54,6 +56,9 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
   );
   const threads = [...new Set(messages.map((m) => m.provider_id))];
   const open = pub.status === "open";
+  // A company that was a marketplace-only customer can turn described equipment into managed equipment (AST-04).
+  const canConvertAsset = ctx.context.kind === "company" && !job.asset_id && can(ctx.capabilities, "assets.manage");
+  const classes = canConvertAsset ? (await listAssetClasses(db)).map((c) => ({ value: c.id, label: c.name })) : [];
   const active = proposals.filter((p) => p.status === "active");
   const base = `/customer/${orgId}/marketplace`;
 
@@ -185,6 +190,19 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
               </p>
             ) : null}
           </Card>
+          {canConvertAsset ? (
+            <Card>
+              <CardBody className="flex flex-wrap items-center justify-between gap-3 text-[14px]">
+                <span className="text-ink-muted">This job describes equipment that isn&apos;t in your register yet.</span>
+                <ConvertJobAssetDialog
+                  orgId={orgId}
+                  jobId={job.id}
+                  classes={classes}
+                  described={{ make: String(job.shared_asset.make ?? ""), model: String(job.shared_asset.model ?? ""), registration: String(job.shared_asset.registration ?? "") }}
+                />
+              </CardBody>
+            </Card>
+          ) : null}
           <Card>
             <CardHeader title="What providers see" />
             <CardBody className="pt-0">

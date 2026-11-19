@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isTechnicianOnly } from "@/lib/shell-data";
-import { AlertOctagon, AlertTriangle, Building2, CheckCircle2, ChevronRight, MapPin, Plus, Truck, Upload, Users, Wrench } from "lucide-react";
-import { getAssetConditionCounts, getDashboardTodo, listAssets, listClients, listMembers, listSites } from "@hvems/api-client";
+import { AlertOctagon, AlertTriangle, Briefcase, Building2, CheckCircle2, ChevronRight, CircleDollarSign, ClipboardCheck, Handshake, MapPin, Plus, Truck, Upload, Users, Wrench } from "lucide-react";
+import { getAssetConditionCounts, getDashboardTodo, listAssets, listClients, listEngagements, listExpenditure, listMarketplaceJobs, listMembers, listSites } from "@hvems/api-client";
+import { startOfDayInZone, todayISO } from "@hvems/domain";
+import { ConvertToCompanyButton } from "@/features/marketplace/convert-button";
+import { effectiveJobStatus } from "@/features/marketplace/labels";
+import { buildCompliance } from "@/features/reports/compliance";
 import { fleetSubscriptionCents, formatAud, monthlyWaiverAllowance } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { ConditionBadge } from "@/components/condition";
@@ -19,7 +23,8 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function DashboardPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
   const ctx = await loadOrgContext(orgId, ["company", "marketplace_customer"]);
-  if (ctx.context.kind === "marketplace_customer") return <MarketplaceCustomerDashboard orgId={orgId} name={ctx.context.organisation_name} />;
+  if (ctx.context.kind === "marketplace_customer")
+    return <MarketplaceCustomerDashboard orgId={orgId} name={ctx.context.organisation_name} canConvert={ctx.context.role === "account_owner"} />;
   // Technicians start on their own jobs (managers keep the fleet dashboard; My Jobs is in the menu).
   if (isTechnicianOnly(ctx)) redirect(`/customer/${orgId}/my-work`);
 
@@ -33,6 +38,19 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
     listMembers(db, orgId),
     getDashboardTodo(db, orgId),
   ]);
+  // RPT-01: inspection completion and cost this month, and marketplace activity; each tile opens its list.
+  const today = todayISO(ctx.timezone);
+  const monthStart = `${today.slice(0, 8)}01`;
+  const seesCost = can(ctx.capabilities, "assets.costs.view");
+  const seesMarket = can(ctx.capabilities, "marketplace.post") || can(ctx.capabilities, "marketplace.accept");
+  const [month, monthCost, mJobs, mEngagements] = await Promise.all([
+    can(ctx.capabilities, "reports.view") ? buildCompliance(db, orgId, ctx.timezone, monthStart, today).catch(() => null) : Promise.resolve(null),
+    seesCost ? listExpenditure(db, orgId, { from: startOfDayInZone(monthStart, ctx.timezone).toISOString() }).catch(() => []) : Promise.resolve([]),
+    seesMarket ? listMarketplaceJobs(db, orgId).catch(() => []) : Promise.resolve([]),
+    seesMarket ? listEngagements(db, { posterId: orgId }).catch(() => []) : Promise.resolve([]),
+  ]);
+  const openJobs = mJobs.filter((j) => effectiveJobStatus(j) === "open").length;
+  const liveEngagements = mEngagements.filter((e) => ["confirmed", "on_my_way", "on_site", "completed", "correction_requested", "no_show_reported"].includes(e.status)).length;
   const todoItems = [
     { n: todo.criticalDefects, label: "Critical defects", href: `/customer/${orgId}/defects`, tone: "red" as const },
     { n: todo.minorDefects, label: "Minor defects", href: `/customer/${orgId}/defects`, tone: "amber" as const },
@@ -87,6 +105,36 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
           href={`${base}/defects`}
         />
       </div>
+
+      {month || seesCost || seesMarket ? (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {month ? (
+            <StatCard
+              label="Pre-starts this month"
+              value={month.inspections.completion === null ? "—" : `${month.inspections.completion}%`}
+              sub={`${month.inspections.done} done of ${month.inspections.expected} expected`}
+              icon={<ClipboardCheck />}
+              tone={month.inspections.completion !== null && month.inspections.completion < 90 ? "amber" : "neutral"}
+              href={`${base}/reports/compliance`}
+            />
+          ) : null}
+          {seesCost ? (
+            <StatCard
+              label="Maintenance cost this month"
+              value={formatAud(monthCost.reduce((sum, c) => sum + c.amount_cents, 0))}
+              sub="Parts, labour, outside work and fuel"
+              icon={<CircleDollarSign />}
+              href={`${base}/costs?from=${monthStart}`}
+            />
+          ) : null}
+          {seesMarket ? (
+            <>
+              <StatCard label="Marketplace jobs open" value={openJobs} icon={<Briefcase />} href={`${base}/marketplace?status=open`} />
+              <StatCard label="Engagements in progress" value={liveEngagements} icon={<Handshake />} href={`${base}/engagements`} />
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
         <Card className="xl:col-span-2">
@@ -206,24 +254,43 @@ export default async function DashboardPage({ params }: { params: Promise<{ orgI
   );
 }
 
-function MarketplaceCustomerDashboard({ orgId, name }: { orgId: string; name: string }) {
+async function MarketplaceCustomerDashboard({ orgId, name, canConvert }: { orgId: string; name: string; canConvert: boolean }) {
+  const db = await createSupabaseServerClient();
+  const [jobs, engagements] = await Promise.all([listMarketplaceJobs(db, orgId).catch(() => []), listEngagements(db, { posterId: orgId }).catch(() => [])]);
+  const open = jobs.filter((j) => effectiveJobStatus(j) === "open");
+  const proposals = open.reduce((n, j) => n + (j.proposals?.[0]?.count ?? 0), 0);
+  const live = engagements.filter((e) => ["confirmed", "on_my_way", "on_site", "completed", "correction_requested", "no_show_reported"].includes(e.status));
+  const toConfirm = engagements.filter((e) => e.status === "completed").length;
   return (
     <>
-      <PageHeader title="Dashboard" description={`${name} · Marketplace-only customer`} />
-      <Card>
-        <EmptyState
-          icon={<Truck />}
-          title="Post a job when you need a breakdown repair, urgent repair or service"
-          action={
-            <Button asChild>
-              <Link href={`/customer/${orgId}/module/jobs`}>About marketplace jobs</Link>
-            </Button>
-          }
-        >
-          Job posting, proposals and engagements are delivered in increment 2D. Your account, team and audit history are ready now. Marketplace-only
-          accounts have no fleet subscription.
-        </EmptyState>
-      </Card>
+      <PageHeader
+        title="Dashboard"
+        description={`${name} · Marketplace-only customer`}
+        actions={
+          <Button asChild>
+            <Link href={`/customer/${orgId}/marketplace/new`}>
+              <Plus /> Post a job
+            </Link>
+          </Button>
+        }
+      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Open jobs" value={open.length} sub={`${proposals} proposal${proposals === 1 ? "" : "s"} to compare`} icon={<Briefcase />} href={`/customer/${orgId}/marketplace?status=open`} />
+        <StatCard label="Engagements in progress" value={live.length} icon={<Handshake />} href={`/customer/${orgId}/engagements`} />
+        <StatCard label="Completed work to confirm" value={toConfirm} icon={<CheckCircle2 />} tone={toConfirm ? "amber" : "neutral"} href={`/customer/${orgId}/engagements`} />
+      </div>
+      {canConvert ? (
+        <Card className="mt-5">
+          <CardHeader title="Running your own fleet?" />
+          <CardBody className="flex flex-wrap items-center justify-between gap-3 pt-0">
+            <p className="max-w-[620px] text-[14px] text-ink-muted">
+              Convert this account to a company to manage your vehicles and equipment: pre-starts, defects, maintenance and work orders. Your past jobs and
+              engagements stay with you, and the equipment you described on jobs can become managed equipment. The first five pieces of equipment are free.
+            </p>
+            <ConvertToCompanyButton orgId={orgId} />
+          </CardBody>
+        </Card>
+      ) : null}
     </>
   );
 }

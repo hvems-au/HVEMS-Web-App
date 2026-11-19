@@ -1,5 +1,5 @@
 import "server-only";
-import { strToU8, zipSync } from "fflate";
+import { strToU8, zipSync, type Zippable } from "fflate";
 import { REPORT_ROW_LIMIT, reportRows, type HvemsClient } from "@hvems/api-client";
 import { toCsv } from "@hvems/domain";
 
@@ -39,6 +39,9 @@ const TABLES: { table: string; file: string; order?: string }[] = [
   { table: "workforce_leave", file: "technician-leave" },
   { table: "driver_profiles", file: "operator-profiles" },
   { table: "driver_credentials", file: "operator-credentials" },
+  { table: "marketplace_jobs", file: "marketplace-jobs" },
+  { table: "marketplace_job_files", file: "marketplace-job-files" },
+  { table: "marketplace_engagements", file: "marketplace-engagements" },
 ];
 
 function objectsToCsv(rows: Record<string, unknown>[]): string {
@@ -57,13 +60,15 @@ function objectsToCsv(rows: Record<string, unknown>[]): string {
   ]);
 }
 
+const FILE_BUDGET_BYTES = 150 * 1024 * 1024;
+
 /** Builds the zip: one CSV per record type, the audit history when permitted, a file list and a README. */
 export async function buildFullExport(
   db: HvemsClient,
   orgId: string,
   info: { company: string; generated: string; includeAudit: boolean },
 ): Promise<{ zip: Uint8Array; rows: number }> {
-  const files: Record<string, Uint8Array> = {};
+  const files: Zippable = {};
   const notes: string[] = [];
   let total = 0;
   const results = await Promise.all(
@@ -75,7 +80,7 @@ export async function buildFullExport(
       }
     }),
   );
-  const manifest: (string | number | null)[][] = [["Record type", "File", "Storage bucket", "Path"]];
+  const manifest: (string | number | null)[][] = [["Record type", "File", "Storage bucket", "Path", "In this zip"]];
   for (const { t, rows } of results) {
     if (rows === null) {
       notes.push(`- ${t.file}: not included (your role can't read these records).`);
@@ -90,6 +95,8 @@ export async function buildFullExport(
       if (t.table === "documents") add("documents", r.path);
       if (t.table === "work_order_files") add("work-order-files", r.path);
       if (t.table === "inspection_photos") add("inspection-photos", r.storage_path);
+      if (t.table === "marketplace_job_files") add("marketplace-files", r.path);
+      if (t.table === "marketplace_engagements" && Array.isArray(r.completion_paths)) for (const p of r.completion_paths as unknown[]) add("marketplace-files", p);
       for (const k of ["evidence_paths", "receipt_paths", "photo_paths"]) if (Array.isArray(r[k])) for (const p of r[k] as unknown[]) add("inspection-photos", p);
     }
   }
@@ -103,6 +110,42 @@ export async function buildFullExport(
       notes.push("- audit-history: not included.");
     }
   }
+  // Original files, read with the person's own access, up to the size budget (RPT-05: larger exports need the background job).
+  let used = 0;
+  let skipped = 0;
+  const seen = new Set<string>();
+  for (const row of manifest.slice(1)) {
+    const bucket = String(row[2]);
+    const path = String(row[3]);
+    const key = `files/${bucket}/${path}`;
+    if (seen.has(key)) {
+      row[4] = "yes";
+      continue;
+    }
+    seen.add(key);
+    if (used >= FILE_BUDGET_BYTES) {
+      row[4] = "no (size limit)";
+      skipped++;
+      continue;
+    }
+    const { data } = await db.storage.from(bucket).download(path);
+    if (!data) {
+      row[4] = "no (not readable)";
+      skipped++;
+      continue;
+    }
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    if (used + bytes.length > FILE_BUDGET_BYTES) {
+      row[4] = "no (size limit)";
+      skipped++;
+      continue;
+    }
+    used += bytes.length;
+    // Photos and PDFs are already compressed: store them as they are.
+    files[key] = [bytes, { level: 0 }];
+    row[4] = "yes";
+  }
+  if (skipped) notes.push(`- ${skipped} stored file(s) are listed in original-files.csv but not included (over the ${FILE_BUDGET_BYTES / 1048576} MB limit for one download, or not readable with your access).`);
   files["original-files.csv"] = strToU8("﻿" + toCsv(manifest));
   files["README.txt"] = strToU8(
     [
@@ -110,8 +153,8 @@ export async function buildFullExport(
       info.generated,
       "",
       "One CSV per type of record. Dates and times are in UTC (ISO 8601); amounts ending _cents are whole cents (AUD).",
-      "original-files.csv lists every stored file (documents, photos, receipts, invoices) with its storage location;",
-      "the files themselves are not inside this zip yet.",
+      "Stored files (documents, photos, receipts, invoices) are in the files/ folder, by storage bucket and path.",
+      "original-files.csv lists every one and whether it is in this zip.",
       ...(notes.length ? ["", "Notes:", ...notes] : []),
       "",
     ].join("\r\n"),

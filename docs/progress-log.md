@@ -1,5 +1,20 @@
 # Development progress log
 
+## 2026-11-22 — Console settings and dashboard, company dashboard, export files, conversion to a company
+**Done**
+- Migration `20261122090000 console_settings_dashboard_conversion` (in the repo; apply in the SQL editor). pgTAP `400`.
+- **Console settings** (ADM-08): a Platform Administrator changes a setting with a reason; the value keeps its type; the change history shows who, when, from, to and why (append-only, also in the audit history).
+- **Console dashboard** (ADM-09, RPT-07): jobs posted, proposals per job, median time to first proposal (standard and urgent), engagements and acceptance rate, cancellations and no-shows, reviews, connection fees recorded, verification backlog, open cases, jobs by region; safety figures as counts only.
+- **Company dashboard** (RPT-01): pre-start completion this month, maintenance cost this month (cost readers), open marketplace jobs and engagements in progress; each figure opens its list.
+- **Marketplace-only customer dashboard**: open jobs and proposals, engagements in progress, work to confirm, Post a job.
+- **Conversion to a company** (CS-09): the Account Owner converts the account; it keeps the same organisation so jobs, engagements and history stay; the Account Owner becomes Owner and Job Managers become Fleet Managers with the Marketplace Buyer grant. On a past job, "Add to my equipment" turns the described equipment into managed equipment, and jobs with the same registration move with it.
+- **Full export** now includes the stored files (documents, photos, receipts, invoices, marketplace files) up to 150 MB, plus marketplace jobs, attachments and engagements; the file list shows which files are in the zip.
+- Traceability brought up to date for the safety and maintenance work done in 2B and 2C.
+
+**Limitations**
+- Exports over 150 MB of files or 10,000 rows still need the background job with an emailed link (RPT-05).
+- Conversion keeps the same organisation rather than creating a new one (spec ACC); the outcome for users is the same and nothing has to be moved.
+
 ## 2026-11-21 — 2D Marketplace slice 2: engagements, completion, reviews, cancellations, cases
 **Done**
 - Migration `20261121090000 marketplace_engagements` (in the repo; apply in the SQL editor). pgTAP `390`.

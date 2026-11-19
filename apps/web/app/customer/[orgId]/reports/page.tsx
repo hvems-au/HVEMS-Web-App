@@ -49,7 +49,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ orgId:
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-semibold text-ink">Full export</span>
               <span className="block text-[13px] text-ink-muted">
-                Every record your company holds, one CSV per type, plus a list of all stored files. Recorded in the audit history.
+                Every record your company holds, one CSV per type, with the stored documents, photos and invoices (up to 150 MB). Recorded in the audit history.
               </span>
             </span>
             <a href={`${base}/full-export`} className="rounded-[8px] border border-stroke-strong px-3.5 py-2 text-[13.5px] font-medium text-ink hover:bg-surface-hover">

@@ -229,3 +229,25 @@ export async function searchProvidersAction(orgId: string, q: string, category: 
     return errorState(e);
   }
 }
+
+// ---- Conversion to a company (CS-09) --------------------------------------------------------------
+export async function convertToCompanyAction(orgId: string) {
+  return call("convert_to_company" as MarketplaceRpc, { p_organisation_id: orgId }, "Your account is now a company", `/customer/${orgId}`);
+}
+
+export async function convertJobAssetAction(orgId: string, jobId: string, input: { assetNumber: string; classId: string; make: string; model: string; registration: string; state: string }) {
+  return call<string>(
+    "convert_job_asset" as MarketplaceRpc,
+    {
+      p_job_id: jobId,
+      p_asset_number: input.assetNumber,
+      p_asset_class_id: input.classId,
+      p_make: input.make || null,
+      p_model: input.model || null,
+      p_registration: input.registration || null,
+      p_registration_state: input.state || null,
+    },
+    "Equipment added to your register",
+    `/customer/${orgId}`,
+  );
+}
