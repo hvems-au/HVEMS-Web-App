@@ -432,7 +432,8 @@ export type NotificationKind =
   | "prestart_missed"
   | "meter_reading_review"
   | "parts_approval"
-  | "parts_decision";
+  | "parts_decision"
+  | "document_expiring";
 
 export interface CriticalAlert {
   id: UUID;

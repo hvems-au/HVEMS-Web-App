@@ -1937,3 +1937,83 @@ export type PartsRpc =
 export async function partsRpc(db: HvemsClient, fn: PartsRpc, args: Record<string, unknown>): Promise<unknown> {
   return unwrap(await raw(db).rpc(fn, args));
 }
+
+// ---------------------------------------------------------------------------
+// Equipment documents (CS-22)
+// ---------------------------------------------------------------------------
+export type DocumentCategory = "registration" | "insurance" | "service_record" | "inspection_report" | "warranty" | "manual" | "certificate" | "photo" | "other";
+
+export interface EquipmentDocument {
+  id: string;
+  organisation_id: string;
+  asset_id: string;
+  category: DocumentCategory;
+  title: string;
+  path: string;
+  file_name: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  expires_on: string | null;
+  notes: string | null;
+  uploaded_by: string;
+  uploaded_at: string;
+  superseded_by: string | null;
+  superseded_at: string | null;
+  superseded_reason: string | null;
+  asset?: { asset_number: string; make: string | null; model: string | null } | null;
+}
+
+/** Documents (RLS: whoever can see the equipment). Current only unless includeReplaced. */
+export async function listDocuments(
+  db: HvemsClient,
+  filter: { organisationId: string; assetId?: string; includeReplaced?: boolean; limit?: number },
+): Promise<EquipmentDocument[]> {
+  let q = raw(db).from("documents").select("*, asset:assets(asset_number, make, model)").eq("organisation_id", filter.organisationId);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  if (!filter.includeReplaced) q = q.is("superseded_at", null);
+  return unwrap(await q.order("uploaded_at", { ascending: false }).limit(filter.limit ?? 500)) as EquipmentDocument[];
+}
+
+export async function addDocument(
+  db: HvemsClient,
+  input: {
+    assetId: string;
+    category: DocumentCategory;
+    title: string;
+    path: string;
+    fileName: string;
+    contentType?: string | null;
+    sizeBytes?: number | null;
+    expiresOn?: string | null;
+    notes?: string | null;
+    replaces?: string | null;
+    replaceReason?: string | null;
+  },
+): Promise<string> {
+  return unwrap(
+    await raw(db).rpc("add_document", {
+      p_asset_id: input.assetId,
+      p_category: input.category,
+      p_title: input.title,
+      p_path: input.path,
+      p_file_name: input.fileName,
+      p_content_type: input.contentType ?? null,
+      p_size_bytes: input.sizeBytes ?? null,
+      p_expires_on: input.expiresOn ?? null,
+      p_notes: input.notes ?? null,
+      p_replaces: input.replaces ?? null,
+      p_replace_reason: input.replaceReason ?? null,
+    }),
+  ) as string;
+}
+
+export async function supersedeDocument(db: HvemsClient, id: string, reason: string): Promise<void> {
+  unwrap(await raw(db).rpc("supersede_document", { p_document_id: id, p_reason: reason }));
+}
+
+/** Short-lived private links (DOC-03: 5 minutes). */
+export async function signDocumentLinks(db: HvemsClient, paths: string[], seconds = 300): Promise<Map<string, string>> {
+  if (!paths.length) return new Map();
+  const { data } = await raw(db).storage.from("documents").createSignedUrls(paths, seconds);
+  return new Map((data ?? []).flatMap((s) => (s.signedUrl && s.path ? [[s.path, s.signedUrl] as const] : [])));
+}

@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Popover as P } from "radix-ui";
-import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge, PackageCheck } from "lucide-react";
+import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge, PackageCheck, FileClock } from "lucide-react";
 import type { AppNotification } from "@hvems/types";
 import { loadTrayAction, markTrayReadAction } from "@/features/alerts/tray-actions";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ const KIND: Record<string, { icon: LucideIcon; tone: string }> = {
   meter_reading_review: { icon: Gauge, tone: "text-warn-ink" },
   parts_approval: { icon: PackageCheck, tone: "text-warn-ink" },
   parts_decision: { icon: PackageCheck, tone: "text-info-ink" },
+  document_expiring: { icon: FileClock, tone: "text-warn-ink" },
 };
 
 function ago(iso: string): string {

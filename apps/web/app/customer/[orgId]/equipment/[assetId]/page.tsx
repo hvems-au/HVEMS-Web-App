@@ -18,8 +18,11 @@ import {
   listServiceSchedule,
   listWorkOrders,
   listServiceDueHistory,
+  listDocuments,
 } from "@hvems/api-client";
-import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, prestartFrequencyText, formatDateAU, formatDateTimeAU } from "@hvems/domain";
+import { CONDITION_LABELS, METER_TYPE_LABELS, OWNER_TYPE_LABELS, prestartFrequencyText, formatDateAU, formatDateTimeAU, todayISO } from "@hvems/domain";
+import { EquipmentDocuments } from "@/features/documents/equipment-documents";
+import { toDocRows } from "@/features/documents/rows";
 import { can } from "@hvems/permissions";
 import { ConditionBadge, ConditionBanner } from "@/components/condition";
 import { ResultBadge, SeverityBadge } from "@/components/safety";
@@ -135,6 +138,8 @@ export default async function AssetPage({
       ])
     : [[], [], null];
   const dueHistory = new Map(await Promise.all(plans.map(async (pl) => [pl.id, await listServiceDueHistory(db, pl.id, 5)] as const)));
+  // Documents on this equipment (anyone who can see it), with 5-minute links.
+  const docRows = view === "overview" ? await toDocRows(db, await listDocuments(db, { organisationId: orgId, assetId }).catch(() => []), ctx.timezone, todayISO(ctx.timezone)) : [];
   const maintNames = await getPersonNames(db, [
     ...new Set([...assetWorkOrders.map((w) => w.assigned_to), ...[...dueHistory.values()].flat().map((h) => h.set_by)].filter(Boolean) as string[]),
   ]);
@@ -359,6 +364,15 @@ export default async function AssetPage({
               ) : null}
             </div>
           </div>
+
+          {view === "overview" ? (
+            <Card id="documents" className="mt-5 scroll-mt-20">
+              <CardHeader title="Documents" description="Registration, insurance, manuals, certificates and other files for this equipment." />
+              <CardBody>
+                <EquipmentDocuments orgId={orgId} assetId={assetId} docs={docRows} canManage={can(ctx.capabilities, "assets.manage") && !asset.archived_at} />
+              </CardBody>
+            </Card>
+          ) : null}
 
           {seesMaintenance ? (
             <EquipmentMaintenance

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX, Gauge, PackageCheck } from "lucide-react";
+import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX, Gauge, PackageCheck, FileClock } from "lucide-react";
 import { listCriticalAlerts, listMembers, listMyNotifications } from "@hvems/api-client";
 import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -32,6 +32,7 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   meter_reading_review: "Readings to approve",
   parts_approval: "Parts to approve",
   parts_decision: "Parts decisions",
+  document_expiring: "Documents expiring",
 };
 const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }> = {
   critical_defect: { icon: OctagonAlert, tone: "text-danger" },
@@ -49,6 +50,7 @@ const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }
   meter_reading_review: { icon: Gauge, tone: "text-warn-ink" },
   parts_approval: { icon: PackageCheck, tone: "text-warn-ink" },
   parts_decision: { icon: PackageCheck, tone: "text-info-ink" },
+  document_expiring: { icon: FileClock, tone: "text-warn-ink" },
 };
 const ESCALATION = ["", "Escalated: 30 min", "Escalated: 2 hours"] as const;
 

@@ -112,7 +112,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
       title: "Records",
       items: [
         { label: "Fuel & Usage", href: `${base}/module/fuel`, icon: "fuel", increment: "2C" },
-        { label: "Documents", href: `${base}/module/documents`, icon: "documents", increment: "2C" },
+        { label: "Documents", href: `${base}/documents`, icon: "documents" },
         { label: "Reports", href: `${base}/module/reports`, icon: "reports", capability: "reports.view", increment: "2C" },
       ],
     },
