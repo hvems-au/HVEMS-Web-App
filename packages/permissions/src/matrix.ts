@@ -80,6 +80,8 @@ export const CAPABILITIES = [
   "workforce.manage",
   "parts.request",
   "parts.approve",
+  // Record orders and receipts, keep the parts catalogue and supplier list (spec 7.7: Fleet Manager and above).
+  "parts.manage",
   "reports.view",
   "reports.export",
   "defects.clear_critical",
@@ -133,6 +135,7 @@ const OPERATIONS_MANAGER: Capability[] = [
   "work_orders.work",
   "workforce.manage",
   "parts.request",
+  "parts.manage",
   "reports.view",
   "reports.export",
   // Owners and Fleet Managers clear defects and return equipment to service by role
