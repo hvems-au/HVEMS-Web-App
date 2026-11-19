@@ -61,7 +61,7 @@ select is((select status from public.marketplace_jobs where id = :'job'), 'engag
 select is((select status from public.marketplace_proposals where id = :'prop2'), 'not_selected', 'other proposals are not selected');
 select is((select fee_status from public.marketplace_engagements where id = :'eng'), 'not_live', 'fees are recorded but not charged until billing is live');
 select is((select poster_fee_cents from public.marketplace_engagements where id = :'eng'), 2900::bigint, 'the standard fee is recorded for each party');
-select ok((select vendor_name = 'Deception Bay Diesel' and status = 'in_progress' from public.work_orders w join public.marketplace_jobs j on j.work_order_id = w.id where j.id = :'job'),
+select ok((select w.vendor_name = 'Deception Bay Diesel' and w.status = 'in_progress' from public.work_orders w join public.marketplace_jobs j on j.work_order_id = w.id where j.id = :'job'),
   'the work order shows the provider');
 
 -- MKT-11: details released to the engaged provider only
@@ -122,7 +122,7 @@ select is(tests.error_code(format($$select public.confirm_engagement_completion(
 select lives_ok(format($$select public.confirm_engagement_completion(%L, true)$$, :'eng'), 'the customer confirms completion');
 reset role;
 select is((select condition from public.assets where id = :'asset')::text, 'out_of_service', 'confirming completion never clears the defect or returns the equipment to service');
-select is((select status from public.work_orders w join public.marketplace_jobs j on j.work_order_id = w.id where j.id = :'job'), 'completed', 'the work order is completed for review');
+select is((select w.status from public.work_orders w join public.marketplace_jobs j on j.work_order_id = w.id where j.id = :'job'), 'completed', 'the work order is completed for review');
 
 -- MKT-17 reviews
 select tests.authenticate_as(:'cowner');
