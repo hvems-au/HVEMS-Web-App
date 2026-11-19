@@ -97,8 +97,9 @@ select is((select valid_until::date - now()::date from public.marketplace_propos
 select public.submit_marketplace_proposal(:'p1', :'job', '{"price_basis": "estimate", "amount_cents": 80000, "amount_max_cents": 120000, "gst_applies": true, "available_from": "2026-12-01", "fee_consent": true}') as prop2 \gset
 select is(:'prop2'::uuid, :'prop'::uuid, 'one proposal per provider per job');
 select is((select count(*) from public.marketplace_proposal_versions where proposal_id = :'prop')::int, 2, 'every revision is kept');
-select is(tests.error_code(format($$update public.marketplace_proposal_versions set amount_cents = 1 where proposal_id = %L$$, :'prop')), 'append_only', 'versions are never edited');
+select is(tests.error_code(format($update public.marketplace_proposal_versions set amount_cents = 1 where proposal_id = %L$, :'prop')), '42501', 'parties cannot edit versions');
 reset role;
+select is(tests.error_code(format($update public.marketplace_proposal_versions set amount_cents = 1 where proposal_id = %L$, :'prop')), 'append_only', 'and versions are never edited, even by the system');
 
 select tests.authenticate_as(:'buyer');
 select is((select count(*) from public.list_job_proposals(:'job'))::int, 1, 'the poster sees the proposal');
