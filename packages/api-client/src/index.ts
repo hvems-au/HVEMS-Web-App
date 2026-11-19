@@ -2170,3 +2170,362 @@ export async function reportRows<T = Record<string, unknown>>(
 export async function logReportExport(db: HvemsClient, organisationId: string, report: string, rows: number, filters: Record<string, string>): Promise<void> {
   unwrap(await raw(db).rpc("log_report_export", { p_organisation_id: organisationId, p_report: report, p_rows: rows, p_filters: filters }));
 }
+
+// ---------------------------------------------------------------------------
+// Marketplace (2D): regions, providers and verification, jobs, questions, proposals
+// ---------------------------------------------------------------------------
+export const PROVIDER_CATEGORIES = {
+  diesel_mechanical: "Diesel mechanical",
+  auto_electrical: "Auto-electrical",
+  hydraulics: "Hydraulics",
+  tyres: "Tyres",
+  welding_fabrication: "Welding and fabrication",
+  refrigeration: "Refrigeration",
+  mobile_plant: "Mobile plant",
+  inspections: "Inspections",
+  towing_recovery: "Towing and recovery",
+  other: "Other",
+} as const;
+export type ProviderCategory = keyof typeof PROVIDER_CATEGORIES;
+
+export const JOB_TYPES = { breakdown_repair: "Breakdown or repair", planned_service: "Planned service", inspection: "Inspection", other: "Other" } as const;
+export type JobType = keyof typeof JOB_TYPES;
+
+export interface MarketplaceRegion {
+  code: string;
+  name: string;
+  state: string;
+  open: boolean;
+  sort_order: number;
+}
+
+export async function listMarketplaceRegions(db: HvemsClient): Promise<MarketplaceRegion[]> {
+  return unwrap(await raw(db).from("marketplace_regions").select("*").order("sort_order")) as MarketplaceRegion[];
+}
+
+export interface ProviderProfile {
+  organisation_id: string;
+  description: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  categories: ProviderCategory[];
+  asset_class_codes: string[];
+  region_codes: string[];
+  base_suburb: string | null;
+  base_postcode: string | null;
+  radius_km: number | null;
+  mobile_service: boolean;
+  workshop_address: string | null;
+  hours: string | null;
+  accepting_urgent: boolean;
+  unavailable_dates: string[];
+  status: "draft" | "submitted" | "verified" | "rejected" | "suspended";
+  submitted_at: string | null;
+  decided_at: string | null;
+  decided_by: string | null;
+  decision_reason: string | null;
+  suspended_reason: string | null;
+}
+
+export interface ProviderDocument {
+  id: string;
+  organisation_id: string;
+  kind: "public_liability" | "qualification" | "licence" | "other";
+  category: string | null;
+  title: string;
+  path: string;
+  file_name: string;
+  expires_on: string | null;
+  uploaded_at: string;
+  superseded_at: string | null;
+}
+
+export interface ProviderBadge {
+  id: string;
+  organisation_id: string;
+  kind: "abn" | "public_liability" | "qualification";
+  category: string | null;
+  document_id: string | null;
+  details: string;
+  checked_by: string;
+  checked_at: string;
+  expires_on: string | null;
+  revoked_at: string | null;
+}
+
+type ProviderWithOrg = ProviderProfile & { organisation: { name: string; abn: string | null; legal_name: string | null } | null };
+
+export async function getProviderProfile(db: HvemsClient, organisationId: string): Promise<ProviderProfile | null> {
+  return (unwrap(await raw(db).from("provider_profiles").select("*").eq("organisation_id", organisationId).maybeSingle()) as ProviderProfile | null) ?? null;
+}
+
+export async function listProviderProfiles(db: HvemsClient, status?: ProviderProfile["status"]): Promise<ProviderWithOrg[]> {
+  let q = raw(db).from("provider_profiles").select("*, organisation:organisations(name, abn, legal_name)");
+  if (status) q = q.eq("status", status);
+  return unwrap(await q.order("submitted_at", { ascending: true, nullsFirst: false })) as ProviderWithOrg[];
+}
+
+export async function listProviderDocuments(db: HvemsClient, organisationId: string, includeRetired = false): Promise<ProviderDocument[]> {
+  let q = raw(db).from("provider_documents").select("*").eq("organisation_id", organisationId);
+  if (!includeRetired) q = q.is("superseded_at", null);
+  return unwrap(await q.order("uploaded_at", { ascending: false })) as ProviderDocument[];
+}
+
+export async function listProviderBadges(db: HvemsClient, organisationId: string): Promise<ProviderBadge[]> {
+  return unwrap(await raw(db).from("provider_badges").select("*").eq("organisation_id", organisationId).is("revoked_at", null).order("checked_at")) as ProviderBadge[];
+}
+
+async function signFrom(db: HvemsClient, bucket: string, paths: string[], seconds: number): Promise<Map<string, string>> {
+  if (!paths.length) return new Map();
+  const { data } = await raw(db).storage.from(bucket).createSignedUrls(paths, seconds);
+  return new Map((data ?? []).flatMap((s) => (s.signedUrl && s.path ? [[s.path, s.signedUrl] as const] : [])));
+}
+
+export const signProviderDocuments = (db: HvemsClient, paths: string[], seconds = 300) => signFrom(db, "provider-documents", paths, seconds);
+export const signMarketplaceFiles = (db: HvemsClient, paths: string[], seconds = 300) => signFrom(db, "marketplace-files", paths, seconds);
+
+/** Public view of a job, exactly as providers see it (MKT-04). */
+export interface PublicJob {
+  id: string;
+  number: number;
+  title: string;
+  description: string;
+  category: ProviderCategory;
+  job_type: JobType;
+  urgency: "standard" | "urgent";
+  shared_asset: Record<string, string | number>;
+  region_code: string;
+  region: string | null;
+  suburb: string;
+  postcode: string | null;
+  preferred_from: string | null;
+  preferred_to: string | null;
+  preferred_time: string | null;
+  budget_min_cents: number | null;
+  budget_max_cents: number | null;
+  required_badges: string[];
+  invited_only: boolean;
+  status: "open" | "engaged" | "closed" | "cancelled" | "expired";
+  posted_at: string;
+  closes_at: string;
+  poster: string;
+  poster_kind: string;
+  fee_cents: number;
+  files: { id: string; file_name: string; path: string }[];
+  saved?: boolean;
+  invited?: boolean;
+  my_proposal?: string | null;
+  matches?: boolean;
+  block?: string | null;
+}
+
+export interface MarketplaceJob {
+  id: string;
+  number: number;
+  organisation_id: string;
+  work_order_id: string | null;
+  asset_id: string | null;
+  title: string;
+  description: string;
+  category: ProviderCategory;
+  job_type: JobType;
+  urgency: "standard" | "urgent";
+  shared_asset: Record<string, string | number>;
+  region_code: string;
+  suburb: string;
+  postcode: string | null;
+  address: string | null;
+  site_access_notes: string | null;
+  preferred_from: string | null;
+  preferred_to: string | null;
+  preferred_time: string | null;
+  budget_min_cents: number | null;
+  budget_max_cents: number | null;
+  required_badges: string[];
+  show_poster_name: boolean;
+  invited_only: boolean;
+  status: PublicJob["status"];
+  posted_by: string;
+  posted_at: string;
+  closes_at: string;
+  extended_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  clarification_sent_at: string | null;
+  work_order?: { number: number; title: string } | null;
+}
+
+export async function listMarketplaceJobs(db: HvemsClient, organisationId: string): Promise<(MarketplaceJob & { proposals: { count: number }[] })[]> {
+  return unwrap(
+    await raw(db)
+      .from("marketplace_jobs")
+      .select("*, work_order:work_orders(number, title), proposals:marketplace_proposals(count)")
+      .eq("organisation_id", organisationId)
+      .order("posted_at", { ascending: false })
+      .limit(500),
+  ) as (MarketplaceJob & { proposals: { count: number }[] })[];
+}
+
+export async function getMarketplaceJob(db: HvemsClient, organisationId: string, id: string): Promise<MarketplaceJob | null> {
+  return (unwrap(
+    await raw(db).from("marketplace_jobs").select("*, work_order:work_orders(number, title)").eq("organisation_id", organisationId).eq("id", id).maybeSingle(),
+  ) as MarketplaceJob | null) ?? null;
+}
+
+export async function listMarketplaceJobsForWorkOrder(db: HvemsClient, workOrderId: string): Promise<MarketplaceJob[]> {
+  return unwrap(await raw(db).from("marketplace_jobs").select("*").eq("work_order_id", workOrderId).order("posted_at", { ascending: false })) as MarketplaceJob[];
+}
+
+export type JobFile = { id: string; path: string; file_name: string; shared: boolean };
+
+export async function listMarketplaceJobFiles(db: HvemsClient, jobId: string): Promise<JobFile[]> {
+  return unwrap(await raw(db).from("marketplace_job_files").select("id, path, file_name, shared").eq("job_id", jobId).order("created_at")) as JobFile[];
+}
+
+export interface MarketplaceMessage {
+  id: string;
+  job_id: string;
+  provider_id: string;
+  from_provider: boolean;
+  sender_id: string;
+  body: string;
+  masked: boolean;
+  is_clarification: boolean;
+  created_at: string;
+}
+
+export async function listMarketplaceMessages(db: HvemsClient, jobId: string, providerId?: string): Promise<MarketplaceMessage[]> {
+  let q = raw(db).from("marketplace_messages").select("*").eq("job_id", jobId);
+  if (providerId) q = q.eq("provider_id", providerId);
+  return unwrap(await q.order("created_at")) as MarketplaceMessage[];
+}
+
+export interface ProposalTerms {
+  id: string;
+  version: number;
+  price_basis: "fixed" | "estimate" | "hourly";
+  amount_cents: number | null;
+  amount_max_cents: number | null;
+  hourly_rate_cents: number | null;
+  callout_cents: number | null;
+  gst_applies: boolean;
+  available_from: string | null;
+  available_to: string | null;
+  arrival_minutes: number | null;
+  valid_until: string;
+  inclusions: string | null;
+  exclusions: string | null;
+  assumptions: string | null;
+  note: string | null;
+  fee_cents: number;
+  fee_consented_at: string;
+  created_at: string;
+}
+
+export type ProposalStatus = "active" | "withdrawn" | "expired" | "not_selected" | "accepted";
+
+export interface JobProposal {
+  id: string;
+  status: ProposalStatus;
+  version: number;
+  valid_until: string;
+  submitted_at: string;
+  updated_at: string;
+  provider: {
+    id: string;
+    name: string;
+    mobile_service: boolean | null;
+    categories: string[] | null;
+    regions: string[];
+    badges: { kind: string; details: string; checked_at: string; expires_on: string | null }[];
+  };
+  conflict: boolean;
+  terms: ProposalTerms;
+  versions: number;
+}
+
+export async function listJobProposals(db: HvemsClient, jobId: string): Promise<JobProposal[]> {
+  return unwrap(await raw(db).rpc("list_job_proposals", { p_job_id: jobId })) as JobProposal[];
+}
+
+export type MyProposal = { id: string; status: ProposalStatus; version: number; valid_until: string; versions: ProposalTerms[] };
+
+export async function getMyProposal(db: HvemsClient, providerId: string, jobId: string): Promise<MyProposal | null> {
+  const p = unwrap(
+    await raw(db).from("marketplace_proposals").select("id, status, version, valid_until").eq("provider_id", providerId).eq("job_id", jobId).maybeSingle(),
+  ) as Omit<MyProposal, "versions"> | null;
+  if (!p) return null;
+  const versions = unwrap(await raw(db).from("marketplace_proposal_versions").select("*").eq("proposal_id", p.id).order("version", { ascending: false })) as ProposalTerms[];
+  return { ...p, versions };
+}
+
+export async function browseMarketplaceJobs(
+  db: HvemsClient,
+  providerId: string,
+  f: { q?: string; category?: string; jobType?: string; urgency?: string; region?: string; saved?: boolean; mine?: boolean } = {},
+): Promise<PublicJob[]> {
+  return unwrap(
+    await raw(db).rpc("browse_marketplace_jobs", {
+      p_provider_id: providerId,
+      p_query: f.q || null,
+      p_category: f.category || null,
+      p_job_type: f.jobType || null,
+      p_urgency: f.urgency || null,
+      p_region: f.region || null,
+      p_saved_only: !!f.saved,
+      p_mine: !!f.mine,
+    }),
+  ) as PublicJob[];
+}
+
+export async function getJobForProvider(db: HvemsClient, providerId: string, jobId: string): Promise<PublicJob> {
+  return unwrap(await raw(db).rpc("get_marketplace_job_for_provider", { p_provider_id: providerId, p_job_id: jobId })) as PublicJob;
+}
+
+export async function previewMarketplaceJob(db: HvemsClient, jobId: string): Promise<PublicJob> {
+  return unwrap(await raw(db).rpc("preview_marketplace_job", { p_job_id: jobId })) as PublicJob;
+}
+
+export type ProviderCard = {
+  id: string;
+  name: string;
+  categories: string[];
+  regions: string[];
+  mobile_service: boolean;
+  accepting_urgent: boolean;
+  description: string | null;
+  badges: { kind: string; details: string }[];
+};
+
+export async function searchMarketplaceProviders(db: HvemsClient, organisationId: string, f: { q?: string; category?: string; region?: string } = {}): Promise<ProviderCard[]> {
+  return unwrap(
+    await raw(db).rpc("search_marketplace_providers", { p_organisation_id: organisationId, p_query: f.q || null, p_category: f.category || null, p_region: f.region || null }),
+  ) as ProviderCard[];
+}
+
+/** The marketplace functions; each one checks permissions and rules in the database. */
+export type MarketplaceRpc =
+  | "save_provider_profile"
+  | "add_provider_document"
+  | "retire_provider_document"
+  | "submit_provider_verification"
+  | "decide_provider_verification"
+  | "set_provider_suspended"
+  | "set_marketplace_region"
+  | "register_region_interest"
+  | "post_marketplace_job"
+  | "extend_marketplace_job"
+  | "withdraw_marketplace_job"
+  | "invite_providers"
+  | "save_marketplace_job"
+  | "send_marketplace_message"
+  | "send_marketplace_clarification"
+  | "submit_marketplace_proposal"
+  | "withdraw_marketplace_proposal"
+  | "provider_proposal_block"
+  | "marketplace_thread_providers";
+
+export async function marketplaceRpc<T = unknown>(db: HvemsClient, fn: MarketplaceRpc, args: Record<string, unknown>): Promise<T> {
+  return unwrap(await raw(db).rpc(fn, args)) as T;
+}

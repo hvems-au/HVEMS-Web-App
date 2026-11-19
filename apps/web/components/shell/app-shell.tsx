@@ -30,7 +30,7 @@ export interface AppShellProps {
   contexts: ShellContext[];
   banner?: React.ReactNode;
   /** Where the bell goes and how many alerts are unread (company portal). */
-  alerts?: { href: string; unread: number; orgId?: string };
+  alerts?: { href: string; unread: number; orgId?: string; base?: string };
   children: React.ReactNode;
 }
 
@@ -332,7 +332,7 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeSwitcher compact />
             {alerts?.orgId ? (
-              <NotificationTray orgId={alerts.orgId} href={alerts.href} unread={alerts.unread} />
+              <NotificationTray orgId={alerts.orgId} href={alerts.href} unread={alerts.unread} base={alerts.base} />
             ) : (
             <Link
               href={alerts?.href ?? current.href.replace(/\/dashboard$/, "") + "/module/notifications"}

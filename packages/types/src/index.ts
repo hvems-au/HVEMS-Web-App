@@ -413,6 +413,8 @@ export interface AppNotification {
   asset_id: UUID | null;
   inspection_id: UUID | null;
   alert_id: UUID | null;
+  /** Where it opens, relative to the portal (marketplace and provider alerts). */
+  link_path?: string | null;
   created_at: ISODateTime;
   read_at: ISODateTime | null;
 }
@@ -433,7 +435,12 @@ export type NotificationKind =
   | "meter_reading_review"
   | "parts_approval"
   | "parts_decision"
-  | "document_expiring";
+  | "document_expiring"
+  | "provider_verification"
+  | "provider_document_expiring"
+  | "marketplace_job"
+  | "marketplace_message"
+  | "marketplace_proposal";
 
 export interface CriticalAlert {
   id: UUID;

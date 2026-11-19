@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Popover as P } from "radix-ui";
-import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge, PackageCheck, FileClock } from "lucide-react";
+import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge, PackageCheck, FileClock, BadgeCheck, Store, MessageSquare, FileText } from "lucide-react";
 import type { AppNotification } from "@hvems/types";
 import { loadTrayAction, markTrayReadAction } from "@/features/alerts/tray-actions";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,11 @@ const KIND: Record<string, { icon: LucideIcon; tone: string }> = {
   parts_approval: { icon: PackageCheck, tone: "text-warn-ink" },
   parts_decision: { icon: PackageCheck, tone: "text-info-ink" },
   document_expiring: { icon: FileClock, tone: "text-warn-ink" },
+  provider_verification: { icon: BadgeCheck, tone: "text-info-ink" },
+  provider_document_expiring: { icon: FileClock, tone: "text-warn-ink" },
+  marketplace_job: { icon: Store, tone: "text-brand-ink" },
+  marketplace_message: { icon: MessageSquare, tone: "text-info-ink" },
+  marketplace_proposal: { icon: FileText, tone: "text-ok-ink" },
 };
 
 function ago(iso: string): string {
@@ -42,7 +47,8 @@ function ago(iso: string): string {
  * one marks it read and opens what it's about; "Mark all read" and "See all
  * alerts" (the full Alerts page) sit at the top and bottom.
  */
-export function NotificationTray({ orgId, href, unread }: { orgId: string; href: string; unread: number }) {
+export function NotificationTray({ orgId, href, unread, base }: { orgId: string; href: string; unread: number; base?: string }) {
+  const portalBase = base ?? `/customer/${orgId}`;
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [items, setItems] = React.useState<AppNotification[] | null>(null);
@@ -65,7 +71,9 @@ export function NotificationTray({ orgId, href, unread }: { orgId: string; href:
   }, [orgId]);
 
   const targetOf = (n: AppNotification) =>
-    n.kind === "parts_approval"
+    n.link_path
+      ? `${portalBase}/${n.link_path}`
+      : n.kind === "parts_approval"
       ? `/customer/${orgId}/parts?view=approval`
       : n.kind === "parts_decision"
         ? `/customer/${orgId}/parts`

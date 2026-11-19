@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatWorkOrderNumber, getWorkOrder } from "@hvems/api-client";
+import { formatWorkOrderNumber, getWorkOrder, listMarketplaceJobsForWorkOrder } from "@hvems/api-client";
 import { QUALIFICATION_LABELS, formatAud, formatDateTimeAU } from "@hvems/domain";
-import { AlertTriangle, FileDown } from "lucide-react";
+import { AlertTriangle, FileDown, Store } from "lucide-react";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/primitives";
@@ -40,6 +40,10 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
   const who = (id: string | null) => (id ? (opts.nameOf.get(id) ?? "Former member") : null);
   const when = (iso: string | null) => (iso ? formatDateTimeAU(new Date(iso), tz) : null);
   const mt = asset.data?.meter_type ?? "none";
+  // "Post to marketplace" when nobody in-house can do it (2D); the job links back here.
+  const mktJobs = await listMarketplaceJobsForWorkOrder(db, w.id).catch(() => []);
+  const liveJob = mktJobs.find((j) => j.status === "open" || j.status === "engaged");
+  const canPostToMarket = can(ctx.capabilities, "marketplace.post") && ["open", "in_progress"].includes(w.status) && !liveJob;
 
   return (
     <>
@@ -56,6 +60,21 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
             >
               <FileDown className="size-4" aria-hidden /> PDF
             </a>
+            {liveJob ? (
+              <Link
+                href={`/customer/${orgId}/marketplace/${liveJob.id}`}
+                className="inline-flex items-center gap-1.5 rounded-[8px] border border-brand/40 bg-brand-soft px-3 py-1.5 text-[13px] font-medium text-brand-ink hover:border-brand"
+              >
+                <Store className="size-4" aria-hidden /> Marketplace job {liveJob.number}
+              </Link>
+            ) : canPostToMarket ? (
+              <Link
+                href={`/customer/${orgId}/marketplace/new?wo=${w.id}`}
+                className="inline-flex items-center gap-1.5 rounded-[8px] border border-stroke-strong px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-surface-hover"
+              >
+                <Store className="size-4" aria-hidden /> Post to marketplace
+              </Link>
+            ) : null}
           </>
         }
       />

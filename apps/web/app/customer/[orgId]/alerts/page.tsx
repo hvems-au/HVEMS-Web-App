@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX, Gauge, PackageCheck, FileClock } from "lucide-react";
+import { BellRing, FileWarning, Hand, OctagonAlert, TriangleAlert, UserX, Wrench, IdCard, LifeBuoy, ClipboardX, Gauge, PackageCheck, FileClock, BadgeCheck, Store, MessageSquare, FileText } from "lucide-react";
 import { listCriticalAlerts, listMembers, listMyNotifications } from "@hvems/api-client";
 import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
@@ -33,6 +33,11 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   parts_approval: "Parts to approve",
   parts_decision: "Parts decisions",
   document_expiring: "Documents expiring",
+  provider_verification: "Verification",
+  provider_document_expiring: "Provider documents expiring",
+  marketplace_job: "Marketplace jobs",
+  marketplace_message: "Marketplace questions",
+  marketplace_proposal: "Proposals",
 };
 const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }> = {
   critical_defect: { icon: OctagonAlert, tone: "text-danger" },
@@ -51,6 +56,11 @@ const KIND: Record<NotificationKind, { icon: typeof OctagonAlert; tone: string }
   parts_approval: { icon: PackageCheck, tone: "text-warn-ink" },
   parts_decision: { icon: PackageCheck, tone: "text-info-ink" },
   document_expiring: { icon: FileClock, tone: "text-warn-ink" },
+  provider_verification: { icon: BadgeCheck, tone: "text-info-ink" },
+  provider_document_expiring: { icon: FileClock, tone: "text-warn-ink" },
+  marketplace_job: { icon: Store, tone: "text-brand-ink" },
+  marketplace_message: { icon: MessageSquare, tone: "text-info-ink" },
+  marketplace_proposal: { icon: FileText, tone: "text-ok-ink" },
 };
 const ESCALATION = ["", "Escalated: 30 min", "Escalated: 2 hours"] as const;
 

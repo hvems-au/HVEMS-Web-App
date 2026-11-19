@@ -146,5 +146,13 @@ select is(tests.error_code(format($$select public.submit_marketplace_proposal(%L
   'not_eligible', 'a provider whose insurance expired cannot propose');
 reset role;
 
+-- The poster sees the names of providers in its threads
+select tests.authenticate_as(:'buyer');
+select is((select x ->> 'name' from public.marketplace_thread_providers(:'job') x), 'North Diesel', 'the poster sees who asked or proposed');
+reset role;
+select tests.authenticate_as(:'p2owner');
+select is(tests.error_code(format('select public.marketplace_thread_providers(%L)', :'job')), 'forbidden', 'providers cannot list other threads');
+reset role;
+
 select * from finish();
 rollback;

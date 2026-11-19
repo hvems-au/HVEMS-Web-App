@@ -60,8 +60,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
       {
         items: [
           { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
-          { label: "My Jobs", href: `${base}/module/jobs`, icon: "jobs", increment: "2D" },
-          { label: "Proposals", href: `${base}/module/proposals`, icon: "proposals", increment: "2D" },
+          { label: "My Jobs", href: `${base}/marketplace`, icon: "jobs", anyCapability: ["marketplace.post", "marketplace.accept"] },
           { label: "Engagements", href: `${base}/module/engagements`, icon: "engagements", increment: "2D" },
           { label: "Notifications", href: `${base}/module/notifications`, icon: "notifications", increment: "2D" },
         ],
@@ -106,7 +105,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         { label: "Work Orders", href: `${base}/work-orders`, icon: "workorders" },
         { label: "Technicians", href: `${base}/technicians`, icon: "technicians", capability: "workforce.manage" },
         { label: "Parts", href: `${base}/parts`, icon: "parts", anyCapability: ["parts.request", "parts.approve", "parts.manage"], forTechnicians: true },
-        { label: "Marketplace", href: `${base}/module/marketplace`, icon: "marketplace", capability: "marketplace.post", increment: "2D" },
+        { label: "Marketplace", href: `${base}/marketplace`, icon: "marketplace", anyCapability: ["marketplace.post", "marketplace.accept"] },
       ],
     },
     {
@@ -135,10 +134,10 @@ export function providerNav(orgId: string): NavSection[] {
     {
       items: [
         { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
-        { label: "Browse Jobs", href: `${base}/module/jobs`, icon: "jobs", capability: "provider.jobs.browse", increment: "2D" },
-        { label: "My Proposals", href: `${base}/module/proposals`, icon: "proposals", capability: "provider.proposals.manage", increment: "2D" },
+        { label: "Browse Jobs", href: `${base}/jobs`, icon: "jobs", capability: "provider.jobs.browse" },
+        { label: "My Proposals", href: `${base}/jobs?view=mine`, icon: "proposals", capability: "provider.proposals.manage" },
         { label: "Engagements", href: `${base}/module/engagements`, icon: "engagements", increment: "2D" },
-        { label: "Verification", href: `${base}/module/verification`, icon: "verification", capability: "provider.verification.submit", increment: "2D" },
+        { label: "Profile & Verification", href: `${base}/verification`, icon: "verification", anyCapability: ["provider.verification.submit", "provider.profile.manage", "provider.jobs.browse"] },
         { label: "Subscription", href: `${base}/module/billing`, icon: "billing", capability: "org.billing.view", increment: "2D" },
       ],
     },
@@ -160,6 +159,7 @@ export function adminNav(): NavSection[] {
         { label: "Dashboard", href: "/admin", icon: "dashboard" },
         { label: "Organisations", href: "/admin/organisations", icon: "organisations" },
         { label: "Asset Classes", href: "/admin/asset-classes", icon: "equipment" },
+        { label: "Marketplace Regions", href: "/admin/regions", icon: "marketplace" },
         { label: "Audit History", href: "/admin/audit", icon: "audit" },
         { label: "Settings", href: "/admin/settings", icon: "settings" },
       ],
@@ -167,7 +167,7 @@ export function adminNav(): NavSection[] {
     {
       title: "Increment 2D",
       items: [
-        { label: "Verification", href: "/admin/module/verification", icon: "verification", increment: "2D" },
+        { label: "Verification", href: "/admin/verification", icon: "verification" },
         { label: "Cases & Disputes", href: "/admin/module/cases", icon: "cases", increment: "2D" },
         { label: "Billing", href: "/admin/module/billing", icon: "billing", increment: "2D" },
         { label: "Moderation", href: "/admin/module/moderation", icon: "marketplace", increment: "2D" },
