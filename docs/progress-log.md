@@ -1,5 +1,19 @@
 # Development progress log
 
+## 2026-11-21 — 2D Marketplace slice 2: engagements, completion, reviews, cancellations, cases
+**Done**
+- Migration `20261121090000 marketplace_engagements` (in the repo; apply in the SQL editor). pgTAP `390`.
+- **Accept** a proposal from the job page: one engagement per job even if two people accept at once; other proposals Not selected; the job Engaged; the work order shows the provider. Fees are recorded on the engagement but not charged (`marketplace.connection_fees_live` is off until Stripe and A-02); follow-ups within 30 days have no fee.
+- **Engagement page** for both sides (company / marketplace-only customer, and provider): agreed proposal version, address, site access and safety, all files, the other party's contacts, unmasked messages. Provider: assign a technician, acknowledge site safety (required before On site), book a start time, On my way with arrival time, On site. Findings: Critical takes the equipment out of service at once (awaiting review), Minor and Advisory become defects when the company confirms. Changes to price, scope or timing are accepted or declined by the other party. Completion report with photos or invoice; the customer confirms or asks for a correction (after 7 days: Completed – not confirmed); the work order is marked completed for the manager to review and close. Confirmation never clears defects.
+- **Reviews** (once, within 14 days; the provider replies once; rating shows after 3 reviews), **job payment** marked "Reported by" either party.
+- **Cancellations** with a reason; a provider cancellation is a strike and reopens the job with the remaining valid proposals. **No-shows** can be reported only after 60 minutes (urgent) or 2 hours (standard); the provider has 48 hours to respond; HVEMS decides. Three strikes in 90 days open a review case.
+- **Console**: Cases (ready to decide, waiting for a response, decided) with history and strikes; Moderation (hidden contact details with the original text; reviews with removal kept for audit).
+- Proposals now show the provider's rating, completed jobs, cancellation rate, no-shows and typical response time.
+
+**Not yet**
+- Connection fee collection, refunds, waivers, subscriptions and invoices (Stripe; ADR-006 needs A-02).
+- Email notifications (CS-40), distance matching (suburb dataset), push (Stage 3).
+
 ## 2026-11-20 — 2D Marketplace slice 1: providers, verification, jobs, questions, proposals
 **Done**
 - Migrations (in the repo; apply in order in the SQL editor): `20261120090000 marketplace_providers`, `20261120120000 marketplace_jobs`, `20261120150000 marketplace_thread_names`. pgTAP `370`, `380`.
