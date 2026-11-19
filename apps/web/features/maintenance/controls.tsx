@@ -329,7 +329,7 @@ export function WorkOrderActions({ orgId, id, status, manager, meters }: { orgId
                 <Field label="Labour (hours)" htmlFor="wo-labour">
                   <Input id="wo-labour" inputMode="decimal" value={f.v.labour_hours} onChange={f.set("labour_hours")} />
                 </Field>
-                <Field label="Cost (AUD)" htmlFor="wo-cost" hint="Parts and outside work">
+                <Field label="Other costs (AUD)" htmlFor="wo-cost" hint="Outside work or vendor invoice; fitted parts are costed separately">
                   <Input id="wo-cost" inputMode="decimal" value={f.v.cost} onChange={f.set("cost")} placeholder="e.g. 480.00" />
                 </Field>
               </div>

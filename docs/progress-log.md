@@ -1,5 +1,16 @@
 # Development progress log
 
+## 2026-11-19 — 2C Documents (CS-22); Fuel & Usage and Costs (CS-23)
+**Done**
+- Migration `20261119120000 equipment_documents` (in the repo; apply in the SQL editor): documents per equipment in a private bucket, nine categories, expiry dates with bell reminders 30 and 7 days before (daily job), 5-minute links, replace or retire with a reason (kept in the history). pgTAP `340`. Web: Documents card on each equipment page; Documents page with Expired / Expiring filters, type and equipment.
+- Migration `20261119150000 fuel_and_costs` (in the repo; apply in the SQL editor): `fuel_records` (the reading is recorded on the equipment as source `fuel`, a lower one needs a reason; operators only on equipment they may operate); corrections by amendment with a reason (original kept, its cost reversed); fuel costs, and on closing a work order its labour (hours × technician cost rate) and other costs, go to the append-only cost lines; reopening reverses them and closing again posts fresh ones; `workforce_cost_rates` readable only with `assets.costs.view`. pgTAP `350`.
+- Web: **Fuel & Usage** (record fuel with searchable equipment, reading with the lower-reading reason, receipt photos; correct a record; search, equipment, fuel and date filters; litres and spend totals). **Costs** (cost readers only): totals by type, equipment, work order and client, and every cost line, with filters. Cost rate on each technician's page (cost readers only). Work order completion cost renamed "Other costs" so fitted parts aren't counted twice.
+
+**Limitations**
+- Document malware scanning (DOC-02) waits on P-07.
+- Labour is costed only when the technician has a cost rate set; vendor jobs post their invoice amount as outside work.
+- Not yet checked in the browser: the three migrations (parts, documents, fuel and costs) must be applied to development first.
+
 ## 2026-11-19 — 2C Parts: requests, approval by limit, orders, receiving, fitting (CS-20)
 **Done**
 - Migration `20261119090000 parts_requests` (in the repo; apply to development in the SQL editor): suppliers and a parts catalogue (PRT-06/07); multi-line requests linked to equipment and optionally a work order, with urgency, needed-by date, delivery site and photos (PRT-01); one approval level by Approval Limit: within the requester's limit it is approved automatically and recorded, otherwise members whose limit covers it are alerted and approve or reject with a reason; the Owner has no limit (PRT-02); orders per line by Fleet Managers and above (new capability `parts.manage`), an actual price more than 10% over the approved one sends it back for approval (PRT-03); partial receiving, substitutes and returns to the supplier with reasons (PRT-04); fitting to a work order from deliveries or bought on the spot posts one cost line, a return writes a reversing line, cost lines are append-only (PRT-05, spec 9.2). Technicians see requests and estimates but never actual prices or cost lines. pgTAP `330`.

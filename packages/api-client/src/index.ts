@@ -2017,3 +2017,127 @@ export async function signDocumentLinks(db: HvemsClient, paths: string[], second
   const { data } = await raw(db).storage.from("documents").createSignedUrls(paths, seconds);
   return new Map((data ?? []).flatMap((s) => (s.signedUrl && s.path ? [[s.path, s.signedUrl] as const] : [])));
 }
+
+// ---------------------------------------------------------------------------
+// Fuel and usage, cost rates and expenditure (CS-23, EXP-01..03)
+// ---------------------------------------------------------------------------
+export type FuelType = "diesel" | "unleaded" | "adblue" | "lpg" | "oil" | "other";
+export type FuelUnit = "L" | "kg" | "each";
+
+export interface FuelRecord {
+  id: string;
+  organisation_id: string;
+  asset_id: string;
+  filled_at: string;
+  fuel_type: FuelType;
+  quantity: number;
+  unit: FuelUnit;
+  odometer_km: number | null;
+  engine_hours: number | null;
+  supplier: string | null;
+  receipt_paths: string[];
+  notes: string | null;
+  amends_id: string | null;
+  amend_reason: string | null;
+  superseded_at: string | null;
+  recorded_by: string;
+  created_at: string;
+  asset?: { asset_number: string; make: string | null; model: string | null; meter_type: string } | null;
+}
+
+export async function listFuelRecords(
+  db: HvemsClient,
+  filter: { organisationId: string; assetId?: string; includeSuperseded?: boolean; limit?: number },
+): Promise<FuelRecord[]> {
+  let q = raw(db).from("fuel_records").select("*, asset:assets(asset_number, make, model, meter_type)").eq("organisation_id", filter.organisationId);
+  if (filter.assetId) q = q.eq("asset_id", filter.assetId);
+  if (!filter.includeSuperseded) q = q.is("superseded_at", null);
+  return unwrap(await q.order("filled_at", { ascending: false }).limit(filter.limit ?? 1000)) as FuelRecord[];
+}
+
+export async function recordFuel(
+  db: HvemsClient,
+  input: {
+    assetId: string;
+    filledAt: string;
+    quantity: number;
+    fuelType: FuelType;
+    unit: FuelUnit;
+    costCents?: number | null;
+    gstIncluded?: boolean;
+    supplier?: string | null;
+    odometerKm?: number | null;
+    engineHours?: number | null;
+    lowerReason?: string | null;
+    confirmJump?: boolean;
+    receiptPaths?: string[];
+    notes?: string | null;
+    clientRequestId?: string | null;
+    amendsId?: string | null;
+    amendReason?: string | null;
+  },
+): Promise<string> {
+  return unwrap(
+    await raw(db).rpc("record_fuel", {
+      p_asset_id: input.assetId,
+      p_filled_at: input.filledAt,
+      p_quantity: input.quantity,
+      p_fuel_type: input.fuelType,
+      p_unit: input.unit,
+      p_cost_cents: input.costCents ?? null,
+      p_gst_included: input.gstIncluded ?? true,
+      p_supplier: input.supplier ?? null,
+      p_odometer_km: input.odometerKm ?? null,
+      p_engine_hours: input.engineHours ?? null,
+      p_lower_reason: input.lowerReason ?? null,
+      p_confirm_jump: input.confirmJump ?? false,
+      p_receipt_paths: input.receiptPaths ?? [],
+      p_notes: input.notes ?? null,
+      p_client_request_id: input.clientRequestId ?? null,
+      p_amends_id: input.amendsId ?? null,
+      p_amend_reason: input.amendReason ?? null,
+    }),
+  ) as string;
+}
+
+export interface CostRate {
+  user_id: string;
+  hourly_rate_cents: number;
+  updated_at: string;
+}
+
+/** Technician cost rates; empty for anyone without assets.costs.view (EXP-03). */
+export async function listCostRates(db: HvemsClient, organisationId: string): Promise<CostRate[]> {
+  return unwrap(await raw(db).from("workforce_cost_rates").select("user_id, hourly_rate_cents, updated_at").eq("organisation_id", organisationId)) as CostRate[];
+}
+
+export async function setCostRate(db: HvemsClient, organisationId: string, userId: string, hourlyRateCents: number): Promise<void> {
+  unwrap(await raw(db).rpc("set_cost_rate", { p_organisation_id: organisationId, p_user_id: userId, p_hourly_rate_cents: hourlyRateCents }));
+}
+
+export interface ExpenditureLine {
+  id: string;
+  source_type: "parts_usage" | "fuel_record" | "work_order";
+  source_id: string;
+  kind: "parts" | "labour" | "external" | "fuel" | "other";
+  work_order_id: string | null;
+  asset_id: string | null;
+  description: string;
+  amount_cents: number;
+  gst_included: boolean;
+  reverses_id: string | null;
+  created_at: string;
+  asset?: { asset_number: string; make: string | null; model: string | null; client_id: string | null } | null;
+  work_order?: { number: number; title: string } | null;
+}
+
+/** All cost lines for an organisation (cost readers only; RLS returns nothing to others). */
+export async function listExpenditure(db: HvemsClient, organisationId: string, range?: { from?: string; to?: string }): Promise<ExpenditureLine[]> {
+  let q = raw(db)
+    .from("cost_lines")
+    .select("*, asset:assets(asset_number, make, model, client_id), work_order:work_orders(number, title)")
+    .eq("organisation_id", organisationId);
+  if (range?.from) q = q.gte("created_at", range.from);
+  if (range?.to) q = q.lt("created_at", range.to);
+  return unwrap(await q.order("created_at", { ascending: false }).limit(5000)) as ExpenditureLine[];
+}

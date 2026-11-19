@@ -166,7 +166,7 @@ export function JobReportForm({
               <Field label="Labour (hours)" htmlFor="post-labour">
                 <Input id="post-labour" inputMode="decimal" value={labour} onChange={(e) => setLabour(e.target.value.replace(/[^\d.]/g, ""))} />
               </Field>
-              <Field label="Parts and costs (AUD)" htmlFor="post-cost" hint="Add the invoices under Documents">
+              <Field label="Other costs (AUD)" htmlFor="post-cost" hint="Outside work or costs not entered as parts; add invoices under Documents">
                 <Input id="post-cost" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value.replace(/[^\d.]/g, ""))} placeholder="e.g. 480.00" />
               </Field>
             </>

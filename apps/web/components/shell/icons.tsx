@@ -28,8 +28,7 @@ import {
   Wrench,
   BarChart3,
   IdCard,
-  type LucideIcon,
-} from "lucide-react";
+  type LucideIcon, CircleDollarSign } from "lucide-react";
 import type { IconName } from "@/lib/navigation";
 
 export const ICONS: Record<IconName, LucideIcon> = {
@@ -45,6 +44,7 @@ export const ICONS: Record<IconName, LucideIcon> = {
   technicians: HardHat,
   parts: Package,
   fuel: Fuel,
+  costs: CircleDollarSign,
   documents: FileText,
   reports: BarChart3,
   marketplace: Store,

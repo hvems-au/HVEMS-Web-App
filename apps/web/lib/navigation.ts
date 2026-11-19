@@ -13,6 +13,7 @@ export type IconName =
   | "technicians"
   | "parts"
   | "fuel"
+  | "costs"
   | "documents"
   | "reports"
   | "marketplace"
@@ -111,7 +112,8 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
     {
       title: "Records",
       items: [
-        { label: "Fuel & Usage", href: `${base}/module/fuel`, icon: "fuel", increment: "2C" },
+        { label: "Fuel & Usage", href: `${base}/fuel`, icon: "fuel", anyCapability: ["meter_readings.record", "assets.costs.view"] },
+        { label: "Costs", href: `${base}/costs`, icon: "costs", capability: "assets.costs.view" },
         { label: "Documents", href: `${base}/documents`, icon: "documents" },
         { label: "Reports", href: `${base}/module/reports`, icon: "reports", capability: "reports.view", increment: "2C" },
       ],

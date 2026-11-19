@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatWorkOrderNumber, getWorkforceData, listMembers } from "@hvems/api-client";
+import { formatWorkOrderNumber, getWorkforceData, listCostRates, listMembers } from "@hvems/api-client";
+import { CostRateField } from "@/features/fuel/cost-rate";
 import { LEAVE_LABELS, credentialStatus, qualificationText, todayISO } from "@hvems/domain";
 import { can, ROLE_LABELS } from "@hvems/permissions";
 import { WorkOrderStatusBadge } from "@/features/maintenance/badges";
@@ -36,6 +37,9 @@ export default async function TechnicianPage({ params }: { params: Promise<{ org
   ]);
   const member = members.find((m) => m.user_id === userId && m.status === "active");
   if (!member) notFound();
+  // Cost rates are visible only to cost readers (never to technicians, EXP-03).
+  const seesRates = manage && can(ctx.capabilities, "assets.costs.view");
+  const rate = seesRates ? ((await listCostRates(db, orgId)).find((x) => x.user_id === userId)?.hourly_rate_cents ?? null) : null;
   const warnDays = Number(warnSetting.data?.value ?? 30) || 30;
   const name = member.profile?.full_name || member.profile?.email || "Team member";
   const profile = data.profiles[0] ?? null;
@@ -132,6 +136,15 @@ export default async function TechnicianPage({ params }: { params: Promise<{ org
               <span className="block text-ink">{profile?.phone ?? "—"}</span>
             </p>
             {profile?.notes ? <p className="rounded-[8px] bg-surface-muted p-3 whitespace-pre-wrap text-ink-muted">{profile.notes}</p> : null}
+            {seesRates ? (
+              <div>
+                <span className="text-ink-subtle">Cost rate</span>
+                <span className="mt-1 block">
+                  <CostRateField orgId={orgId} userId={userId} cents={rate} />
+                </span>
+                <span className="mt-1 block text-[12px] text-ink-subtle">Used for labour costs when work orders are closed. Technicians never see it.</span>
+              </div>
+            ) : null}
           </CardBody>
         </Card>
 
