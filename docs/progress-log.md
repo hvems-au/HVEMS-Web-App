@@ -1,5 +1,21 @@
 # Development progress log
 
+## 2026-11-20 — 2D Marketplace slice 1: providers, verification, jobs, questions, proposals
+**Done**
+- Migrations (in the repo; apply in order in the SQL editor): `20261120090000 marketplace_providers`, `20261120120000 marketplace_jobs`, `20261120150000 marketplace_thread_names`. pgTAP `370`, `380`.
+- **Regions** (MKT-25): the SEQ council areas, with Moreton Bay, Brisbane, Sunshine Coast, Somerset, Ipswich, Logan and Redland open; the console opens or closes regions with no deployment; posters elsewhere register interest.
+- **Providers** (MKT-01..03): Profile & verification page (services, regions or base suburb and radius, mobile service, workshop, hours, unavailable dates, urgent switch, private contacts; insurance and qualification documents with 30/7-day reminders). Submit for verification. The console's Verification queue: the officer checks the ABN by hand on the ABR (O-01), picks the insurance certificate checked and the qualifications, approves (badges stating what was checked, by whom and when) or rejects with a reason. Super Admin can suspend. Expired insurance blocks proposals automatically, and the provider is told why.
+- **Jobs** (MKT-04/06/21/22): Post a job in four steps, from a work order (Post to marketplace on the work order page; the job links back) or from equipment (a marketplace work order is created). Marketplace-only customers describe their equipment. Only the chosen equipment fields, the suburb and shared files reach providers; the address, site instructions and unshared files stay private. The review step shows exactly what providers see. Extend once, withdraw (costs nothing), invite providers, invitation-only jobs. Matching verified providers get an in-app alert.
+- **Providers browse** (MKT-07): search, service, type, urgency and region filters; matching, saved and my-proposal views.
+- **Questions** (MKT-08): private per provider; phone numbers, emails and links are masked for the recipient and kept for HVEMS moderation; one clarification to everyone.
+- **Proposals** (MKT-09/20): fixed, estimate or hourly + call-out, GST, window or arrival time, validity (72 h / 60 min defaults), inclusions and exclusions, fee consent; revisions keep every version; the poster compares them with badges and a conflict-of-interest flag.
+- Bell and alert tray now in the provider and marketplace-only portals too.
+
+**Not yet (needs decisions or later slices)**
+- Accepting a proposal: collecting both connection fees together (ADR-006) needs HVEMS approval of the wording (A-02) and the Stripe account. Engagements, completion, reviews, cases and billing follow.
+- Distance (radius) matching needs suburb coordinates: matching is by region until a suburb dataset is chosen.
+- Email alerts to providers come with notifications (CS-40); alerts are in-app now.
+
 ## 2026-11-19 — 2C Reports, compliance summary, PDFs and full export (CS-24)
 **Done**
 - Migration `20261119180000 reports` (in the repo; apply in the SQL editor): `log_report_export` records every report, PDF and full export in the audit history (needs `reports.export`); defects keep `deferred_by` / `deferred_at` (set by the database; existing deferrals filled from the audit history) so deferred-defect reports show the approver. pgTAP `360`.
