@@ -2,6 +2,7 @@
 import * as React from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { THEME_KEY as KEY } from "./theme-script";
 
 /**
  * Appearance: Light, Dark or System (follows the device). The choice is kept in
@@ -11,11 +12,8 @@ import { cn } from "@/lib/utils";
  * no flash, and kept in sync here afterwards (including live device changes).
  */
 export type ThemeChoice = "light" | "dark" | "system";
-const KEY = "hvems.theme";
 const EVENT = "hvems-theme";
 
-/** Runs in <head> before the page is drawn. Keep it tiny and dependency-free. */
-export const THEME_SCRIPT = `(function(){try{var c=localStorage.getItem("${KEY}");if(c!=="light"&&c!=="dark")c="system";var d=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.dataset.theme=d?"dark":"light";r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 
 function readChoice(): ThemeChoice {
   try {

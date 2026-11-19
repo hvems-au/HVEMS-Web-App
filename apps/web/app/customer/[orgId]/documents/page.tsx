@@ -5,7 +5,7 @@ import { todayISO } from "@hvems/domain";
 import { FilterBar } from "@/components/filter-bar";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
-import { DOCUMENT_CATEGORIES, type DocCategory } from "@/features/documents/equipment-documents";
+import { DOCUMENT_CATEGORIES, type DocCategory } from "@/features/documents/categories";
 import { toDocRows } from "@/features/documents/rows";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";

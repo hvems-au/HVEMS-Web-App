@@ -11,18 +11,7 @@ import { Badge } from "@/components/ui/primitives";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { addDocumentAction, supersedeDocumentAction } from "./actions";
 
-export const DOCUMENT_CATEGORIES = {
-  registration: "Registration",
-  insurance: "Insurance",
-  service_record: "Service record",
-  inspection_report: "Inspection report",
-  warranty: "Warranty",
-  manual: "Manual",
-  certificate: "Certificate",
-  photo: "Photo",
-  other: "Other",
-} as const;
-export type DocCategory = keyof typeof DOCUMENT_CATEGORIES;
+import { DOCUMENT_CATEGORIES, type DocCategory } from "./categories";
 
 export type DocRow = {
   id: string;

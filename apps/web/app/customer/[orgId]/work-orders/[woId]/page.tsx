@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatWorkOrderNumber, getWorkOrder } from "@hvems/api-client";
 import { QUALIFICATION_LABELS, formatAud, formatDateTimeAU } from "@hvems/domain";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, FileDown } from "lucide-react";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/primitives";
@@ -47,7 +47,17 @@ export default async function WorkOrderPage({ params }: { params: Promise<{ orgI
         title={`${formatWorkOrderNumber(w.number)} · ${w.title}`}
         description={`${w.asset?.asset_number ?? ""} ${[w.asset?.make, w.asset?.model].filter(Boolean).join(" ")}`}
         breadcrumb={{ label: "Work Orders", href: `/customer/${orgId}/work-orders` }}
-        actions={<WorkOrderStatusBadge status={w.status} />}
+        actions={
+          <>
+            <WorkOrderStatusBadge status={w.status} />
+            <a
+              href={`/customer/${orgId}/work-orders/${w.id}/pdf`}
+              className="inline-flex items-center gap-1.5 rounded-[8px] border border-stroke-strong px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-surface-hover"
+            >
+              <FileDown className="size-4" aria-hidden /> PDF
+            </a>
+          </>
+        }
       />
       {w.assignment_warnings?.length && !["closed", "cancelled"].includes(w.status) ? (
         <div role="status" className="mb-5 rounded-[10px] border border-warn-line bg-warn-soft px-4 py-3 text-[13.5px] text-warn-ink">

@@ -3,7 +3,7 @@ import "@fontsource-variable/montserrat";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { NavProgress } from "@/components/shell/nav-progress";
-import { THEME_SCRIPT } from "@/components/theme/theme";
+import { THEME_SCRIPT } from "@/components/theme/theme-script";
 
 export const metadata: Metadata = {
   title: { default: "HVEMS", template: "%s · HVEMS" },

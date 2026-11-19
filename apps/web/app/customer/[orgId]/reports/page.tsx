@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, ClipboardCheck } from "lucide-react";
+import { Archive, ChevronRight, ClipboardCheck } from "lucide-react";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card } from "@/components/ui/primitives";
@@ -20,6 +20,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ orgId:
   if (!can(ctx.capabilities, "reports.view")) notFound();
   const seesCosts = can(ctx.capabilities, "assets.costs.view");
   const base = `/customer/${orgId}/reports`;
+  const fullExport = can(ctx.capabilities, "data.full_export");
 
   return (
     <>
@@ -40,6 +41,22 @@ export default async function ReportsPage({ params }: { params: Promise<{ orgId:
         <ChevronRight className="size-5 text-ink-muted" aria-hidden />
       </Link>
       <div className="flex flex-col gap-5">
+        {fullExport ? (
+          <Card className="flex flex-wrap items-center gap-4 px-5 py-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-surface-muted text-ink-muted" aria-hidden>
+              <Archive className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-ink">Full export</span>
+              <span className="block text-[13px] text-ink-muted">
+                Every record your company holds, one CSV per type, plus a list of all stored files. Recorded in the audit history.
+              </span>
+            </span>
+            <a href={`${base}/full-export`} className="rounded-[8px] border border-stroke-strong px-3.5 py-2 text-[13.5px] font-medium text-ink hover:bg-surface-hover">
+              Download zip
+            </a>
+          </Card>
+        ) : null}
         {GROUPS.map((g) => (
           <Card key={g}>
             <h2 className="border-b border-stroke px-5 py-3 text-[13px] font-semibold tracking-wide text-ink-muted uppercase">{g}</h2>

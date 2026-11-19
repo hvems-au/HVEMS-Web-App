@@ -1,5 +1,19 @@
 # Development progress log
 
+## 2026-11-19 — 2C Reports, compliance summary, PDFs and full export (CS-24)
+**Done**
+- Migration `20261119180000 reports` (in the repo; apply in the SQL editor): `log_report_export` records every report, PDF and full export in the audit history (needs `reports.export`); defects keep `deferred_by` / `deferred_at` (set by the database; existing deferrals filled from the audit history) so deferred-defect reports show the approver. pgTAP `360`.
+- **Reports** page: reports 1–12 (asset register, condition history, inspections done and missed, defects by age/category/equipment, deferred defects, clearances and return to service, service due and history, work orders and time to complete, maintenance cost, parts, fuel, regulator notices). Each has date, site, client, equipment, class and status filters, a definition of what its rows and figures mean, and a CSV built from the same rows as the screen. Reports 13–15 show as arriving with 2D (no made-up data). Cost columns and the cost report only for people who can see costs.
+- **Compliance summary** for any period (default: this month): equipment, pre-starts expected/done/missed, services done/due/missed, defects raised/cleared/deferred/outstanding, notices, the deferrals with their approvers, and return-to-service decisions with evidence counts. Screen, PDF and CSV.
+- **PDFs** on HVEMS letterhead with the organisation, the time and who generated them: work order (details, pre/post-work reports, parts, invoices, and costs for cost readers) from the work order page; service history pack from each equipment page.
+- **Full export** (Owner and Company Admin): a zip with one CSV per record type, the audit history and a list of every stored file.
+- CSV files now neutralise spreadsheet formulas in text (cells starting =, +, -, @).
+- Fixed: lists of fuel types, document types and the theme script were defined in client-only files and reached server pages as references, not values (Fuel and Documents pages; the no-flash theme script). Moved to plain modules.
+
+**Limitations**
+- The full export lists stored files but doesn't include them yet; exports over 10,000 rows are capped rather than run in the background and emailed (RPT-05). Both need a background worker and email; to be agreed.
+- Engagement summary PDF and reports 13–15 come with 2D.
+
 ## 2026-11-19 — 2C Documents (CS-22); Fuel & Usage and Costs (CS-23)
 **Done**
 - Migration `20261119120000 equipment_documents` (in the repo; apply in the SQL editor): documents per equipment in a private bucket, nine categories, expiry dates with bell reminders 30 and 7 days before (daily job), 5-minute links, replace or retire with a reason (kept in the history). pgTAP `340`. Web: Documents card on each equipment page; Documents page with Expired / Expiring filters, type and equipment.

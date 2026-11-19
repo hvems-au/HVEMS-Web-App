@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { IssueCategoryTag } from "@/features/operator/issue-category";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClipboardCheck, Pencil } from "lucide-react";
+import { ClipboardCheck, Pencil, FileDown } from "lucide-react";
 import {
   getAsset,
   getPersonNames,
@@ -186,6 +186,13 @@ export default async function AssetPage({
                 <Link href={`${base}/${assetId}/prestart`}>
                   <ClipboardCheck /> Pre-start
                 </Link>
+              </Button>
+            ) : null}
+            {seesMaintenance ? (
+              <Button asChild variant="outline">
+                <a href={`${base}/${assetId}/service-history`}>
+                  <FileDown /> Service history
+                </a>
               </Button>
             ) : null}
             {manage ? (
