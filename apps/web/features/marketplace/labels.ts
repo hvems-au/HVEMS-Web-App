@@ -83,3 +83,21 @@ export function closesText(iso: string, tz: string): string {
 export function effectiveJobStatus(j: { status: PublicJob["status"]; closes_at: string }): PublicJob["status"] {
   return j.status === "open" && Date.parse(j.closes_at) <= Date.now() ? "expired" : j.status;
 }
+
+/** True while an instant is within the last N days (e.g. the 14-day review window). */
+export function withinDays(iso: string | null | undefined, days: number): boolean {
+  return !!iso && Date.parse(iso) > Date.now() - days * 86400000;
+}
+
+export const ENGAGEMENT_STATUS: Record<string, { label: string; tone: "green" | "amber" | "grey" | "blue" | "red" }> = {
+  confirmed: { label: "Confirmed", tone: "blue" },
+  on_my_way: { label: "On the way", tone: "blue" },
+  on_site: { label: "On site", tone: "blue" },
+  completed: { label: "Completed: awaiting confirmation", tone: "amber" },
+  correction_requested: { label: "Correction requested", tone: "amber" },
+  confirmed_complete: { label: "Completed and confirmed", tone: "green" },
+  completed_unconfirmed: { label: "Completed – not confirmed", tone: "grey" },
+  no_show_reported: { label: "No-show reported", tone: "red" },
+  cancelled: { label: "Cancelled", tone: "grey" },
+};
+

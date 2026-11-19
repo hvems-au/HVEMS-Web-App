@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
-import { getJobForProvider, getMyProposal, getPersonNames, listMarketplaceMessages, signMarketplaceFiles, type PublicJob } from "@hvems/api-client";
+import Link from "next/link";
+import { getJobForProvider, getMyProposal, getPersonNames, listEngagements, listMarketplaceMessages, signMarketplaceFiles, type PublicJob } from "@hvems/api-client";
 import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
@@ -25,7 +26,7 @@ export default async function ProviderJobPage({ params }: { params: Promise<{ or
   const db = await createSupabaseServerClient();
   const job: PublicJob | null = await getJobForProvider(db, orgId, jobId).catch(() => null);
   if (!job) notFound();
-  const [mine, messages, links, validity] = await Promise.all([
+  const [mine, messages, links, validity, engagements] = await Promise.all([
     getMyProposal(db, orgId, jobId),
     listMarketplaceMessages(db, jobId, orgId),
     signMarketplaceFiles(
@@ -33,6 +34,7 @@ export default async function ProviderJobPage({ params }: { params: Promise<{ or
       job.files.map((f) => f.path),
     ),
     db.from("platform_settings").select("key, value").in("key", ["marketplace.proposal_validity_default_hours", "marketplace.urgent_proposal_validity_default_minutes"]),
+    listEngagements(db, { providerId: orgId, jobId }),
   ]);
   const setting = (k: string, d: number) => Number(validity.data?.find((r) => r.key === k)?.value ?? d) || d;
   const validityDefault = job.urgency === "urgent" ? setting("marketplace.urgent_proposal_validity_default_minutes", 60) : setting("marketplace.proposal_validity_default_hours", 72) * 60;
@@ -60,6 +62,15 @@ export default async function ProviderJobPage({ params }: { params: Promise<{ or
           <Card>
             <CardHeader title={mine ? "Your proposal" : "Submit a proposal"} action={status ? <Badge tone={status.tone}>{status.label}</Badge> : null} />
             <CardBody className="flex flex-col gap-4 pt-0">
+              {engagements[0] ? (
+                <p className="rounded-[10px] border border-brand/40 bg-brand-soft p-3 text-[14px] text-brand-ink">
+                  Accepted.{" "}
+                  <Link href={`/provider/${orgId}/engagements/${engagements[0]!.id}`} className="font-semibold underline">
+                    Open engagement {engagements[0]!.number}
+                  </Link>{" "}
+                  for the address, site safety and the customer&apos;s contacts.
+                </p>
+              ) : null}
               {current ? (
                 <div className="rounded-[10px] border border-stroke p-3.5 text-[14px]">
                   <p className="font-semibold text-ink">{priceText(current)}</p>

@@ -6,6 +6,7 @@ import {
   formatWorkOrderNumber,
   getMarketplaceJob,
   getPersonNames,
+  listEngagements,
   listJobProposals,
   listMarketplaceJobFiles,
   listMarketplaceMessages,
@@ -17,9 +18,9 @@ import { formatDateTimeAU } from "@hvems/domain";
 import { can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, CardBody, CardHeader, EmptyState } from "@/components/ui/primitives";
-import { JobControls } from "@/features/marketplace/job-controls";
+import { AcceptProposalButton, JobControls } from "@/features/marketplace/job-controls";
 import { JobSummary } from "@/features/marketplace/job-summary";
-import { BADGE_LABELS, PROPOSAL_STATUS, availabilityText, dmy, priceText } from "@/features/marketplace/labels";
+import { BADGE_LABELS, ENGAGEMENT_STATUS, PROPOSAL_STATUS, aud, availabilityText, dmy, priceText } from "@/features/marketplace/labels";
 import { MessageThread } from "@/features/marketplace/message-thread";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -34,11 +35,13 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
   const db = await createSupabaseServerClient();
   const job = await getMarketplaceJob(db, orgId, jobId);
   if (!job) notFound();
-  const [pub, proposals, messages, files] = await Promise.all([
+  const canAccept = can(ctx.capabilities, "marketplace.accept");
+  const [pub, proposals, messages, files, engagements] = await Promise.all([
     previewMarketplaceJob(db, jobId),
     listJobProposals(db, jobId),
     listMarketplaceMessages(db, jobId),
     listMarketplaceJobFiles(db, jobId),
+    listEngagements(db, { jobId }),
   ]);
   const links = await signMarketplaceFiles(
     db,
@@ -74,6 +77,21 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
           ) : null
         }
       />
+      {engagements.length ? (
+        <Card className="mb-5">
+          <CardHeader title="Engagements" />
+          <ul className="divide-y divide-stroke">
+            {engagements.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-[14px]">
+                <Link href={`/customer/${orgId}/engagements/${e.id}`} className="font-semibold text-link hover:underline">
+                  Engagement {e.number} · {providerName.get(e.provider_id) ?? "Provider"}
+                </Link>
+                <span>{ENGAGEMENT_STATUS[e.status]?.label ?? e.status}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <div className="flex flex-col gap-5 xl:col-span-2">
           <Card>
@@ -109,6 +127,14 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
                             </Badge>
                           ) : null}
                           <Badge tone={st.tone}>{st.label}</Badge>
+                          {p.status === "active" && open && canAccept ? (
+                            <AcceptProposalButton
+                              orgId={orgId}
+                              proposalId={p.id}
+                              providerName={p.provider.name}
+                              feeText={`Your connection fee is ${aud(p.terms.fee_cents)}${ctx.context.kind === "company" ? " (or covered by your monthly waiver)" : ""}.`}
+                            />
+                          ) : null}
                         </div>
                       </div>
                       <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 text-[14px] sm:grid-cols-3">
@@ -155,7 +181,7 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
             )}
             {active.length ? (
               <p className="border-t border-stroke px-5 py-3 text-[12.5px] text-ink-muted">
-                Accepting a proposal (with connection fees collected from both parties) is being built next. Proposals stay firm until they expire.
+                Proposals stay firm until they expire or are withdrawn. Connection fee payments aren&apos;t switched on yet, so accepting charges nothing for now.
               </p>
             ) : null}
           </Card>

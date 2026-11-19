@@ -2529,3 +2529,198 @@ export type MarketplaceRpc =
 export async function marketplaceRpc<T = unknown>(db: HvemsClient, fn: MarketplaceRpc, args: Record<string, unknown>): Promise<T> {
   return unwrap(await raw(db).rpc(fn, args)) as T;
 }
+
+// ---------------------------------------------------------------------------
+// Marketplace engagements (2D part 3)
+// ---------------------------------------------------------------------------
+export type EngagementStatus =
+  | "confirmed"
+  | "on_my_way"
+  | "on_site"
+  | "completed"
+  | "correction_requested"
+  | "confirmed_complete"
+  | "completed_unconfirmed"
+  | "no_show_reported"
+  | "cancelled";
+
+export interface Engagement {
+  id: string;
+  number: number;
+  job_id: string;
+  organisation_id: string;
+  provider_id: string;
+  proposal_id: string;
+  proposal_version_id: string;
+  status: EngagementStatus;
+  accepted_by: string;
+  accepted_at: string;
+  poster_fee_cents: number;
+  provider_fee_cents: number;
+  fee_status: "not_live" | "waived_follow_up" | "collected" | "refunded" | "pending_provider";
+  follow_up_of: string | null;
+  technician_id: string | null;
+  safety_acknowledged_at: string | null;
+  scheduled_start: string | null;
+  on_my_way_at: string | null;
+  eta_at: string | null;
+  on_site_at: string | null;
+  completion_outcome: "complete" | "partial" | null;
+  completion_notes: string | null;
+  parts_used: string | null;
+  remaining_issues: string | null;
+  recommendations: string | null;
+  completion_paths: string[];
+  completed_at: string | null;
+  completed_by: string | null;
+  correction_reason: string | null;
+  confirmed_at: string | null;
+  payment_reported_by: "poster" | "provider" | null;
+  payment_reported_at: string | null;
+  payment_note: string | null;
+  cancelled_at: string | null;
+  cancelled_by_side: "poster" | "provider" | "hvems" | null;
+  cancel_category: string | null;
+  cancel_reason: string | null;
+  job?: { title: string; number: number; urgency: "standard" | "urgent"; suburb: string } | null;
+}
+
+export interface EngagementDetails {
+  engagement: Engagement;
+  job: PublicJob & { address: string | null; site_access_notes: string | null; work_order_id: string | null };
+  files: { id: string; file_name: string; path: string; shared: boolean }[];
+  terms: ProposalTerms;
+  poster: { name: string; contact_name: string | null; contact_email: string | null; contact_phone: string | null };
+  provider: { id: string; name: string; contact_name: string | null; contact_phone: string | null; contact_email: string | null };
+  side: "poster" | "provider" | null;
+}
+
+const ENG_COLUMNS = "*, job:marketplace_jobs(title, number, urgency, suburb)";
+
+export async function listEngagements(db: HvemsClient, f: { posterId?: string; providerId?: string; jobId?: string }): Promise<Engagement[]> {
+  let q = raw(db).from("marketplace_engagements").select(ENG_COLUMNS);
+  if (f.posterId) q = q.eq("organisation_id", f.posterId);
+  if (f.providerId) q = q.eq("provider_id", f.providerId);
+  if (f.jobId) q = q.eq("job_id", f.jobId);
+  return unwrap(await q.order("accepted_at", { ascending: false }).limit(500)) as Engagement[];
+}
+
+export async function getEngagementDetails(db: HvemsClient, id: string): Promise<EngagementDetails> {
+  return unwrap(await raw(db).rpc("engagement_details", { p_engagement_id: id })) as EngagementDetails;
+}
+
+export interface EngagementVariation {
+  id: string;
+  engagement_id: string;
+  proposed_by_side: "poster" | "provider";
+  kind: "price" | "scope" | "timing";
+  description: string;
+  new_amount_cents: number | null;
+  new_date: string | null;
+  status: "pending" | "accepted" | "declined" | "withdrawn";
+  decided_at: string | null;
+  created_at: string;
+}
+
+export interface EngagementFinding {
+  id: string;
+  engagement_id: string;
+  severity: "critical" | "minor" | "advisory";
+  title: string;
+  description: string | null;
+  status: "suggested" | "confirmed" | "dismissed" | "recorded";
+  defect_id: string | null;
+  created_at: string;
+}
+
+export interface MarketplaceCase {
+  id: string;
+  number: number;
+  engagement_id: string | null;
+  provider_id: string | null;
+  raised_by_side: "poster" | "provider" | "hvems";
+  category: "no_show" | "conduct" | "safety" | "fee" | "strike_review" | "other";
+  description: string;
+  status: "awaiting_response" | "under_review" | "decided" | "closed";
+  respond_by: string | null;
+  response: string | null;
+  responded_at: string | null;
+  outcome: string | null;
+  upheld: boolean | null;
+  decided_at: string | null;
+  created_at: string;
+  provider?: { name: string } | null;
+}
+
+export interface EngagementReview {
+  engagement_id: string;
+  provider_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reply: string | null;
+  replied_at: string | null;
+  removed_at: string | null;
+  removed_reason: string | null;
+}
+
+export async function getEngagementExtras(
+  db: HvemsClient,
+  engagementId: string,
+): Promise<{ variations: EngagementVariation[]; findings: EngagementFinding[]; cases: MarketplaceCase[]; review: EngagementReview | null }> {
+  const [variations, findings, cases, review] = await Promise.all([
+    raw(db).from("engagement_variations").select("*").eq("engagement_id", engagementId).order("created_at"),
+    raw(db).from("engagement_findings").select("*").eq("engagement_id", engagementId).order("created_at"),
+    raw(db).from("marketplace_cases").select("*").eq("engagement_id", engagementId).order("created_at"),
+    raw(db).from("engagement_reviews").select("*").eq("engagement_id", engagementId).maybeSingle(),
+  ]);
+  return {
+    variations: unwrap(variations) as EngagementVariation[],
+    findings: unwrap(findings) as EngagementFinding[],
+    cases: unwrap(cases) as MarketplaceCase[],
+    review: (unwrap(review) as EngagementReview | null) ?? null,
+  };
+}
+
+export async function listMarketplaceCases(db: HvemsClient, status?: MarketplaceCase["status"]): Promise<MarketplaceCase[]> {
+  let q = raw(db).from("marketplace_cases").select("*, provider:organisations(name)");
+  if (status) q = q.eq("status", status);
+  return unwrap(await q.order("created_at", { ascending: false }).limit(500)) as MarketplaceCase[];
+}
+
+export async function getMarketplaceCase(db: HvemsClient, id: string): Promise<{ case: MarketplaceCase; events: { id: string; event: string; note: string | null; actor_id: string | null; created_at: string }[] } | null> {
+  const c = unwrap(await raw(db).from("marketplace_cases").select("*, provider:organisations(name)").eq("id", id).maybeSingle()) as MarketplaceCase | null;
+  if (!c) return null;
+  const events = unwrap(await raw(db).from("marketplace_case_events").select("*").eq("case_id", id).order("created_at")) as {
+    id: string;
+    event: string;
+    note: string | null;
+    actor_id: string | null;
+    created_at: string;
+  }[];
+  return { case: c, events };
+}
+
+export type EngagementRpc =
+  | "accept_marketplace_proposal"
+  | "assign_engagement_technician"
+  | "update_engagement_attendance"
+  | "propose_engagement_variation"
+  | "decide_engagement_variation"
+  | "record_engagement_finding"
+  | "decide_engagement_finding"
+  | "submit_engagement_completion"
+  | "confirm_engagement_completion"
+  | "report_job_payment"
+  | "cancel_marketplace_engagement"
+  | "report_no_show"
+  | "raise_marketplace_case"
+  | "respond_marketplace_case"
+  | "decide_marketplace_case"
+  | "review_engagement"
+  | "reply_to_review"
+  | "remove_review";
+
+export async function engagementRpc<T = unknown>(db: HvemsClient, fn: EngagementRpc, args: Record<string, unknown>): Promise<T> {
+  return unwrap(await raw(db).rpc(fn, args)) as T;
+}

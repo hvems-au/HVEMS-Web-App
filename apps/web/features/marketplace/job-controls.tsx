@@ -185,3 +185,33 @@ function InviteDialog({ orgId, jobId, category }: { orgId: string; jobId: string
     </Dialog>
   );
 }
+
+/** Accept a proposal (MKT-10): confirms the engagement and releases the site details to this provider only. */
+export function AcceptProposalButton({ orgId, proposalId, providerName, feeText }: { orgId: string; proposalId: string; providerName: string; feeText: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = React.useState(false);
+  return (
+    <Button
+      size="sm"
+      disabled={busy}
+      onClick={async () => {
+        const ok = await confirmDialog({
+          title: `Accept ${providerName}'s proposal?`,
+          description: `${feeText} The provider pays its own connection fee too. Fee payments aren't switched on yet, so nothing is charged now. Accepting confirms the engagement, shares the address, site instructions and your contact details with ${providerName}, and tells the other providers they weren't selected.`,
+          confirmLabel: "Accept proposal",
+        });
+        if (!ok) return;
+        setBusy(true);
+        const { acceptProposalAction } = await import("./engagement-actions");
+        const res = await acceptProposalAction(proposalId);
+        setBusy(false);
+        if (res.status === "error") return toast.error(res.message);
+        toast.success("Engagement confirmed");
+        const id = res.status === "success" ? (res.data as string | undefined) : undefined;
+        router.push(id ? `/customer/${orgId}/engagements/${id}` : `/customer/${orgId}/engagements`);
+      }}
+    >
+      {busy ? <Loader2 className="animate-spin" /> : <BadgeCheck />} Accept
+    </Button>
+  );
+}
