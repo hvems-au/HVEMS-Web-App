@@ -11,8 +11,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { recordFuelAction } from "./actions";
 
-export const FUEL_TYPES = { diesel: "Diesel", unleaded: "Unleaded", adblue: "AdBlue", lpg: "LPG", oil: "Oil", other: "Other" } as const;
-export type FuelTypeKey = keyof typeof FUEL_TYPES;
+import { FUEL_TYPES, type FuelTypeKey } from "./types";
 
 export type FuelEquipment = {
   value: string;

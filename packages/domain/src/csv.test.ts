@@ -20,6 +20,9 @@ describe("CSV", () => {
   it("maps headers to normalised keys and drops empty cells", () => {
     expect(csvToRecords("Asset Number,Asset Class,Make\nEX-1,excavator,\n").records).toEqual([{ asset_number: "EX-1", asset_class: "excavator" }]);
   });
+  it("neutralises formulas in text but not in numbers", () => {
+    expect(toCsv([["=SUM(A1)", "@cmd", "+1", -12.5, "plain"]])).toBe("'=SUM(A1),'@cmd,'+1,-12.5,plain");
+  });
   it("round-trips through toCsv", () => {
     const rows = [["a", 'q"uote', "c,d"], ["1", "", "x\ny"]];
     expect(parseCsv(toCsv(rows))).toEqual(rows);

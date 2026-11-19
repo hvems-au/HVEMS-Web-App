@@ -2141,3 +2141,32 @@ export async function listExpenditure(db: HvemsClient, organisationId: string, r
   if (range?.to) q = q.lt("created_at", range.to);
   return unwrap(await q.order("created_at", { ascending: false }).limit(5000)) as ExpenditureLine[];
 }
+
+// ---------------------------------------------------------------------------
+// Reports (CS-24): rows read under the person's own permissions (RPT-05)
+// ---------------------------------------------------------------------------
+export const REPORT_ROW_LIMIT = 10000;
+
+/** Up to REPORT_ROW_LIMIT rows of one table for an organisation, optionally within a date range on one column. */
+export async function reportRows<T = Record<string, unknown>>(
+  db: HvemsClient,
+  table: string,
+  select: string,
+  organisationId: string,
+  opts: { dateColumn?: string; from?: string; to?: string; order?: string } = {},
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let start = 0; start < REPORT_ROW_LIMIT; start += 1000) {
+    let q = raw(db).from(table).select(select).eq("organisation_id", organisationId);
+    if (opts.dateColumn && opts.from) q = q.gte(opts.dateColumn, opts.from);
+    if (opts.dateColumn && opts.to) q = q.lt(opts.dateColumn, opts.to);
+    const page = unwrap(await q.order(opts.order ?? "id", { ascending: false }).range(start, start + 999)) as T[];
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
+}
+
+export async function logReportExport(db: HvemsClient, organisationId: string, report: string, rows: number, filters: Record<string, string>): Promise<void> {
+  unwrap(await raw(db).rpc("log_report_export", { p_organisation_id: organisationId, p_report: report, p_rows: rows, p_filters: filters }));
+}

@@ -67,7 +67,9 @@ export function toCsv(rows: (string | number | null | undefined)[][]): string {
     .map((r) =>
       r
         .map((v) => {
-          const s = v === null || v === undefined ? "" : String(v);
+          let s = v === null || v === undefined ? "" : String(v);
+          // Text that a spreadsheet would run as a formula is prefixed with an apostrophe (numbers are left alone).
+          if (typeof v === "string" && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
           return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         })
         .join(","),
