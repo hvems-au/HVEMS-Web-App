@@ -17,8 +17,8 @@ reset role;
 select tests.add_member(:'co', :'fm', 'fleet_manager') as fm_m \gset
 select tests.add_member(:'co', :'buyer', 'finance') as buyer_m \gset
 insert into public.membership_grants (organisation_id, membership_id, grant_type) values (:'co', :'buyer_m', 'marketplace_buyer');
-insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, registration_number, vin)
-values (:'co', 'TR-9', tests.class_id('excavator'), 'Komatsu', 'PC200', 'ABC123', 'VINSECRET') returning id as asset \gset
+insert into public.assets (organisation_id, asset_number, asset_class_id, make, model, registration_number, registration_state, vin)
+values (:'co', 'TR-9', tests.class_id('excavator'), 'Komatsu', 'PC200', 'ABC123', 'QLD', 'VINSECRET') returning id as asset \gset
 
 -- Two verified providers: one covering Moreton Bay diesel work, one elsewhere.
 select tests.authenticate_as(:'p1owner');
