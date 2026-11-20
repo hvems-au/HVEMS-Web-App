@@ -9,6 +9,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { PageHeader } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { MarketplaceTabs } from "@/features/marketplace/marketplace-tabs";
 import { JOB_STATUS, PROVIDER_CATEGORIES, closesText, effectiveJobStatus, type ProviderCategory } from "@/features/marketplace/labels";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -55,6 +56,9 @@ export default async function MarketplaceJobsPage({
           ) : null
         }
       />
+      {ctx.context.kind === "company" ? (
+        <MarketplaceTabs orgId={orgId} active="posted" canPost={canPost || can(ctx.capabilities, "marketplace.accept")} canProvide={can(ctx.capabilities, "provider.jobs.browse")} />
+      ) : null}
       {!canPost ? (
         <p className="mb-4 rounded-[10px] border border-stroke bg-surface px-4 py-3 text-[13.5px] text-ink-muted">
           You can see your company&apos;s marketplace jobs. To post jobs and accept proposals, ask your Owner for the <strong>Marketplace Buyer</strong> grant (Team → your name).

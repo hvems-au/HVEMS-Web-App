@@ -5,8 +5,27 @@ import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } fro
 import { cn } from "@/lib/utils";
 import { ENGAGEMENT_STATUS } from "./labels";
 
-/** Engagements for either portal, newest first. */
-export function EngagementList({ rows, base, tz, otherName, linkable = true }: { rows: Engagement[]; base: string; tz: string; otherName?: Map<string, string>; linkable?: boolean }) {
+/**
+ * Engagements for either portal, newest first. In the company portal a company can be the customer on
+ * some and the provider on others (decision O-13), so each row can show its role and the other party.
+ */
+export function EngagementList({
+  rows,
+  base,
+  tz,
+  otherName,
+  roleOf,
+  linkable = true,
+}: {
+  rows: Engagement[];
+  base: string;
+  tz: string;
+  /** Name of the other party, by engagement id. */
+  otherName?: Map<string, string>;
+  roleOf?: (e: Engagement) => "Customer" | "Provider";
+  linkable?: boolean | ((e: Engagement) => boolean);
+}) {
+  const canOpen = (e: Engagement) => (typeof linkable === "function" ? linkable(e) : linkable);
   return (
     <Card>
       {rows.length === 0 ? (
@@ -16,6 +35,7 @@ export function EngagementList({ rows, base, tz, otherName, linkable = true }: {
           <THead>
             <tr>
               <TH>Job</TH>
+              {roleOf ? <TH>We are</TH> : null}
               {otherName ? <TH>With</TH> : null}
               <TH>Status</TH>
               <TH>Accepted</TH>
@@ -27,7 +47,7 @@ export function EngagementList({ rows, base, tz, otherName, linkable = true }: {
               return (
                 <TR key={e.id}>
                   <TD className="max-w-[320px]">
-                    {linkable ? (
+                    {canOpen(e) ? (
                       <Link href={`${base}/engagements/${e.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
                         {e.job?.title ?? "Job"}
                       </Link>
@@ -40,7 +60,12 @@ export function EngagementList({ rows, base, tz, otherName, linkable = true }: {
                       {e.job?.urgency === "urgent" ? " · Urgent" : ""}
                     </span>
                   </TD>
-                  {otherName ? <TD>{otherName.get(e.provider_id) ?? "—"}</TD> : null}
+                  {roleOf ? (
+                    <TD>
+                      <Badge tone={roleOf(e) === "Provider" ? "blue" : "grey"}>{roleOf(e)}</Badge>
+                    </TD>
+                  ) : null}
+                  {otherName ? <TD>{otherName.get(e.id) ?? "—"}</TD> : null}
                   <TD>
                     <Badge tone={st.tone}>{st.label}</Badge>
                   </TD>

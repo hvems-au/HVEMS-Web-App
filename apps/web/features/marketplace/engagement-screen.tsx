@@ -15,10 +15,11 @@ import { availabilityText, priceText, withinDays } from "./labels";
 import { MessageThread } from "./message-thread";
 
 /** One engagement for either party (MKT-11..19). Private details reach only the engaged provider (the database decides). */
-export async function EngagementScreen({ engagementId, ctx, side, base }: { engagementId: string; ctx: OrgContext; side: "poster" | "provider"; base: string }) {
+export async function EngagementScreen({ engagementId, ctx, side: wanted, base }: { engagementId: string; ctx: OrgContext; side?: "poster" | "provider"; base: string }) {
   const db = await createSupabaseServerClient();
   const d: EngagementDetails | null = await getEngagementDetails(db, engagementId).catch(() => null);
-  if (!d || !d.side || d.side !== side) notFound();
+  if (!d || !d.side || (wanted && d.side !== wanted)) notFound();
+  const side = d.side;
   const e = d.engagement;
   const tz = ctx.timezone;
   const when = (iso: string | null) => (iso ? formatDateTimeAU(new Date(iso), tz) : null);

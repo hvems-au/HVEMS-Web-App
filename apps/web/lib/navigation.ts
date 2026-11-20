@@ -106,7 +106,8 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         { label: "Technicians", href: `${base}/technicians`, icon: "technicians", capability: "workforce.manage" },
         { label: "Parts", href: `${base}/parts`, icon: "parts", anyCapability: ["parts.request", "parts.approve", "parts.manage"], forTechnicians: true },
         { label: "Marketplace", href: `${base}/marketplace`, icon: "marketplace", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage"] },
-        { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage"] },
+        { label: "Find Work", href: `${base}/jobs`, icon: "jobs", capability: "provider.jobs.browse" },
+        { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage", "provider.engagements.work"], forTechnicians: true },
       ],
     },
     {

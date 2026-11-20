@@ -7,5 +7,5 @@ export const metadata: Metadata = { title: "Engagement" };
 export default async function CustomerEngagementPage({ params }: { params: Promise<{ orgId: string; engagementId: string }> }) {
   const { orgId, engagementId } = await params;
   const ctx = await loadOrgContext(orgId, ["company", "marketplace_customer"]);
-  return <EngagementScreen engagementId={engagementId} ctx={ctx} side="poster" base={`/customer/${orgId}`} />;
+  return <EngagementScreen engagementId={engagementId} ctx={ctx} base={`/customer/${orgId}`} />;
 }
