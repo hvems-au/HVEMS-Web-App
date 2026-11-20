@@ -9,7 +9,7 @@ export function MarketplaceTabs({ orgId, active, canPost, canProvide }: { orgId:
   const tabs: { key: MarketplaceTab; label: string; href: string; show: boolean }[] = [
     { key: "posted", label: "Our jobs", href: `${base}/marketplace`, show: canPost },
     { key: "find", label: "Find work", href: `${base}/jobs`, show: canProvide },
-    { key: "proposals", label: "Our proposals", href: `${base}/jobs?view=mine`, show: canProvide },
+    { key: "proposals", label: "Our proposals", href: `${base}/proposals`, show: canProvide },
     { key: "engagements", label: "Engagements", href: `${base}/engagements`, show: true },
     { key: "profile", label: "Provider profile", href: `${base}/verification`, show: canProvide },
   ];

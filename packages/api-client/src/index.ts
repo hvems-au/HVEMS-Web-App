@@ -2726,3 +2726,16 @@ export type EngagementRpc =
 export async function engagementRpc<T = unknown>(db: HvemsClient, fn: EngagementRpc, args: Record<string, unknown>): Promise<T> {
   return unwrap(await raw(db).rpc(fn, args)) as T;
 }
+
+/** The organisation's own proposals with their current version (provider side). */
+export async function listMyProposals(db: HvemsClient, providerId: string): Promise<(MyProposal & { job_id: string; submitted_at: string; updated_at: string; current: ProposalTerms | null })[]> {
+  const rows = unwrap(
+    await raw(db).from("marketplace_proposals").select("id, job_id, status, version, valid_until, submitted_at, updated_at").eq("provider_id", providerId).order("updated_at", { ascending: false }).limit(500),
+  ) as { id: string; job_id: string; status: ProposalStatus; version: number; valid_until: string; submitted_at: string; updated_at: string }[];
+  if (!rows.length) return [];
+  const versions = unwrap(await raw(db).from("marketplace_proposal_versions").select("*").in("proposal_id", rows.map((r) => r.id))) as (ProposalTerms & { proposal_id: string })[];
+  return rows.map((r) => {
+    const mine = versions.filter((v) => v.proposal_id === r.id).sort((a, b) => b.version - a.version);
+    return { ...r, versions: mine, current: mine.find((v) => v.version === r.version) ?? null };
+  });
+}

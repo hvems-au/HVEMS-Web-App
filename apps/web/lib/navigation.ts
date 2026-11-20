@@ -113,7 +113,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
       items: [
         { label: "Our Jobs", href: `${base}/marketplace`, icon: "marketplace", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage"] },
         { label: "Find Work", href: `${base}/jobs`, icon: "jobs", capability: "provider.jobs.browse" },
-        { label: "Our Proposals", href: `${base}/jobs?view=mine`, icon: "proposals", capability: "provider.proposals.manage" },
+        { label: "Our Proposals", href: `${base}/proposals`, icon: "proposals", capability: "provider.proposals.manage" },
         { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage", "provider.engagements.work"], forTechnicians: true },
         { label: "Provider Profile", href: `${base}/verification`, icon: "verification", capability: "provider.profile.manage" },
       ],
@@ -145,7 +145,7 @@ export function providerNav(orgId: string): NavSection[] {
       items: [
         { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
         { label: "Browse Jobs", href: `${base}/jobs`, icon: "jobs", capability: "provider.jobs.browse" },
-        { label: "My Proposals", href: `${base}/jobs?view=mine`, icon: "proposals", capability: "provider.proposals.manage" },
+        { label: "My Proposals", href: `${base}/proposals`, icon: "proposals", capability: "provider.proposals.manage" },
         { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["provider.engagements.manage", "provider.engagements.work"] },
         { label: "Profile & Verification", href: `${base}/verification`, icon: "verification", anyCapability: ["provider.verification.submit", "provider.profile.manage", "provider.jobs.browse"] },
         { label: "Subscription", href: `${base}/module/billing`, icon: "billing", capability: "org.billing.view", increment: "2D" },

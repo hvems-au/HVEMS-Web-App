@@ -101,3 +101,8 @@ export const ENGAGEMENT_STATUS: Record<string, { label: string; tone: "green" | 
   cancelled: { label: "Cancelled", tone: "grey" },
 };
 
+
+/** An active proposal past its validity shows as expired until the next sweep marks it. */
+export function proposalStatusNow(p: { status: ProposalStatus; valid_until: string }): ProposalStatus {
+  return p.status === "active" && Date.parse(p.valid_until) <= Date.now() ? "expired" : p.status;
+}

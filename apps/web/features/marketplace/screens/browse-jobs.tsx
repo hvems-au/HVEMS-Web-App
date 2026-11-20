@@ -1,6 +1,6 @@
 import "server-only";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { browseMarketplaceJobs, listMarketplaceRegions } from "@hvems/api-client";
 import { can } from "@hvems/permissions";
@@ -13,7 +13,7 @@ import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
 
-const VIEWS = { all: "All open jobs", matching: "Matching my services", saved: "Saved", mine: "My proposals" } as const;
+const VIEWS = { all: "All open jobs", matching: "Matching my services", saved: "Saved" } as const;
 
 /** Provider job search (MKT-06/07): keyword, category, type, urgency, region; saved jobs; my proposals. */
 export async function BrowseJobsScreen({
@@ -26,6 +26,7 @@ export async function BrowseJobsScreen({
   /** Provider portal, or the company portal working as a provider (decision O-13). */
   portal: "provider" | "company";
 }) {
+  if (firstParam(sp.view) === "mine") redirect(portal === "provider" ? `/provider/${orgId}/proposals` : `/customer/${orgId}/proposals`);
   const ctx = await loadOrgContext(orgId, portal === "provider" ? ["provider"] : ["company"]);
   if (!can(ctx.capabilities, "provider.jobs.browse")) notFound();
   const view = (firstParam(sp.view) ?? "all") as keyof typeof VIEWS;
@@ -39,7 +40,7 @@ export async function BrowseJobsScreen({
   };
   const db = await createSupabaseServerClient();
   const [jobs, regions] = await Promise.all([
-    browseMarketplaceJobs(db, orgId, { q: f.q, category: f.category, jobType: f.type, urgency: f.urgency, region: f.region, saved: tab === "saved", mine: tab === "mine" }),
+    browseMarketplaceJobs(db, orgId, { q: f.q, category: f.category, jobType: f.type, urgency: f.urgency, region: f.region, saved: tab === "saved" }),
     listMarketplaceRegions(db),
   ]);
   const shown = tab === "matching" ? jobs.filter((j) => j.matches) : jobs;
@@ -48,13 +49,13 @@ export async function BrowseJobsScreen({
   return (
     <>
       <PageHeader
-        title={portal === "company" ? (tab === "mine" ? "Our proposals" : "Find work") : tab === "mine" ? "My proposals" : "Browse jobs"}
+        title={portal === "company" ? "Find work" : "Browse jobs"}
         description={portal === "company" ? "Other organisations' jobs your company can quote on as a provider. Urgent jobs are listed first." : "Open jobs in the marketplace regions. Urgent jobs are listed first."}
       />
       {portal === "company" ? (
         <MarketplaceTabs
           orgId={orgId}
-          active={tab === "mine" ? "proposals" : "find"}
+          active="find"
           canPost={can(ctx.capabilities, "marketplace.post") || can(ctx.capabilities, "marketplace.accept")}
           canProvide
         />
@@ -84,7 +85,7 @@ export async function BrowseJobsScreen({
           ]}
         />
         {shown.length === 0 ? (
-          <EmptyState title={tab === "mine" ? "No proposals yet" : tab === "saved" ? "No saved jobs" : "No jobs match"}>
+          <EmptyState title={tab === "saved" ? "No saved jobs" : "No jobs match"}>
             {tab === "all" ? "New jobs in your services and regions also arrive in your alerts." : null}
           </EmptyState>
         ) : (
