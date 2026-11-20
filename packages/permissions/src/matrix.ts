@@ -178,7 +178,8 @@ export const ROLE_CAPABILITIES: Record<MemberRole, readonly Capability[]> = {
     "marketplace.post",
     "marketplace.accept",
   ],
-  administrator: ADMINISTRATOR,
+  // Company Admins post and accept marketplace jobs by default (decision 20/11/2026; SoW 4.2 change for HVEMS to acknowledge).
+  administrator: [...ADMINISTRATOR, "marketplace.post", "marketplace.accept"],
   fleet_manager: OPERATIONS_MANAGER,
   technician: [
     "org.view",

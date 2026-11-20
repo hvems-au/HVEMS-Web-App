@@ -85,10 +85,13 @@ describe("SoW §2.4 role rules", () => {
     expect(has("administrator", "org.close")).toBe(false);
   });
 
-  it("only the Owner and Marketplace Buyers post jobs in a company", () => {
+  // SoW 4.2 limits this to the Owner and Marketplace Buyers; Company Admins were added by decision (20/11/2026).
+  it("the Owner, Company Admins and Marketplace Buyers post jobs in a company", () => {
+    expect(has("administrator", "marketplace.post")).toBe(true);
+    expect(has("administrator", "marketplace.accept")).toBe(true);
     expect(has("fleet_manager", "marketplace.post")).toBe(false);
     expect(has("fleet_manager", "marketplace.post", ["marketplace_buyer"])).toBe(true);
-    expect(has("administrator", "marketplace.post")).toBe(false);
+    expect(has("finance", "marketplace.post")).toBe(false);
   });
 
   it("technicians never see costs or the marketplace", () => {
