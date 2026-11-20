@@ -123,7 +123,18 @@ describe("SoW §2.4 role rules", () => {
   it("company and provider roles never mix", () => {
     expect(roleIsValidForKind("provider_manager", "company")).toBe(false);
     expect(roleIsValidForKind("technician", "provider")).toBe(false);
-    expect(has("owner", "provider.jobs.browse")).toBe(false);
     expect(has("provider_owner", "assets.view")).toBe(false);
+  });
+
+  // Decision O-13: a company also works as a provider from the company portal.
+  it("companies work the marketplace as providers too", () => {
+    expect(has("owner", "provider.profile.manage")).toBe(true);
+    expect(has("administrator", "provider.proposals.manage")).toBe(true);
+    expect(has("fleet_manager", "provider.proposals.manage")).toBe(true);
+    expect(has("fleet_manager", "provider.profile.manage")).toBe(false);
+    expect(has("technician", "provider.engagements.work")).toBe(true);
+    expect(has("technician", "provider.proposals.manage")).toBe(false);
+    expect(has("finance", "provider.jobs.browse")).toBe(false);
+    expect(has("driver_operator", "provider.engagements.work")).toBe(false);
   });
 });

@@ -138,6 +138,11 @@ const OPERATIONS_MANAGER: Capability[] = [
   "parts.manage",
   "reports.view",
   "reports.export",
+  // A company also works as a provider in the marketplace (decision O-13).
+  "provider.jobs.browse",
+  "provider.proposals.manage",
+  "provider.engagements.manage",
+  "provider.engagements.work",
   // Owners and Fleet Managers clear defects and return equipment to service by role
   // (decision O-09); Company Admins inherit it. Others need the Clearance Authority grant.
   ...CLEARANCE,
@@ -152,6 +157,9 @@ const ADMINISTRATOR: Capability[] = [
   "assets.import_archive",
   "sites.manage",
   "templates.manage",
+  // Its provider profile and verification (decision O-13).
+  "provider.profile.manage",
+  "provider.verification.submit",
 ];
 
 const ACCOUNT_OWNER_COMMON: Capability[] = [
@@ -191,6 +199,8 @@ export const ROLE_CAPABILITIES: Record<MemberRole, readonly Capability[]> = {
     "defects.report",
     "work_orders.work",
     "parts.request",
+    // Does the work on the company's marketplace engagements as a provider (decision O-13).
+    "provider.engagements.work",
   ],
   driver_operator: [
     "org.view",
