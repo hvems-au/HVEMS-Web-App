@@ -88,9 +88,15 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
           <ul className="divide-y divide-stroke">
             {engagements.map((e) => (
               <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-[14px]">
-                <Link href={`/customer/${orgId}/engagements/${e.id}`} className="font-semibold text-link hover:underline">
-                  Engagement {e.number} · {providerName.get(e.provider_id) ?? "Provider"}
-                </Link>
+                {canAccept || canPost ? (
+                  <Link href={`/customer/${orgId}/engagements/${e.id}`} className="font-semibold text-link hover:underline">
+                    Engagement {e.number} · {providerName.get(e.provider_id) ?? "Provider"}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">
+                    Engagement {e.number} · {providerName.get(e.provider_id) ?? "Provider"}
+                  </span>
+                )}
                 <span>{ENGAGEMENT_STATUS[e.status]?.label ?? e.status}</span>
               </li>
             ))}

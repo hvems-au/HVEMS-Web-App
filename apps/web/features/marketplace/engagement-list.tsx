@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ENGAGEMENT_STATUS } from "./labels";
 
 /** Engagements for either portal, newest first. */
-export function EngagementList({ rows, base, tz, otherName }: { rows: Engagement[]; base: string; tz: string; otherName?: Map<string, string> }) {
+export function EngagementList({ rows, base, tz, otherName, linkable = true }: { rows: Engagement[]; base: string; tz: string; otherName?: Map<string, string>; linkable?: boolean }) {
   return (
     <Card>
       {rows.length === 0 ? (
@@ -27,9 +27,13 @@ export function EngagementList({ rows, base, tz, otherName }: { rows: Engagement
               return (
                 <TR key={e.id}>
                   <TD className="max-w-[320px]">
-                    <Link href={`${base}/engagements/${e.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
-                      {e.job?.title ?? "Job"}
-                    </Link>
+                    {linkable ? (
+                      <Link href={`${base}/engagements/${e.id}`} className={cn("font-semibold text-ink hover:text-link", STRETCHED_LINK)}>
+                        {e.job?.title ?? "Job"}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-ink">{e.job?.title ?? "Job"}</span>
+                    )}
                     <span className="block text-[12.5px] text-ink-muted">
                       Engagement {e.number}
                       {e.job?.suburb ? ` · ${e.job.suburb}` : ""}

@@ -55,6 +55,11 @@ export default async function MarketplaceJobsPage({
           ) : null
         }
       />
+      {!canPost ? (
+        <p className="mb-4 rounded-[10px] border border-stroke bg-surface px-4 py-3 text-[13.5px] text-ink-muted">
+          You can see your company&apos;s marketplace jobs. To post jobs and accept proposals, ask your Owner for the <strong>Marketplace Buyer</strong> grant (Team → your name).
+        </p>
+      ) : null}
       <Card>
         <FilterBar
           action={base}
