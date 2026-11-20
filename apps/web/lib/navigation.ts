@@ -105,9 +105,17 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         { label: "Work Orders", href: `${base}/work-orders`, icon: "workorders" },
         { label: "Technicians", href: `${base}/technicians`, icon: "technicians", capability: "workforce.manage" },
         { label: "Parts", href: `${base}/parts`, icon: "parts", anyCapability: ["parts.request", "parts.approve", "parts.manage"], forTechnicians: true },
-        { label: "Marketplace", href: `${base}/marketplace`, icon: "marketplace", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage"] },
+      ],
+    },
+    {
+      // The company on both sides of the marketplace (decision O-13).
+      title: "Marketplace",
+      items: [
+        { label: "Our Jobs", href: `${base}/marketplace`, icon: "marketplace", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage"] },
         { label: "Find Work", href: `${base}/jobs`, icon: "jobs", capability: "provider.jobs.browse" },
+        { label: "Our Proposals", href: `${base}/jobs?view=mine`, icon: "proposals", capability: "provider.proposals.manage" },
         { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["marketplace.post", "marketplace.accept", "work_orders.manage", "provider.engagements.work"], forTechnicians: true },
+        { label: "Provider Profile", href: `${base}/verification`, icon: "verification", capability: "provider.profile.manage" },
       ],
     },
     {
