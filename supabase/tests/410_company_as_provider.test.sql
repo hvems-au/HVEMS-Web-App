@@ -77,5 +77,17 @@ select tests.authenticate_as(:'bowner');
 select is((public.engagement_details(:'eng') ->> 'side'), 'poster', 'the other company stays the customer');
 reset role;
 
+-- Proposals can state a price that includes GST
+select tests.authenticate_as(:'bowner');
+select public.post_marketplace_job(:'b', jsonb_build_object('title', 'Brake check', 'description', 'Brakes pulling to the left under load.',
+  'category', 'diesel_mechanical', 'job_type', 'inspection', 'region_code', 'moreton_bay', 'suburb', 'Bray Park', 'asset_id', :'basset')) as bjob2 gset
+reset role;
+select tests.authenticate_as(:'afm');
+select public.submit_marketplace_proposal(:'a', :'bjob2', '{"price_basis": "fixed", "amount_cents": 55000, "gst_applies": true, "gst_inclusive": true, "available_from": "2026-12-04", "fee_consent": true}') as prop2 gset
+reset role;
+select ok((select gst_applies and gst_inclusive from public.marketplace_proposal_versions where proposal_id = :'prop2'), 'a proposal records that its price includes GST');
+select is(tests.error_code(format('insert into public.marketplace_proposal_versions (proposal_id, version, price_basis, amount_cents, gst_applies, gst_inclusive, valid_until, fee_cents, fee_consented_at, created_by) values (%L, 9, ''fixed'', 1, false, true, now(), 1, now(), %L)', :'prop2', :'afm')), '23514',
+  'GST can''t be included when no GST applies');
+
 select * from finish();
 rollback;

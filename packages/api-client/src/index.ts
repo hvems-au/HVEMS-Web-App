@@ -2410,6 +2410,8 @@ export interface ProposalTerms {
   hourly_rate_cents: number | null;
   callout_cents: number | null;
   gst_applies: boolean;
+  /** The amounts already include GST. */
+  gst_inclusive?: boolean;
   available_from: string | null;
   available_to: string | null;
   arrival_minutes: number | null;

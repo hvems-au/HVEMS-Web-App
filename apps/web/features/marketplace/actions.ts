@@ -188,6 +188,7 @@ const proposalSchema = z.object({
   hourly_rate: cents,
   callout: cents,
   gst_applies: z.boolean({ message: "Say whether GST applies" }),
+  gst_inclusive: z.boolean().default(false),
   available_from: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional(),
   available_to: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional(),
   arrival_minutes: z.union([z.literal(""), z.coerce.number().int().min(5).max(1440)]).optional(),

@@ -38,7 +38,7 @@ export function ProposalForm({
     amount_max: toDollars(defaults?.amount_max_cents),
     hourly_rate: toDollars(defaults?.hourly_rate_cents),
     callout: toDollars(defaults?.callout_cents),
-    gst_applies: defaults ? (defaults.gst_applies ? "yes" : "no") : "",
+    gst_applies: defaults ? (defaults.gst_inclusive ? "inclusive" : defaults.gst_applies ? "yes" : "no") : "",
     available_from: defaults?.available_from ?? "",
     available_to: defaults?.available_to ?? "",
     arrival_minutes: defaults?.arrival_minutes ? String(defaults.arrival_minutes) : "",
@@ -68,7 +68,8 @@ export function ProposalForm({
         setBusy(true);
         const res = await submitProposalAction(providerId, jobId, {
           ...f,
-          gst_applies: f.gst_applies === "yes",
+          gst_applies: f.gst_applies !== "no",
+          gst_inclusive: f.gst_applies === "inclusive",
           valid_minutes: f.valid,
           amount: f.price_basis === "hourly" ? "" : f.amount,
           amount_max: f.price_basis === "estimate" ? f.amount_max : "",
@@ -118,7 +119,8 @@ export function ProposalForm({
         <Field label="GST" htmlFor="pr-gst" required>
           <Select id="pr-gst" value={f.gst_applies} onChange={(e) => set("gst_applies", e.target.value)}>
             <option value="">Choose…</option>
-            <option value="yes">Plus GST</option>
+            <option value="yes">Plus GST (added to the price)</option>
+            <option value="inclusive">Includes GST</option>
             <option value="no">No GST applies</option>
           </Select>
         </Field>

@@ -57,8 +57,8 @@ export function windowText(j: Pick<PublicJob, "preferred_from" | "preferred_to" 
   return [d, j.preferred_time].filter(Boolean).join(", ") || null;
 }
 
-export function priceText(t: Pick<ProposalTerms, "price_basis" | "amount_cents" | "amount_max_cents" | "hourly_rate_cents" | "callout_cents" | "gst_applies">): string {
-  const gst = t.gst_applies ? " + GST" : " (no GST)";
+export function priceText(t: Pick<ProposalTerms, "price_basis" | "amount_cents" | "amount_max_cents" | "hourly_rate_cents" | "callout_cents" | "gst_applies" | "gst_inclusive">): string {
+  const gst = t.gst_inclusive ? " incl. GST" : t.gst_applies ? " + GST" : " (no GST)";
   if (t.price_basis === "fixed") return `${aud(t.amount_cents)} fixed${gst}`;
   if (t.price_basis === "estimate") return `${aud(t.amount_cents)} – ${aud(t.amount_max_cents)} estimate${gst}`;
   return `${aud(t.hourly_rate_cents)}/hour${t.callout_cents ? ` + ${aud(t.callout_cents)} call-out` : ""}${gst}`;
