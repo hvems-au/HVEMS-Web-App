@@ -4,7 +4,7 @@
 
 | Suite | Command | Result |
 |---|---|---|
-| pgTAP database tests | `pnpm db:test` (CI, Postgres 16) | all pass (43 files, `supabase/tests/010`–`430`; 794 checks before 430 was added) |
+| pgTAP database tests | `pnpm db:test` (CI, Postgres 16) | 804 / 804 pass (43 files, `supabase/tests/010`–`430`) |
 | Unit tests (Vitest) | `pnpm test` | 146 / 146 pass (12 files) |
 | Browser end to end (Playwright) | `E2E_PASSWORD=… corepack pnpm --filter @hvems/web e2e` against a running app | 49 pass, 1 skipped (`portal@` is a Fleet Manager in dev, so the Company Admin menu check skips; set `E2E_COMPANY_ADMIN_EMAIL`) |
 | TypeScript strict / ESLint / build | `pnpm typecheck` · `pnpm lint` · `pnpm build` (CI) | Pass; 1 expected lint warning (TanStack Table) |
