@@ -57,6 +57,27 @@ async function handle(db: Admin, stripe: Stripe, event: Stripe.Event) {
       if (error) throw new Error(error.message);
       return;
     }
+    case "invoice.finalized":
+    case "invoice.paid":
+    case "invoice.payment_failed":
+    case "invoice.voided":
+    case "invoice.marked_uncollectible": {
+      const inv = event.data.object;
+      if (!inv.metadata?.hvems_invoice_id) return; // Only HVEMS monthly invoices.
+      const outcome =
+        event.type === "invoice.paid" ? "paid" : event.type === "invoice.finalized" ? "open" : event.type === "invoice.voided" ? "void" : "failed";
+      const { error } = await db.rpc("record_invoice_outcome", {
+        p_id: null,
+        p_stripe_invoice_id: inv.id,
+        p_outcome: outcome,
+        p_number: inv.number ?? null,
+        p_hosted_url: inv.hosted_invoice_url ?? null,
+        p_pdf_url: inv.invoice_pdf ?? null,
+        p_error: outcome === "failed" ? (inv.last_finalization_error?.message ?? "The card was declined") : null,
+      });
+      if (error) throw new Error(error.message);
+      return;
+    }
     default:
       return; // Stored for the record; handled by later slices.
   }

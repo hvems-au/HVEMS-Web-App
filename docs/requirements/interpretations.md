@@ -17,3 +17,14 @@ Written before the companion *Development Scope and Functional Specification v2.
 | I-11 | Job Manager acceptance | §2.4 "post and manage jobs" | Job Managers can accept proposals (the Account Owner's saved card is used) | To be confirmed |
 | I-12 | Company account approval | Not in SoW (Figma F-04) | Company and marketplace-only accounts are self-serve; only providers need HVEMS verification | ✅ Confirmed 9 Nov 2026 (AP-5, F-04) |
 | I-13 | Out-of-sequence readings | §7.2 "kept and flagged" | Kept as "awaiting manager" and flagged; never overwrite the current reading | Recommended |
+
+## Billing (added 25 Nov 2026, increment 2D)
+
+All are platform settings or simple rules HVEMS can change; none charges anyone until `billing.invoicing_live` is turned on.
+
+| ID | Topic | SoW basis | Interpretation implemented | Label |
+|---|---|---|---|---|
+| I-B1 | When invoices are raised | §5.2 "charged in arrears" | On the 1st (Brisbane) for the month before; fleet and provider subscriptions are separate Stripe invoices charged to the default card; nothing under $0.01 is invoiced | Recommended |
+| I-B2 | Provider subscription months | §5.3 | Charged in arrears for each calendar month the provider was verified for the whole month (the month of first verification is free). Nothing is charged before `marketplace.public_launch_at`; founding providers (verified by 90 days after launch) get 3 months free from launch or verification, whichever is later | To be confirmed |
+| I-B3 | Companies that also quote as providers (O-13) | §5.3 | Not charged the provider subscription unless `billing.charge_company_providers` is turned on | To be confirmed |
+| I-B4 | Failed payments and restriction | §5.8 | Stripe retries the card; billing managers are told at once; an invoice still unpaid `billing.restrict_after_days` (14) after the first failure restricts the account (no new equipment, members or marketplace activity; safety functions keep working). Paying the overdue invoice lifts it automatically | Recommended (setting) |

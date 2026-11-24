@@ -2,12 +2,34 @@ import { can } from "@hvems/permissions";
 import { fleetSubscriptionCents, formatAud } from "@hvems/domain";
 import { PageHeader } from "@/components/shell/page";
 import { FormAlert } from "@/components/ui/form";
-import { Card, CardBody, CardHeader, Dl } from "@/components/ui/primitives";
+import { Badge, Card, CardBody, CardHeader, Dl } from "@/components/ui/primitives";
 import type { OrgContext } from "@/lib/session";
 import { stripePublishableKey, stripeServerAvailability } from "@/lib/stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CardManager, type SavedCard } from "./card-manager";
 import { FleetConsentButton } from "./consent";
+
+interface InvoiceRow {
+  id: string;
+  period_start: string;
+  description: string;
+  amount_cents: number;
+  gst_cents: number;
+  status: "sending" | "open" | "paid" | "failed" | "void";
+  number: string | null;
+  hosted_url: string | null;
+  pdf_url: string | null;
+  last_error: string | null;
+}
+
+const INVOICE_STATUS: Record<InvoiceRow["status"], { label: string; tone: "green" | "amber" | "red" | "grey" }> = {
+  sending: { label: "Processing", tone: "grey" },
+  open: { label: "Due", tone: "amber" },
+  paid: { label: "Paid", tone: "green" },
+  failed: { label: "Payment failed", tone: "red" },
+  void: { label: "Cancelled", tone: "grey" },
+};
+const MONTH = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric", timeZone: "UTC" });
 
 const DATE = new Intl.DateTimeFormat("en-AU", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Australia/Brisbane" });
 
@@ -18,7 +40,7 @@ export async function BillingPage({ ctx }: { ctx: OrgContext }) {
   const kind = ctx.context.kind;
   const canManage = can(ctx.capabilities, "org.billing.manage");
 
-  const [{ data: cards }, { data: settings }, assets, { data: consent }] = await Promise.all([
+  const [{ data: cards }, { data: settings }, assets, { data: consent }, { data: invoiceRows }] = await Promise.all([
     db
       .from("payment_methods")
       .select("stripe_payment_method_id, brand, last4, exp_month, exp_year, is_default")
@@ -33,7 +55,15 @@ export async function BillingPage({ ctx }: { ctx: OrgContext }) {
     kind === "company"
       ? db.from("fleet_subscription_consents").select("consented_at, price_per_asset_cents").eq("organisation_id", orgId).is("withdrawn_at", null).maybeSingle()
       : Promise.resolve({ data: null }),
+    db
+      .from("billing_invoices" as never)
+      .select("id, period_start, description, amount_cents, gst_cents, status, number, hosted_url, pdf_url, last_error")
+      .eq("organisation_id" as never, orgId as never)
+      .neq("status" as never, "draft" as never)
+      .order("period_start" as never, { ascending: false })
+      .limit(24),
   ]);
+  const invoices = (invoiceRows ?? []) as unknown as InvoiceRow[];
 
   const setting = (k: string, d: number) => {
     const v = Number(settings?.find((s) => s.key === k)?.value);
@@ -124,6 +154,37 @@ export async function BillingPage({ ctx }: { ctx: OrgContext }) {
           </Card>
         ) : null}
       </div>
+
+      <Card className="mt-5">
+        <CardHeader title="Invoices" description="Charged to the default card on the 1st for the month before." />
+        <CardBody className="pt-0">
+          {invoices.length ? (
+            <ul className="flex flex-col divide-y divide-stroke rounded-[10px] border border-stroke text-[14px]">
+              {invoices.map((i) => (
+                <li key={i.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
+                  <span className="min-w-40 font-medium text-ink">{MONTH.format(new Date(i.period_start))}</span>
+                  <span className="flex-1 text-ink-subtle">{i.description}</span>
+                  <span className="font-medium text-ink">{formatAud(i.amount_cents)}</span>
+                  <Badge tone={INVOICE_STATUS[i.status].tone}>{INVOICE_STATUS[i.status].label}</Badge>
+                  {i.pdf_url ? (
+                    <a href={i.pdf_url} target="_blank" rel="noreferrer" className="text-link hover:underline">
+                      {i.number ? `Invoice ${i.number}` : "Invoice"}
+                    </a>
+                  ) : null}
+                  {i.status === "failed" && i.hosted_url ? (
+                    <a href={i.hosted_url} target="_blank" rel="noreferrer" className="font-semibold text-link hover:underline">
+                      Pay now
+                    </a>
+                  ) : null}
+                  {i.status === "failed" && i.last_error ? <span className="w-full text-[13px] text-danger">{i.last_error}</span> : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[14px] text-ink-subtle">No invoices yet.</p>
+          )}
+        </CardBody>
+      </Card>
     </>
   );
 }
