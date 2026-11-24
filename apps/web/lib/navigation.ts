@@ -69,6 +69,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
         items: [
           { label: "Team", href: `${base}/team`, icon: "team" },
           { label: "Audit History", href: `${base}/audit`, icon: "audit", capability: "audit.view" },
+          { label: "Billing", href: `${base}/billing`, icon: "billing", capability: "org.billing.view" },
           { label: "Settings", href: `${base}/settings`, icon: "settings" },
         ],
       },
@@ -132,6 +133,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
       items: [
         { label: "Team", href: `${base}/team`, icon: "team" },
         { label: "Audit History", href: `${base}/audit`, icon: "audit", capability: "audit.view" },
+        { label: "Billing", href: `${base}/billing`, icon: "billing", capability: "org.billing.view" },
         { label: "Settings", href: `${base}/settings`, icon: "settings" },
       ],
     },
@@ -148,7 +150,7 @@ export function providerNav(orgId: string): NavSection[] {
         { label: "My Proposals", href: `${base}/proposals`, icon: "proposals", capability: "provider.proposals.manage" },
         { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["provider.engagements.manage", "provider.engagements.work"] },
         { label: "Profile & Verification", href: `${base}/verification`, icon: "verification", anyCapability: ["provider.verification.submit", "provider.profile.manage", "provider.jobs.browse"] },
-        { label: "Subscription", href: `${base}/module/billing`, icon: "billing", capability: "org.billing.view", increment: "2D" },
+        { label: "Billing", href: `${base}/billing`, icon: "billing", capability: "org.billing.view" },
       ],
     },
     {
