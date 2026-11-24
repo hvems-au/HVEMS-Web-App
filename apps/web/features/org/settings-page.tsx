@@ -3,6 +3,7 @@ import { KIND_LABELS, can } from "@hvems/permissions";
 import { PageHeader } from "@/components/shell/page";
 import type { OrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { CloseOrganisationCard } from "./close-card";
 import { LogoCard } from "./logo-card";
 import { SupportPinCard } from "./support-pin-card";
 import { SettingsForm } from "./settings-form";
@@ -14,6 +15,11 @@ export async function SettingsPage({ ctx, portal }: { ctx: OrgContext; portal: "
   const logoUrl = await signOrganisationLogo(db, org.logo_path);
   // Support PIN (Owner and Company Admins).
   const supportPin = editable ? await getSupportPin(db, org.id).catch(() => null) : null;
+  // Closing the account (Owner, Account Owner, Provider Owner): what still has to finish first.
+  const canClose = can(ctx.capabilities, "org.close");
+  const blockers = canClose
+    ? (((await db.rpc("closure_blockers" as never, { p_organisation_id: org.id } as never)).data as unknown as string[] | null) ?? [])
+    : [];
   return (
     <>
       <PageHeader title="Settings" description={`${KIND_LABELS[org.kind]} details${org.kind === "company" ? " and company rules" : ""}`} />
@@ -44,6 +50,14 @@ export async function SettingsPage({ ctx, portal }: { ctx: OrgContext; portal: "
           pin={supportPin.pin}
           rotationHours={supportPin.rotation_hours}
           validUntilText={new Date(supportPin.valid_until).toLocaleTimeString("en-AU", { timeZone: ctx.timezone, hour: "numeric", minute: "2-digit" })}
+        />
+      ) : null}
+      {canClose ? (
+        <CloseOrganisationCard
+          orgId={org.id}
+          name={org.name}
+          blockers={blockers}
+          exportHref={portal === "provider" ? `/provider/${org.id}/full-export` : `/customer/${org.id}/reports/full-export`}
         />
       ) : null}
     </>

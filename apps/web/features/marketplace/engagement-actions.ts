@@ -105,3 +105,27 @@ export const replyReviewAction = async (engagementId: string, reply: string) =>
 
 export const removeReviewAction = async (engagementId: string, reason: string) =>
   run("remove_review", { p_engagement_id: id(engagementId), p_reason: reason }, "Review removed (kept for audit)");
+
+export const assignCaseAction = async (caseId: string, ownerId: string | null) => {
+  try {
+    const db = await createSupabaseServerClient();
+    const { error } = await db.rpc("assign_marketplace_case" as never, { p_case_id: id(caseId), p_owner_id: ownerId } as never);
+    if (error) throw error;
+    revalidatePath("/admin", "layout");
+    return { status: "success", message: ownerId ? "Case assigned" : "Owner removed" } as ActionState;
+  } catch (e) {
+    return errorState(e);
+  }
+};
+
+export const caseNoteAction = async (caseId: string, note: string) => {
+  try {
+    const db = await createSupabaseServerClient();
+    const { error } = await db.rpc("add_marketplace_case_note" as never, { p_case_id: id(caseId), p_note: note } as never);
+    if (error) throw error;
+    revalidatePath("/admin", "layout");
+    return { status: "success", message: "Note added" } as ActionState;
+  } catch (e) {
+    return errorState(e);
+  }
+};

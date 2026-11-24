@@ -4,7 +4,8 @@ import { getMarketplaceCase, getPersonNames } from "@hvems/api-client";
 import { formatDateTimeAU } from "@hvems/domain";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, CardBody, CardHeader } from "@/components/ui/primitives";
-import { CaseDecision } from "@/features/marketplace/case-decision";
+import { CaseDecision, CaseOwnerNotes } from "@/features/marketplace/case-decision";
+import { requireUser } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Case" };
@@ -18,7 +19,9 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
   const data = await getMarketplaceCase(db, caseId);
   if (!data) notFound();
   const c = data.case;
-  const names = await getPersonNames(db, data.events.map((e) => e.actor_id));
+  const me = await requireUser("/admin");
+  const names = await getPersonNames(db, [...data.events.map((e) => e.actor_id), (data.case as { owner_id?: string | null }).owner_id ?? null]);
+  const ownerId = (data.case as { owner_id?: string | null }).owner_id ?? null;
   const [engagement, strikes] = await Promise.all([
     c.engagement_id ? db.from("marketplace_engagements").select("number, status, accepted_at, job:marketplace_jobs(title, number)").eq("id", c.engagement_id).maybeSingle() : Promise.resolve({ data: null }),
     c.provider_id ? db.from("provider_strikes").select("id, reason, created_at").eq("provider_id", c.provider_id).order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
@@ -64,12 +67,18 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
         </div>
         <div className="flex flex-col gap-5">
           <Card>
+            <CardHeader title="Owner and notes" />
+            <CardBody className="pt-0">
+              <CaseOwnerNotes caseId={c.id} ownerName={ownerId ? (names.get(ownerId) ?? "Staff member") : null} isMine={ownerId === me.id} myId={me.id} />
+            </CardBody>
+          </Card>
+          <Card>
             <CardHeader title="History" />
             <CardBody className="pt-0">
               <ul className="flex flex-col gap-2 text-[13.5px]">
                 {data.events.map((e) => (
                   <li key={e.id}>
-                    <span className="font-medium">{e.event.replaceAll("_", " ")}</span> · {e.actor_id ? (names.get(e.actor_id) ?? "—") : "System"} · {formatDateTimeAU(new Date(e.created_at))}
+                    <span className="font-medium">{e.event === "note" ? "Internal note" : e.event.replaceAll("_", " ")}</span> · {e.actor_id ? (names.get(e.actor_id) ?? "—") : "System"} · {formatDateTimeAU(new Date(e.created_at))}
                     {e.note ? <span className="block text-ink-muted">{e.note}</span> : null}
                   </li>
                 ))}

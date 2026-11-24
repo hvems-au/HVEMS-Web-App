@@ -35,6 +35,7 @@ import { getSessionUser, getStaffContext } from "@/lib/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
+import { ReopenOrganisationButton } from "@/features/org/close-card";
 import {
   AdminSignInLock,
   OrganisationDetailsForm,
@@ -271,6 +272,11 @@ async function DetailsTab({
               </dl>
             </CardBody>
           </Card>
+          {superAdmin && org.status === "closed" ? (
+            <div className="mt-3">
+              <ReopenOrganisationButton orgId={org.id} />
+            </div>
+          ) : null}
           {superAdmin && org.status !== "closed" && org.status !== "closing" ? (
             <Card>
               <CardHeader

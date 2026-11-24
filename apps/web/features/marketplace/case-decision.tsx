@@ -6,7 +6,7 @@ import { Gavel, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { promptDialog } from "@/components/ui/confirm";
 import { Field, FormAlert, Textarea } from "@/components/ui/form";
-import { decideCaseAction, removeReviewAction } from "./engagement-actions";
+import { assignCaseAction, caseNoteAction, decideCaseAction, removeReviewAction } from "./engagement-actions";
 
 /** HVEMS decides a case. An upheld no-show cancels the engagement, adds a strike and reopens the job. */
 export function CaseDecision({ caseId, noShow }: { caseId: string; noShow: boolean }) {
@@ -59,5 +59,51 @@ export function RemoveReviewButton({ engagementId }: { engagementId: string }) {
     >
       Remove
     </Button>
+  );
+}
+
+/** Case owner and internal notes (ADM-05). Notes are for HVEMS staff only. */
+export function CaseOwnerNotes({ caseId, ownerName, isMine, myId }: { caseId: string; ownerName: string | null; isMine: boolean; myId: string }) {
+  const router = useRouter();
+  const [note, setNote] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const run = async (p: Promise<{ status: string; message?: string }>) => {
+    setBusy(true);
+    const res = await p;
+    setBusy(false);
+    if (res.status === "error") toast.error(res.message ?? "Something went wrong");
+    else toast.success(res.message ?? "Done");
+    router.refresh();
+    return res.status !== "error";
+  };
+  return (
+    <div className="flex flex-col gap-3 text-[14px]">
+      <div className="flex flex-wrap items-center gap-2">
+        <span>
+          Owner: <span className="font-medium">{ownerName ?? "Nobody yet"}</span>
+        </span>
+        {!isMine ? (
+          <Button size="sm" variant="secondary" disabled={busy} onClick={() => run(assignCaseAction(caseId, myId))}>
+            Assign to me
+          </Button>
+        ) : (
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => run(assignCaseAction(caseId, null))}>
+            Remove me
+          </Button>
+        )}
+      </div>
+      <form
+        className="flex flex-col gap-2"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (await run(caseNoteAction(caseId, note))) setNote("");
+        }}
+      >
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} placeholder="Internal note (HVEMS staff only)" aria-label="Internal note" />
+        <Button type="submit" size="sm" variant="secondary" disabled={busy || note.trim().length < 2} className="self-start">
+          Add note
+        </Button>
+      </form>
+    </div>
   );
 }

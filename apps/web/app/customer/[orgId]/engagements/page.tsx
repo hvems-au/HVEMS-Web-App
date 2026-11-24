@@ -35,6 +35,8 @@ export default async function CustomerEngagementsPage({ params }: { params: Prom
   for (const e of provided) {
     const d = await getEngagementDetails(db, e.id).catch(() => null);
     names.set(e.id, d?.poster.name ?? "Customer");
+    // Providers can't read the jobs table, so the job's public details come with the engagement.
+    if (d) e.job = { title: d.job.title, number: d.job.number, urgency: d.job.urgency, suburb: d.job.suburb };
   }
 
   return (

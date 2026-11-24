@@ -168,10 +168,11 @@ export const REPORTS: ReportDef[] = [
     number: 13,
     title: "Marketplace jobs, proposals and engagements",
     group: "Marketplace and billing",
-    summary: "Jobs posted, proposals received and engagements.",
-    definition: "One row per marketplace job with its proposals and engagement.",
+    summary: "Jobs you posted with their proposals and engagement, and (for a company working as a provider) the jobs you quoted on.",
+    definition:
+      "Posted rows: one per job you posted, with the number of proposals, time to the first proposal, the engaged provider and the engagement status. Quoted rows: one per proposal you submitted, with its price and outcome. Connection fees show as recorded; they are not charged until billing is live.",
+    dateLabel: "Posted or quoted",
     filters: ["date", "status"],
-    unavailable: "Available with the Service Marketplace (increment 2D).",
   },
   {
     key: "connection-fees",

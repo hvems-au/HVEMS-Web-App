@@ -1,5 +1,15 @@
 import "server-only";
-import { formatPartsRequestNumber, getPersonNames, listAssetsForExport, REPORT_ROW_LIMIT, reportRows, type HvemsClient } from "@hvems/api-client";
+import {
+  browseMarketplaceJobs,
+  formatPartsRequestNumber,
+  getPersonNames,
+  listAssetsForExport,
+  listMyProposals,
+  REPORT_ROW_LIMIT,
+  reportRows,
+  type HvemsClient,
+} from "@hvems/api-client";
+import { ENGAGEMENT_STATUS, JOB_STATUS, PROPOSAL_STATUS, PROVIDER_CATEGORIES, priceText } from "@/features/marketplace/labels";
 import {
   CONDITION_LABELS,
   DEFECT_SEVERITY_LABELS,
@@ -552,6 +562,94 @@ export async function buildReport(
         status: n.status,
         cells: [dmy(n.issued_on), ...assetCells(n.asset_id), n.authority, n.notice_number, NOTICE_SEVERITY[n.severity] ?? n.severity, n.details, dmy(n.clear_by), n.status === "open" ? "Open" : "Cleared", dmy(n.cleared_on), n.clearance_reference, nm(n.recorded_by), nm(n.cleared_by)],
       }));
+      break;
+    }
+    case "marketplace": {
+      type J = { id: string; number: number; title: string; category: string; urgency: string; status: keyof typeof JOB_STATUS; asset_id: string | null; suburb: string; posted_at: string; closes_at: string };
+      type P = { job_id: string; provider_id: string; status: string; submitted_at: string };
+      type E = { job_id: string; provider_id: string; status: string; number: number; poster_fee_cents: number; fee_status: string; accepted_at: string };
+      const [jobs, props, engs, quoted, quotedJobs] = await Promise.all([
+        reportRows<J>(db, "marketplace_jobs", "id, number, title, category, urgency, status, asset_id, suburb, posted_at, closes_at", orgId, { order: "posted_at" }),
+        reportRows<P>(db, "marketplace_proposals", "job_id, provider_id, status, submitted_at", orgId, { order: "submitted_at" }).catch(() => [] as P[]),
+        reportRows<E>(db, "marketplace_engagements", "job_id, provider_id, status, number, poster_fee_cents, fee_status, accepted_at", orgId, { order: "accepted_at" }).catch(() => [] as E[]),
+        listMyProposals(db, orgId).catch(() => []),
+        browseMarketplaceJobs(db, orgId, { mine: true }).catch(() => []),
+      ]);
+      // Proposals on our jobs aren't filtered by organisation (they belong to providers), so read them per job.
+      const onJobs = jobs.length
+        ? ((await db.from("marketplace_proposals" as never).select("job_id, provider_id, status, submitted_at").in("job_id", jobs.map((j) => j.id))).data as P[] | null) ?? []
+        : props;
+      const names = new Map<string, string>();
+      for (const j of jobs.filter((x) => onJobs.some((p) => p.job_id === x.id))) {
+        const { data } = await db.rpc("marketplace_thread_providers" as never, { p_job_id: j.id } as never);
+        for (const p of ((data as unknown as { id: string; name: string }[] | null) ?? [])) names.set(p.id, p.name);
+      }
+      const jobOf = new Map(quotedJobs.map((j) => [j.id, j]));
+      money$ = true;
+      columns = ["Side", "Date", "Job", "Title", "Service", "Urgency", "Equipment", "Suburb", "Job status", "Proposals", "First proposal (minutes)", "Provider", "Price", "Proposal or engagement", "Connection fee (AUD)", "Fee status"];
+      statuses = [
+        { value: "posted", label: "Jobs we posted" },
+        { value: "quoted", label: "Jobs we quoted on" },
+      ];
+      rows = [
+        ...jobs.map((j) => {
+          const ps = onJobs.filter((p) => p.job_id === j.id);
+          const first = ps.map((p) => Date.parse(p.submitted_at)).sort((a, b) => a - b)[0];
+          const e = engs.filter((x) => x.job_id === j.id).sort((a, b) => b.accepted_at.localeCompare(a.accepted_at))[0];
+          const a = j.asset_id ? assets.get(j.asset_id) : undefined;
+          return {
+            day: dayOf(j.posted_at),
+            assetId: j.asset_id,
+            status: "posted",
+            amount: e && e.status !== "cancelled" ? e.poster_fee_cents : 0,
+            cells: [
+              "Posted",
+              dmyt(j.posted_at),
+              `Job ${j.number}`,
+              j.title,
+              PROVIDER_CATEGORIES[j.category as keyof typeof PROVIDER_CATEGORIES] ?? j.category,
+              j.urgency === "urgent" ? "Urgent" : "Standard",
+              a?.number ?? null,
+              j.suburb,
+              JOB_STATUS[j.status]?.label ?? j.status,
+              ps.length,
+              first ? Math.round((first - Date.parse(j.posted_at)) / 60000) : null,
+              e ? (names.get(e.provider_id) ?? "Provider") : null,
+              null,
+              e ? `Engagement ${e.number}: ${ENGAGEMENT_STATUS[e.status]?.label ?? e.status}` : null,
+              e && e.status !== "cancelled" ? money(e.poster_fee_cents) : null,
+              e ? (e.fee_status === "not_live" ? "Recorded, not charged" : e.fee_status.replaceAll("_", " ")) : null,
+            ],
+          };
+        }),
+        ...quoted.map((p) => {
+          const j = jobOf.get(p.job_id);
+          return {
+            day: dayOf(p.submitted_at),
+            assetId: null,
+            status: "quoted",
+            amount: 0,
+            cells: [
+              "Quoted",
+              dmyt(p.submitted_at),
+              j ? `Job ${j.number}` : null,
+              j?.title ?? null,
+              j ? (PROVIDER_CATEGORIES[j.category] ?? j.category) : null,
+              j ? (j.urgency === "urgent" ? "Urgent" : "Standard") : null,
+              null,
+              j?.suburb ?? null,
+              j ? (JOB_STATUS[j.status]?.label ?? j.status) : null,
+              null,
+              null,
+              null,
+              p.current ? priceText(p.current) : null,
+              `Proposal: ${PROPOSAL_STATUS[p.status]?.label ?? p.status}${p.version > 1 ? ` (v${p.version})` : ""}`,
+              p.current ? money(p.current.fee_cents) : null,
+              p.status === "accepted" ? "Recorded, not charged" : null,
+            ],
+          };
+        }),
+      ].sort((x, y) => (y.day ?? "").localeCompare(x.day ?? ""));
       break;
     }
     default:

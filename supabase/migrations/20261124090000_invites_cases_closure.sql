@@ -145,3 +145,21 @@ begin
 end $$;
 revoke execute on function public.reopen_organisation(uuid, text) from public, anon;
 grant execute on function public.reopen_organisation(uuid, text) to authenticated, service_role;
+
+-- The full export is logged by whoever may take it (data.full_export: Owner, Account Owner, Provider Owner),
+-- not only report readers, so every account type can export before closing.
+create or replace function public.log_report_export(p_organisation_id uuid, p_report text, p_rows integer, p_filters jsonb default '{}'::jsonb)
+returns void
+language plpgsql security definer set search_path = '' as $fn$
+begin
+  if p_report = 'full-export' then
+    perform app.require_capability(p_organisation_id, 'data.full_export');
+  else
+    perform app.require_capability(p_organisation_id, 'reports.export');
+  end if;
+  if p_report is null or p_report !~ '^[a-z0-9_-]{2,60}$' then
+    perform app.raise('invalid_report', 'Unknown report');
+  end if;
+  perform app.audit('export', 'report', null, p_organisation_id, '{}'::jsonb,
+    jsonb_build_object('report', p_report, 'rows', coalesce(p_rows, 0), 'filters', coalesce(p_filters, '{}'::jsonb)));
+end $fn$;

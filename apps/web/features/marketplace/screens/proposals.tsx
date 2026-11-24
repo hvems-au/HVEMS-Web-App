@@ -8,7 +8,7 @@ import { FilterBar } from "@/components/filter-bar";
 import { PageHeader } from "@/components/shell/page";
 import { Badge, Card, EmptyState, STRETCHED_LINK, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
 import { MarketplaceTabs } from "@/features/marketplace/marketplace-tabs";
-import { PROPOSAL_STATUS, availabilityText, priceText, proposalStatusNow } from "@/features/marketplace/labels";
+import { JOB_STATUS, PROPOSAL_STATUS, availabilityText, priceText, proposalStatusNow } from "@/features/marketplace/labels";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
@@ -29,10 +29,10 @@ export async function ProposalsScreen({
   const [proposals, jobs] = await Promise.all([listMyProposals(db, orgId), browseMarketplaceJobs(db, orgId, { mine: true }).catch(() => [])]);
   const jobOf = new Map(jobs.map((j) => [j.id, j]));
   const statusOf = (p: (typeof proposals)[number]) => proposalStatusNow(p);
-  const f = { q: (firstParam(sp.q) ?? "").trim().toLowerCase().slice(0, 60), status: firstParam(sp.status) ?? "" };
+  const f = { q: (firstParam(sp.q) ?? "").trim().toLowerCase().slice(0, 60), status: firstParam(sp.status) ?? "", job: firstParam(sp.job) ?? "" };
   const rows = proposals.filter((p) => {
     const j = jobOf.get(p.job_id);
-    return (!f.q || [j?.title, j?.suburb, j ? `job ${j.number}` : ""].some((x) => (x ?? "").toLowerCase().includes(f.q))) && (!f.status || statusOf(p) === f.status);
+    return (!f.q || [j?.title, j?.suburb, j ? `job ${j.number}` : ""].some((x) => (x ?? "").toLowerCase().includes(f.q))) && (!f.status || statusOf(p) === f.status) && (!f.job || j?.status === f.job);
   });
   const base = portal === "provider" ? `/provider/${orgId}` : `/customer/${orgId}`;
   const counts = { active: proposals.filter((p) => statusOf(p) === "active").length, accepted: proposals.filter((p) => p.status === "accepted").length };
@@ -56,7 +56,8 @@ export async function ProposalsScreen({
           action={`${base}/proposals`}
           search={{ value: f.q, placeholder: "Job, suburb or job number" }}
           fields={[
-            { kind: "select", name: "status", label: "Status", all: "Any status", value: f.status, options: Object.entries(PROPOSAL_STATUS).map(([value, s]) => ({ value, label: s.label })) },
+            { kind: "select", name: "status", label: "Proposal", all: "Any status", value: f.status, options: Object.entries(PROPOSAL_STATUS).map(([value, s]) => ({ value, label: s.label })) },
+            { kind: "select", name: "job", label: "Job", all: "Any job status", value: f.job, options: Object.entries(JOB_STATUS).map(([value, s]) => ({ value, label: s.label })) },
           ]}
         />
         {rows.length === 0 ? (
