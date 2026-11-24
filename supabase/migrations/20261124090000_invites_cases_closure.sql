@@ -90,15 +90,15 @@ begin
   perform app.require_capability(p_organisation_id, 'org.close');
   if not exists (select 1 from public.audit_events e where e.organisation_id = p_organisation_id and e.action = 'export'
                  and e.context ->> 'report' = 'full-export' and e.occurred_at > now() - interval '7 days') then
-    v := v || 'Download a full export first (Reports → Full export); it must be from the last 7 days.';
+    v := array_append(v, 'Download a full export first (Reports → Full export); it must be from the last 7 days.');
   end if;
   if exists (select 1 from public.marketplace_engagements e where (e.organisation_id = p_organisation_id or e.provider_id = p_organisation_id)
              and app.engagement_live(e.status)) then
-    v := v || 'Finish or cancel the marketplace engagements in progress.';
+    v := array_append(v, 'Finish or cancel the marketplace engagements in progress.');
   end if;
   if exists (select 1 from public.marketplace_cases c join public.marketplace_engagements e on e.id = c.engagement_id
              where (e.organisation_id = p_organisation_id or e.provider_id = p_organisation_id) and c.status in ('awaiting_response', 'under_review')) then
-    v := v || 'Wait for open marketplace cases to be decided.';
+    v := array_append(v, 'Wait for open marketplace cases to be decided.');
   end if;
   return v;
 end $$;
