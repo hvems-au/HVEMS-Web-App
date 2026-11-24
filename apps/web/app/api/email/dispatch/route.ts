@@ -48,7 +48,7 @@ const settingText = (rows: { key: string; value: unknown }[] | null, key: string
 
 export async function POST(req: NextRequest) {
   if (!authorised(req)) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
-  // Without the MailerSend key, leave everything queued rather than burning retries.
+  // Without SMTP (or an API key) configured, leave everything queued rather than burning retries.
   if (!emailConfigured()) return NextResponse.json({ error: "email provider not configured" }, { status: 503 });
 
   const db = createSupabaseAdminClient();
