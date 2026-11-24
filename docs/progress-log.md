@@ -1,5 +1,23 @@
 # Development progress log
 
+## 2026-11-24 — Company as provider, account closure, report 13, case notes, end-to-end tests
+**Done**
+- Migrations (in the repo; apply in order in the SQL editor): `20261122120000 admin_marketplace_access`, `20261122150000 company_as_provider`, `20261123090000 proposal_gst_inclusive` (applied), `20261124090000 invites_cases_closure` (**to apply**). pgTAP `410`, `420`, `430`.
+- **Company Admins** post marketplace jobs and accept proposals like the Owner (O-12).
+- **A company works the marketplace from both sides** (O-13): a Marketplace menu group in the company portal (Our Jobs, Find Work, Our Proposals, Engagements, Provider Profile). A company keeps its own provider profile, is verified, quotes on other organisations' jobs and runs those engagements. It never sees its own jobs under Find Work.
+- **Proposals** have their own page with search, status and job-status filters; the price can be entered GST inclusive or exclusive.
+- **Invitations** reach any organisation with a provider profile (companies included), never the poster.
+- **Cases**: HVEMS staff assign an owner and add internal notes, which the parties never see.
+- **Closing an account** (Settings, `org.close`): allowed only after a full export in the last 7 days, with no live engagements and no open cases; the organisation name must be typed to confirm. Its open jobs and active proposals are withdrawn. The console's Platform Administrator can reopen with a reason. Both are audited.
+- **Report 13 (marketplace)**: jobs posted (proposals, time to first proposal, engaged provider, fee recorded) and proposals sent. Provider engagement lists now show job titles.
+- **End-to-end tests** (Playwright, `apps/web/e2e`): sign-in for five roles, menus by role, a Technician refused on Costs, 29 pages open without errors, axe WCAG 2.2 AA (no critical issues) on seven key pages, phone width, marketplace privacy. 49 pass against the dev project; read-only. See `docs/testing/test-report.md`.
+- **pgTAP 430**: completing and closing a work order raised for a Critical defect leaves the defect open and the equipment out of service (brief critical test 6).
+
+**Not yet**
+- Reports 14 and 15 (connection fees, subscription billing), fee collection, waivers, refunds, subscriptions: Stripe.
+- Email notifications (CS-40), large emailed exports (RPT-05), distance matching, malware scanning.
+- Write journeys in E2E (post, propose, accept) stay manual in the tester handover; they change shared dev data.
+
 ## 2026-11-22 — Console settings and dashboard, company dashboard, export files, conversion to a company
 **Done**
 - Migration `20261122090000 console_settings_dashboard_conversion` (in the repo; apply in the SQL editor). pgTAP `400`.
