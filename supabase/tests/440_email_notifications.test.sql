@@ -73,7 +73,7 @@ select public.complete_email(:'e4', false, 'Still failing', null);
 reset role;
 select is((select status from public.email_outbox where id = :'e4'), 'failed', 'after five attempts it stops as failed');
 select is((select notification_group from claimed where notification_id = :'n4'), 'safety', 'the claim says which group the email belongs to');
-select id as e1b from public.email_outbox where notification_id = :'n1' gset
+select id as e1b from public.email_outbox where notification_id = :'n1' \gset
 update public.email_outbox set status = 'sending', sent_at = null where id = :'e1b';
 select pg_temp.as_service();
 select public.complete_email(:'e1b', false, 'Invalid recipient', null, true);
