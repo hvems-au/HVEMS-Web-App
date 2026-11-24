@@ -242,6 +242,14 @@ function UserMenu({ user }: { user: AppShellProps["user"] }) {
                 <ShieldCheck className="size-4 text-ink-muted" /> Account security
               </Link>
             </DropdownMenu.Item>
+            <DropdownMenu.Item asChild>
+              <Link
+                href="/account/notifications"
+                className="flex items-center gap-2 rounded-md px-2 py-2 text-[13px] text-ink outline-none data-[highlighted]:bg-surface-muted"
+              >
+                <Bell className="size-4 text-ink-muted" /> Email preferences
+              </Link>
+            </DropdownMenu.Item>
             <DropdownMenu.Separator className="my-1 h-px bg-stroke" />
             <DropdownMenu.Label className="px-2 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-ink-subtle uppercase">Appearance</DropdownMenu.Label>
             <DropdownMenu.RadioGroup value={choice} onValueChange={(v) => setChoice(v as ThemeChoice)}>

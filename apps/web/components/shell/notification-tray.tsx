@@ -6,6 +6,7 @@ import { Popover as P } from "radix-ui";
 import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge, PackageCheck, FileClock, BadgeCheck, Store, MessageSquare, FileText } from "lucide-react";
 import type { AppNotification } from "@hvems/types";
 import { loadTrayAction, markTrayReadAction } from "@/features/alerts/tray-actions";
+import { notificationPath } from "@/lib/notification-links";
 import { cn } from "@/lib/utils";
 
 const KIND: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -70,16 +71,7 @@ export function NotificationTray({ orgId, href, unread, base }: { orgId: string;
     });
   }, [orgId]);
 
-  const targetOf = (n: AppNotification) =>
-    n.link_path
-      ? `${portalBase}/${n.link_path}`
-      : n.kind === "parts_approval"
-      ? `/customer/${orgId}/parts?view=approval`
-      : n.kind === "parts_decision"
-        ? `/customer/${orgId}/parts`
-        : n.kind === "meter_reading_review"
-      ? `/customer/${orgId}/equipment/readings`
-      : n.inspection_id ? `/customer/${orgId}/inspections/${n.inspection_id}` : n.asset_id ? `/customer/${orgId}/equipment/${n.asset_id}` : href;
+  const targetOf = (n: AppNotification) => notificationPath(n, portalBase, href);
 
   const markAll = () => {
     setItems((xs) => (xs ?? []).map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
