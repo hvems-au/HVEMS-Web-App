@@ -26,10 +26,10 @@ select tests.authenticate_as(:'owner2', 'aal2');
 select public.create_organisation('company', 'Intro Co') as org2 \gset
 reset role;
 select tests.authenticate_as(:'prov', 'aal2');
-select public.create_organisation('provider', 'Pat Diesel') as porg \gset
+select public.create_organisation('provider', 'Pat Diesel', '51 824 753 556') as porg \gset
 reset role;
 select tests.authenticate_as(:'prov2', 'aal2');
-select public.create_organisation('provider', 'Founding Fixers') as porg2 \gset
+select public.create_organisation('provider', 'Founding Fixers', '53 004 085 616') as porg2 \gset
 reset role;
 select tests.add_member(:'org', :'fm', 'fleet_manager');
 
