@@ -56,7 +56,7 @@ select tests.authenticate_as(:'cfm');
 select is(tests.error_code(format($$select public.close_organisation(%L, 'Clontarf Civil', 'Sold the business')$$, :'co')), 'forbidden', 'a Fleet Manager can''t close the company');
 reset role;
 select tests.authenticate_as(:'cowner');
-select ok(array_length(public.closure_blockers(:'co'), 1) = 2, 'closing is blocked without an export and with an engagement in progress');
+select ok(array_length(public.closure_blockers(:'co'), 1) = 3, 'closing is blocked without an export, with an engagement in progress and an open case');
 select is(tests.error_code(format($$select public.close_organisation(%L, 'Wrong name', 'Sold the business')$$, :'co')), 'confirm_name', 'the name must be typed exactly');
 select is(tests.error_code(format($$select public.close_organisation(%L, 'Clontarf Civil', 'Sold the business')$$, :'co')), 'closure_blocked', 'and the blockers stop it');
 reset role;
