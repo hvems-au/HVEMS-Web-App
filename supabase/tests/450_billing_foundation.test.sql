@@ -14,6 +14,10 @@ select public.create_organisation('company', 'Other Co') as org2 \gset
 reset role;
 select tests.add_member(:'org', :'fm', 'fleet_manager');
 
+-- The server role uses the test helpers here (only inside this rolled-back test).
+grant usage on schema tests to service_role;
+grant execute on all functions in schema tests to service_role;
+
 create function pg_temp.as_service() returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
