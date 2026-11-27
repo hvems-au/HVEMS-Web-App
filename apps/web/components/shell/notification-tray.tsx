@@ -3,50 +3,17 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Popover as P } from "radix-ui";
-import { Bell, BellRing, CheckCheck, ClipboardX, FileWarning, Hand, IdCard, LifeBuoy, Loader2, OctagonAlert, TriangleAlert, UserX, Wrench, type LucideIcon, Gauge, PackageCheck, FileClock, BadgeCheck, Store, MessageSquare, FileText } from "lucide-react";
+import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import type { AppNotification } from "@hvems/types";
 import { loadTrayAction, markTrayReadAction } from "@/features/alerts/tray-actions";
 import { notificationPath } from "@/lib/notification-links";
+import { TONE_CLASS, notificationKind, timeAgo } from "@/lib/notification-kinds";
 import { cn } from "@/lib/utils";
 
-const KIND: Record<string, { icon: LucideIcon; tone: string }> = {
-  critical_defect: { icon: OctagonAlert, tone: "text-danger" },
-  minor_defect: { icon: TriangleAlert, tone: "text-warn-ink" },
-  operator_not_fit: { icon: UserX, tone: "text-danger" },
-  out_of_service_hold: { icon: Hand, tone: "text-danger" },
-  needs_attention_hold: { icon: Hand, tone: "text-warn-ink" },
-  breakdown: { icon: Wrench, tone: "text-danger" },
-  regulator_notice: { icon: FileWarning, tone: "text-warn-ink" },
-  alert_escalated: { icon: BellRing, tone: "text-danger" },
-  credential_expiring: { icon: IdCard, tone: "text-warn-ink" },
-  credential_expired: { icon: IdCard, tone: "text-danger" },
-  support_access_started: { icon: LifeBuoy, tone: "text-info-ink" },
-  prestart_missed: { icon: ClipboardX, tone: "text-warn-ink" },
-  meter_reading_review: { icon: Gauge, tone: "text-warn-ink" },
-  parts_approval: { icon: PackageCheck, tone: "text-warn-ink" },
-  parts_decision: { icon: PackageCheck, tone: "text-info-ink" },
-  document_expiring: { icon: FileClock, tone: "text-warn-ink" },
-  provider_verification: { icon: BadgeCheck, tone: "text-info-ink" },
-  provider_document_expiring: { icon: FileClock, tone: "text-warn-ink" },
-  marketplace_job: { icon: Store, tone: "text-brand-ink" },
-  marketplace_message: { icon: MessageSquare, tone: "text-info-ink" },
-  marketplace_proposal: { icon: FileText, tone: "text-ok-ink" },
-};
-
-function ago(iso: string): string {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const h = Math.round(mins / 60);
-  if (h < 24) return `${h} h ago`;
-  const d = Math.round(h / 24);
-  return d === 1 ? "yesterday" : `${d} days ago`;
-}
-
 /**
- * Bell with a tray of the latest alerts. Opening it loads them fresh; clicking
+ * Bell with a tray of the latest notifications. Opening it loads them fresh; clicking
  * one marks it read and opens what it's about; "Mark all read" and "See all
- * alerts" (the full Alerts page) sit at the top and bottom.
+ * notifications" (the full Notifications page) sit at the top and bottom.
  */
 export function NotificationTray({ orgId, href, unread, base }: { orgId: string; href: string; unread: number; base?: string }) {
   const portalBase = base ?? `/customer/${orgId}`;
@@ -91,7 +58,7 @@ export function NotificationTray({ orgId, href, unread, base }: { orgId: string;
         <button
           type="button"
           className={cn("relative rounded-full p-2 text-ink hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none", open && "bg-surface-muted")}
-          aria-label={count ? `Alerts: ${count} unread` : "Alerts"}
+          aria-label={count ? `Notifications: ${count} unread` : "Notifications"}
         >
           <Bell className="size-[22px]" />
           {count ? (
@@ -110,7 +77,7 @@ export function NotificationTray({ orgId, href, unread, base }: { orgId: string;
         >
           <div className="flex items-center justify-between gap-3 border-b border-stroke px-4 py-3">
             <p className="text-[15px] font-semibold text-ink">
-              Alerts{count ? <span className="ml-1.5 rounded-full bg-danger-soft px-2 py-0.5 text-[12px] font-bold text-danger-ink">{count} new</span> : null}
+              Notifications{count ? <span className="ml-1.5 rounded-full bg-danger-soft px-2 py-0.5 text-[12px] font-bold text-danger-ink">{count} new</span> : null}
             </p>
             {count ? (
               <button type="button" onClick={markAll} className="inline-flex items-center gap-1 text-[13px] font-medium text-link hover:underline">
@@ -129,12 +96,12 @@ export function NotificationTray({ orgId, href, unread, base }: { orgId: string;
               <div className="px-4 py-10 text-center">
                 <Bell className="mx-auto size-8 text-ink-subtle" aria-hidden />
                 <p className="mt-2 text-[14px] font-medium text-ink">You&apos;re all caught up</p>
-                <p className="text-[13px] text-ink-muted">Faults, holds, breakdowns and notices show up here.</p>
+                <p className="text-[13px] text-ink-muted">Safety alerts, reminders, marketplace and account updates show up here.</p>
               </div>
             ) : (
               <ul className="divide-y divide-stroke">
                 {items.map((n) => {
-                  const k = KIND[n.kind] ?? { icon: Bell, tone: "text-ink-muted" };
+                  const k = notificationKind(n.kind);
                   return (
                     <li key={n.id}>
                       <P.Close asChild>
@@ -148,13 +115,13 @@ export function NotificationTray({ orgId, href, unread, base }: { orgId: string;
                           }}
                           className={cn("flex gap-3 px-4 py-3 hover:bg-surface-hover", !n.read_at && "bg-brand-soft/60")}
                         >
-                          <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-surface-muted", k.tone)} aria-hidden>
+                          <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full", TONE_CLASS[k.tone])} aria-hidden>
                             <k.icon className="size-4" />
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className={cn("block text-[13.5px] leading-snug text-ink", !n.read_at && "font-semibold")}>{n.title}</span>
                             {n.body ? <span className="mt-0.5 line-clamp-2 block text-[12.5px] text-ink-muted">{n.body}</span> : null}
-                            <span className="mt-0.5 block text-[12px] text-ink-subtle">{ago(n.created_at)}</span>
+                            <span className="mt-0.5 block text-[12px] text-ink-subtle">{k.label} · {timeAgo(n.created_at)}</span>
                           </span>
                           {!n.read_at ? <span className="mt-2 size-2 shrink-0 rounded-full bg-brand" aria-label="Unread" /> : null}
                         </Link>
@@ -167,7 +134,7 @@ export function NotificationTray({ orgId, href, unread, base }: { orgId: string;
           </div>
           <P.Close asChild>
             <Link href={href} className="block border-t border-stroke px-4 py-2.5 text-center text-[13.5px] font-semibold text-link hover:bg-surface-hover">
-              See all alerts
+              See all notifications
             </Link>
           </P.Close>
         </P.Content>

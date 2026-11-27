@@ -4,17 +4,17 @@ import { listMyNotifications, markNotificationsRead } from "@hvems/api-client";
 import type { AppNotification } from "@hvems/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-/** The latest alerts for the bell tray (RLS: only the signed-in person's own). */
+/** The latest notifications for the bell tray (RLS: only the signed-in person's own). */
 export async function loadTrayAction(orgId: string): Promise<{ items: AppNotification[]; error?: string }> {
   try {
     const db = await createSupabaseServerClient();
     return { items: await listMyNotifications(db, orgId, 12) };
   } catch {
-    return { items: [], error: "Couldn't load alerts. Try again." };
+    return { items: [], error: "Couldn't load notifications. Try again." };
   }
 }
 
-/** Mark some (or all) of the person's alerts as read. */
+/** Mark some (or all) of the person's notifications as read. */
 export async function markTrayReadAction(orgId: string, ids?: string[]): Promise<{ ok: boolean }> {
   try {
     const db = await createSupabaseServerClient();

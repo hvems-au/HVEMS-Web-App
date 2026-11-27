@@ -86,7 +86,7 @@ export async function BrowseJobsScreen({
         />
         {shown.length === 0 ? (
           <EmptyState title={tab === "saved" ? "No saved jobs" : "No jobs match"}>
-            {tab === "all" ? "New jobs in your services and regions also arrive in your alerts." : null}
+            {tab === "all" ? "New jobs in your services and regions also arrive in your notifications." : null}
           </EmptyState>
         ) : (
           <ul className="divide-y divide-stroke">

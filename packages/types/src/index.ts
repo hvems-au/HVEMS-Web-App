@@ -440,7 +440,13 @@ export type NotificationKind =
   | "provider_document_expiring"
   | "marketplace_job"
   | "marketplace_message"
-  | "marketplace_proposal";
+  | "marketplace_proposal"
+  | "marketplace_engagement"
+  | "marketplace_case"
+  | "billing_invoice"
+  | "billing_payment_failed"
+  | "billing_restricted"
+  | "billing_restored";
 
 export interface CriticalAlert {
   id: UUID;

@@ -30,7 +30,7 @@ export default async function CustomerLayout({ children, params }: { children: R
       user={{ fullName: ctx.user.fullName, email: ctx.user.email }}
       current={{ ...currentShellContext(ctx, portal), logoUrl }}
       contexts={ctx.contexts.map((c) => toShellContext(c, portal))}
-      alerts={{ href: isCompany ? `/customer/${orgId}/alerts` : `/customer/${orgId}/marketplace`, unread, orgId }}
+      alerts={{ href: `/customer/${orgId}/notifications`, unread, orgId }}
       banner={
         ctx.context.status === "suspended" ? (
           <div role="alert" className="border-b border-danger/30 bg-danger-soft px-6 py-2.5 text-[13.5px] text-danger-ink">

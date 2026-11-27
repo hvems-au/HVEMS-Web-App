@@ -62,7 +62,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
           { label: "Dashboard", href: `${base}/dashboard`, icon: "dashboard" },
           { label: "My Jobs", href: `${base}/marketplace`, icon: "jobs", anyCapability: ["marketplace.post", "marketplace.accept"] },
           { label: "Engagements", href: `${base}/engagements`, icon: "engagements", anyCapability: ["marketplace.post", "marketplace.accept"] },
-          { label: "Notifications", href: `${base}/module/notifications`, icon: "notifications", increment: "2D" },
+          { label: "Notifications", href: `${base}/notifications`, icon: "notifications" },
         ],
       },
       {
@@ -96,7 +96,7 @@ export function customerNav(orgId: string, kind: OrganisationKind): NavSection[]
       items: [
         { label: "Inspections", href: `${base}/inspections`, icon: "inspections", forTechnicians: true },
         { label: "Defects & Safety", href: `${base}/defects`, icon: "defects" },
-        { label: "Alerts", href: `${base}/alerts`, icon: "alerts" },
+        { label: "Notifications", href: `${base}/notifications`, icon: "notifications" },
       ],
     },
     {
@@ -191,7 +191,6 @@ export function adminNav(): NavSection[] {
 export const MODULE_INFO: Record<string, { title: string; increment: "2B" | "2C" | "2D"; scope: string; sow: string }> = {
   inspections: { title: "Inspections", increment: "2B", scope: "Pre-start, inspection and condition forms; versioned templates; frequency, missed inspections and review.", sow: "CS-11, CS-12" },
   defects: { title: "Defects & Safety", increment: "2B", scope: "Defect reports and triage, holds, deferral, two-step clearance and return to service, breakdowns and regulator notices.", sow: "CS-13 – CS-16" },
-  alerts: { title: "Alerts", increment: "2B", scope: "Critical alerts with acknowledgement and escalation at 30 minutes and 2 hours.", sow: "CS-16, CS-40" },
   drivers: { title: "Operators", increment: "2B", scope: "Operator profiles with Operator ID and 6-digit PIN, permitted assets and sites, equipment codes and QR labels.", sow: "CS-10" },
   maintenance: { title: "Maintenance", increment: "2C", scope: "Service plans by date, kilometres or hours, due-soon thresholds and history.", sow: "CS-17" },
   "work-orders": { title: "Work Orders", increment: "2C", scope: "Work orders done internally, by an outside vendor, or through the marketplace; review, closure and reopening.", sow: "CS-18" },

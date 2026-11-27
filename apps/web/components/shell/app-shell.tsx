@@ -29,7 +29,7 @@ export interface AppShellProps {
   current: ShellContext;
   contexts: ShellContext[];
   banner?: React.ReactNode;
-  /** Where the bell goes and how many alerts are unread (company portal). */
+  /** Where the bell goes and how many notifications are unread (company portal). */
   alerts?: { href: string; unread: number; orgId?: string; base?: string };
   children: React.ReactNode;
 }
@@ -345,7 +345,7 @@ export function AppShell({ nav, user, current, contexts, banner, alerts, childre
             <Link
               href={alerts?.href ?? current.href.replace(/\/dashboard$/, "") + "/module/notifications"}
               className="relative rounded-full p-2 text-ink hover:bg-surface-muted"
-              aria-label={alerts?.unread ? `Alerts: ${alerts.unread} unread` : "Alerts"}
+              aria-label={alerts?.unread ? `Notifications: ${alerts.unread} unread` : "Notifications"}
             >
               <Bell className="size-[22px]" />
               {alerts?.unread ? (

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { COMPANY_URL, PROVIDER_URL, asAccount, basePath, open } from "./helpers";
 
 const COMPANY_PAGES = [
-  "dashboard", "equipment", "inspections", "defects", "alerts", "maintenance", "work-orders", "technicians",
+  "dashboard", "equipment", "inspections", "defects", "notifications", "maintenance", "work-orders", "technicians",
   "parts", "fuel", "costs", "documents", "reports", "reports/asset-register", "reports/marketplace",
   "reports/compliance", "marketplace", "jobs", "proposals", "engagements", "verification", "team", "settings",
 ];
