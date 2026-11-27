@@ -35,6 +35,17 @@ describe("notification emails", () => {
     expect(e.text).toContain("always emailed");
   });
 
+  it("shows the logo when given, and the word HVEMS otherwise", () => {
+
+    const logo = "https://portal.hvems.com.au/brand/hvems-logo-email.png";
+
+    expect(renderNotificationEmail({ ...base, logoUrl: logo }).html).toContain(`<img src="${logo}"`);
+
+    expect(renderNotificationEmail(base).html).not.toContain("<img");
+
+  });
+
+
   it("escapes HTML from titles and bodies", () => {
     const e = renderNotificationEmail({ ...base, title: "<script>x</script>", body: 'a "b" & c' });
     expect(e.html).not.toContain("<script>x</script>");

@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       url,
       preferencesUrl: optional ? `${origin}/account/notifications` : null,
       sentAt: new Date(m.created_at),
+      logoUrl: `${origin}/brand/hvems-logo-email.png`,
     });
     const res = await sendEmail({ email: m.to_email, name: m.to_name }, from, content);
     if (res.ok) sent++;

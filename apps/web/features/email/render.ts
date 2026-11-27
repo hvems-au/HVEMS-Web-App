@@ -20,6 +20,8 @@ export interface NotificationEmailInput {
   /** Absolute link to the person's email preferences (not shown for safety or account emails). */
   preferencesUrl: string | null;
   sentAt: Date;
+  /** Absolute link to the PNG logo for dark backgrounds (email clients do not show SVG). Falls back to the word HVEMS. */
+  logoUrl?: string | null;
 }
 
 const escapeHtml = (s: string) =>
@@ -74,7 +76,7 @@ export function renderNotificationEmail(input: NotificationEmailInput): EmailCon
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 12px;">
 <tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;">
-<tr><td style="background:#444444;padding:16px 24px;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.5px;">HVEMS</td></tr>
+<tr><td style="background:#444444;padding:14px 24px;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.5px;">${input.logoUrl ? `<img src="${e(input.logoUrl)}" width="160" height="47" alt="HVEMS" style="display:block;border:0;outline:none;width:160px;height:auto;color:#ffffff;font-size:18px;font-weight:700;">` : "HVEMS"}</td></tr>
 ${urgent ? `<tr><td style="background:#b42318;color:#ffffff;padding:10px 24px;font-size:14px;font-weight:700;">Safety alert</td></tr>` : ""}
 <tr><td style="padding:24px;">
 <p style="margin:0 0 4px;font-size:13px;color:#6b6b6b;">Hi ${e(input.recipientName)},</p>
