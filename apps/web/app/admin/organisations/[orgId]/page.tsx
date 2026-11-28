@@ -36,6 +36,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn, firstParam } from "@/lib/utils";
 import { ReopenOrganisationButton } from "@/features/org/close-card";
+import { OrgBillingPanel } from "@/features/billing/admin-billing";
 import {
   AdminSignInLock,
   OrganisationDetailsForm,
@@ -65,6 +66,7 @@ const TABS = [
   { id: "team", label: "Team" },
   { id: "equipment", label: "Equipment" },
   { id: "clients", label: "Clients & Sites" },
+  { id: "billing", label: "Billing" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -110,7 +112,7 @@ export default async function AdminOrganisationPage({
   const base = `/admin/organisations/${orgId}`;
 
   // Transparency for the customer: record each time HVEMS opens its team or fleet records.
-  if (tab !== "details" && user) {
+  if (tab !== "details" && tab !== "billing" && user) {
     await createSupabaseAdminClient()
       .from("security_events")
       .insert({
@@ -194,6 +196,7 @@ export default async function AdminOrganisationPage({
       {tab === "clients" ? (
         <ClientsTab orgId={orgId} superAdmin={canSee} />
       ) : null}
+      {tab === "billing" ? <OrgBillingPanel orgId={orgId} orgKind={org.kind} /> : null}
     </>
   );
 }

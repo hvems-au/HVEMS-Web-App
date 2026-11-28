@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, stripeServerAvailability } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { processAdjustments } from "@/features/billing/adjustments";
 import { cleanUpFeeAttempts } from "@/features/billing/connection-fees";
 
 /**
@@ -105,5 +106,7 @@ export async function POST(req: NextRequest) {
   }
   // Connection fees: release holds and refund fees on attempts that didn't complete.
   const fees = await cleanUpFeeAttempts(db, stripe).catch((e: Error) => ({ error: e.message }));
-  return NextResponse.json({ ...results, fees });
+  // Refunds and credits approved in the console that haven't gone through yet.
+  const adjustments = await processAdjustments(undefined, { db, stripe }).catch((e: Error) => ({ error: e.message }));
+  return NextResponse.json({ ...results, fees, adjustments });
 }

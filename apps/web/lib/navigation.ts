@@ -181,7 +181,7 @@ export function adminNav(): NavSection[] {
       items: [
         { label: "Verification", href: "/admin/verification", icon: "verification" },
         { label: "Cases", href: "/admin/cases", icon: "cases" },
-        { label: "Billing", href: "/admin/module/billing", icon: "billing", increment: "2D" },
+        { label: "Billing", href: "/admin/billing", icon: "billing" },
         { label: "Moderation", href: "/admin/moderation", icon: "marketplace" },
       ],
     },
