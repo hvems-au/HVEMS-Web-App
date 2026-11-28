@@ -155,7 +155,7 @@ update public.assets set created_at = now() - interval '20 days' where id = :'as
 select tests.authenticate_as(:'cowner');
 select is((select available || '/' || allowance from public.company_waiver_balance(:'co')), '1/1', 'after 14 days it earns a waiver');
 select public.post_marketplace_job(:'co', jsonb_build_object('title', 'Bucket teeth', 'description', 'Replace worn teeth.',
-  'category', 'diesel_mechanical', 'job_type', 'planned_service', 'region_code', 'moreton_bay', 'suburb', 'Caboolture', 'address', '3 Quarry Road')) as job2 \gset
+  'category', 'diesel_mechanical', 'job_type', 'planned_service', 'region_code', 'moreton_bay', 'suburb', 'Caboolture', 'address', '3 Quarry Road', 'asset_id', :'asset')) as job2 \gset
 reset role;
 select tests.authenticate_as(:'p1owner');
 select public.submit_marketplace_proposal(:'p1', :'job2', '{"price_basis": "fixed", "amount_cents": 40000, "gst_applies": true, "available_from": "2026-12-03", "fee_consent": true}') as prop3 \gset
