@@ -19,6 +19,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ orgId:
   const ctx = await loadOrgContext(orgId, ["company"]);
   if (!can(ctx.capabilities, "reports.view")) notFound();
   const seesCosts = can(ctx.capabilities, "assets.costs.view");
+  const seesBilling = can(ctx.capabilities, "org.billing.view");
   const base = `/customer/${orgId}/reports`;
   const fullExport = can(ctx.capabilities, "data.full_export");
 
@@ -62,7 +63,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ orgId:
             <h2 className="border-b border-stroke px-5 py-3 text-[13px] font-semibold tracking-wide text-ink-muted uppercase">{g}</h2>
             <ul className="divide-y divide-stroke">
               {REPORTS.filter((r) => r.group === g).map((r) => {
-                const locked = !!r.unavailable || (r.costs && !seesCosts);
+                const locked = !!r.unavailable || (r.costs && !seesCosts) || (r.billing && !seesBilling);
                 return (
                   <li key={r.key}>
                     <Link
@@ -74,7 +75,13 @@ export default async function ReportsPage({ params }: { params: Promise<{ orgId:
                         <span className="block text-[14.5px] font-medium text-ink">{r.title}</span>
                         <span className="block text-[13px] text-ink-muted">{r.summary}</span>
                       </span>
-                      {r.unavailable ? <Badge tone="grey">2D</Badge> : r.costs && !seesCosts ? <Badge tone="grey">Cost access</Badge> : null}
+                      {r.unavailable ? (
+                        <Badge tone="grey">2D</Badge>
+                      ) : r.costs && !seesCosts ? (
+                        <Badge tone="grey">Cost access</Badge>
+                      ) : r.billing && !seesBilling ? (
+                        <Badge tone="grey">Billing access</Badge>
+                      ) : null}
                       <ChevronRight className="size-4 shrink-0 text-ink-subtle" aria-hidden />
                     </Link>
                   </li>

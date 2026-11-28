@@ -31,6 +31,8 @@ export type ReportDef = {
   filters: ReportFilter[];
   /** Cost reports need assets.costs.view as well as reports.view. */
   costs?: boolean;
+  /** Billing reports need org.billing.view as well as reports.view. */
+  billing?: boolean;
   /** Not built yet: says when it arrives (no made-up data). */
   unavailable?: string;
 };
@@ -170,7 +172,7 @@ export const REPORTS: ReportDef[] = [
     group: "Marketplace and billing",
     summary: "Jobs you posted with their proposals and engagement, and (for a company working as a provider) the jobs you quoted on.",
     definition:
-      "Posted rows: one per job you posted, with the number of proposals, time to the first proposal, the engaged provider and the engagement status. Quoted rows: one per proposal you submitted, with its price and outcome. Connection fees show as recorded; they are not charged until billing is live.",
+      "Posted rows: one per job you posted, with the number of proposals, time to the first proposal, the engaged provider and the engagement status. Quoted rows: one per proposal you submitted, with its price and outcome. Connection fees show as recorded and their status (collected, waived, refunded, or not charged while fees are off).",
     dateLabel: "Posted or quoted",
     filters: ["date", "status"],
   },
@@ -179,20 +181,24 @@ export const REPORTS: ReportDef[] = [
     number: 14,
     title: "Connection fees and waivers",
     group: "Marketplace and billing",
-    summary: "Connection fees charged on engagements and any waivers applied.",
-    definition: "One row per connection fee or waiver.",
+    summary: "Connection fees you paid on accepted jobs, waivers used, refunds, and your monthly waiver allowance.",
+    definition:
+      "Fee rows: one per engagement where you paid (or were due) a connection fee, as the customer or as the provider. Fee is the amount due; Waived shows a monthly waiver or a follow-up; Refunded is what HVEMS refunded; Net is what you paid after refunds. Waiver rows: one per month with the waivers issued, used and unused (unused waivers lapse at the end of the month). The total is the net paid.",
+    dateLabel: "Accepted (fees) or month (waivers)",
     filters: ["date", "status"],
-    unavailable: "Available with the Service Marketplace and billing (increment 2D).",
+    billing: true,
   },
   {
     key: "subscription-billing",
     number: 15,
     title: "Subscription billing",
     group: "Marketplace and billing",
-    summary: "Monthly fleet subscription charges by billing month.",
-    definition: "One row per billing month with billable equipment and the charge.",
-    filters: ["date"],
-    unavailable: "Available when Stripe billing is connected (increment 2D).",
+    summary: "Monthly fleet and provider subscription invoices, refunds and credits.",
+    definition:
+      "Invoice rows: one per monthly invoice (fleet subscription: highest number of current assets in the month, less the free allowance, at the per-asset price; provider subscription: a flat monthly price). Refunded is what HVEMS refunded of it; Net is the amount less refunds. Credit rows: credits HVEMS added, which come off the next invoice. The total is net invoices less credits.",
+    dateLabel: "Billing month",
+    filters: ["date", "status"],
+    billing: true,
   },
 ];
 

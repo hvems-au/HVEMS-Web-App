@@ -44,6 +44,14 @@ const WO_STATUS: Record<string, string> = { open: "Open", in_progress: "In progr
 const SERVICE_STATUS: Record<string, string> = { ok: "OK", due_soon: "Due soon", overdue: "Overdue" };
 const MISSED: Record<string, string> = { open: "Missed: not reviewed", not_used: "Not used", missed: "Missed" };
 const NOTICE_SEVERITY: Record<string, string> = { major: "Major", minor: "Minor", self_clearing: "Self-clearing" };
+const MONTH_LABEL = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric", timeZone: "UTC" });
+const FEE_STATUS: Record<string, string> = {
+  not_live: "Recorded, not charged",
+  collected: "Collected",
+  waived_follow_up: "Follow-up: no fee",
+  refunded: "Refunded",
+  pending_provider: "Pending fees",
+};
 const money = (cents: number | null | undefined) => (cents === null || cents === undefined ? null : Math.round(cents) / 100);
 const num = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
 
@@ -618,7 +626,7 @@ export async function buildReport(
               null,
               e ? `Engagement ${e.number}: ${ENGAGEMENT_STATUS[e.status]?.label ?? e.status}` : null,
               e && e.status !== "cancelled" ? money(e.poster_fee_cents) : null,
-              e ? (e.fee_status === "not_live" ? "Recorded, not charged" : e.fee_status.replaceAll("_", " ")) : null,
+              e ? (FEE_STATUS[e.fee_status] ?? e.fee_status) : null,
             ],
           };
         }),
@@ -645,10 +653,187 @@ export async function buildReport(
               p.current ? priceText(p.current) : null,
               `Proposal: ${PROPOSAL_STATUS[p.status]?.label ?? p.status}${p.version > 1 ? ` (v${p.version})` : ""}`,
               p.current ? money(p.current.fee_cents) : null,
-              p.status === "accepted" ? "Recorded, not charged" : null,
+              null,
             ],
           };
         }),
+      ].sort((x, y) => (y.day ?? "").localeCompare(x.day ?? ""));
+      break;
+    }
+    case "connection-fees": {
+      type F = {
+        engagement_id: string;
+        engagement_number: number;
+        side: "poster" | "provider";
+        job_number: number;
+        job_title: string;
+        urgency: string;
+        accepted_at: string;
+        fee_cents: number;
+        fee_status: string;
+        waiver_used: boolean;
+        refunded_cents: number;
+      };
+      type W = { month: string; status: string; engagement_id: string | null };
+      const [fees, waivers] = await Promise.all([
+        (db.rpc as unknown as (f: string, a: object) => Promise<{ data: F[] | null; error: unknown }>)("connection_fee_rows", { p_organisation_id: orgId }).then((r) => r.data ?? []),
+        reportRows<W>(db, "company_waivers", "month, status, engagement_id", orgId, { order: "month" }).catch(() => [] as W[]),
+      ]);
+      money$ = true;
+      columns = ["Type", "Date", "Side", "Engagement", "Job", "Title", "Urgency", "Fee (AUD)", "Waived", "Refunded (AUD)", "Net paid (AUD)", "Status"];
+      statuses = [
+        { value: "collected", label: "Charged" },
+        { value: "waived", label: "Waived" },
+        { value: "refunded", label: "Refunded" },
+        { value: "not_charged", label: "Not charged (fees off)" },
+        { value: "waivers", label: "Monthly waivers" },
+      ];
+      const feeRows = fees.map((x) => {
+        const due = x.fee_cents;
+        const waiver = x.waiver_used;
+        const followUp = x.fee_status === "waived_follow_up";
+        const back = x.refunded_cents;
+        const charged = x.fee_status === "collected" || x.fee_status === "refunded";
+        const net = charged ? Math.max(due - back, 0) : 0;
+        const status = waiver || followUp ? "waived" : x.fee_status === "not_live" ? "not_charged" : back > 0 ? "refunded" : "collected";
+        const label =
+          status === "waived"
+            ? waiver
+              ? "Waived: monthly waiver"
+              : "Waived: follow-up"
+            : status === "not_charged"
+              ? "Recorded, not charged"
+              : back >= due && due > 0
+                ? "Refunded"
+                : back > 0
+                  ? "Part refunded"
+                  : "Charged";
+        return {
+          day: dayOf(x.accepted_at),
+          assetId: null,
+          status,
+          amount: net,
+          cells: [
+            "Connection fee",
+            dmyt(x.accepted_at),
+            x.side === "poster" ? "Customer" : "Provider",
+            `Engagement ${x.engagement_number}`,
+            `Job ${x.job_number}`,
+            x.job_title,
+            x.urgency === "urgent" ? "Urgent" : "Standard",
+            money(waiver ? 0 : due),
+            waiver ? "Monthly waiver" : followUp ? "Follow-up" : null,
+            back ? money(back) : null,
+            money(net),
+            label,
+          ] as Cell[],
+        };
+      });
+      const months = new Map<string, { issued: number; used: number }>();
+      for (const w of waivers) {
+        const m = months.get(w.month) ?? { issued: 0, used: 0 };
+        m.issued++;
+        if (w.status === "used") m.used++;
+        months.set(w.month, m);
+      }
+      const thisMonth = today.slice(0, 7);
+      const waiverRows = [...months.entries()].map(([month, m]) => {
+        const current = month.slice(0, 7) === thisMonth;
+        return {
+          day: month,
+          assetId: null,
+          status: "waivers",
+          amount: 0,
+          cells: [
+            "Monthly waivers",
+            MONTH_LABEL.format(new Date(month)),
+            "Customer",
+            null,
+            null,
+            `${m.issued} issued, ${m.used} used, ${m.issued - m.used} ${current ? "still available" : "lapsed"}`,
+            null,
+            null,
+            `${m.used} of ${m.issued}`,
+            null,
+            null,
+            current ? "This month" : "Closed",
+          ] as Cell[],
+        };
+      });
+      rows = [...feeRows, ...waiverRows].sort((x, y) => (y.day ?? "").localeCompare(x.day ?? ""));
+      break;
+    }
+    case "subscription-billing": {
+      type I = {
+        id: string;
+        kind: string;
+        period_start: string;
+        description: string;
+        amount_cents: number;
+        gst_cents: number;
+        details: { highest_assets?: number; free_assets?: number; per_asset_cents?: number } | null;
+        status: string;
+        number: string | null;
+        paid_at: string | null;
+        last_error: string | null;
+      };
+      type A = { invoice_id: string | null; amount_cents: number; kind: string; reason: string; completed_at: string | null };
+      const [invoices, adjustments] = await Promise.all([
+        reportRows<I>(db, "billing_invoices", "id, kind, period_start, description, amount_cents, gst_cents, details, status, number, paid_at, last_error", orgId, {
+          order: "period_start",
+        }).catch(() => [] as I[]),
+        reportRows<A>(db, "billing_adjustments", "invoice_id, amount_cents, kind, reason, completed_at", orgId, { order: "requested_at" }).catch(() => [] as A[]),
+      ]);
+      const INVOICE_STATUS: Record<string, string> = { draft: "Being prepared", sending: "Processing", open: "Due", paid: "Paid", failed: "Payment failed", void: "Cancelled" };
+      money$ = true;
+      columns = ["Type", "Billing month", "Subscription", "Description", "Billable assets", "Free assets", "Price per asset (AUD)", "Amount (AUD)", "GST (AUD)", "Refunded (AUD)", "Net (AUD)", "Status", "Invoice", "Paid on"];
+      statuses = [
+        { value: "paid", label: "Paid" },
+        { value: "open", label: "Due" },
+        { value: "failed", label: "Payment failed" },
+        { value: "void", label: "Cancelled" },
+        { value: "credit", label: "Credits" },
+      ];
+      rows = [
+        ...invoices
+          .filter((i) => i.status !== "draft")
+          .map((i) => {
+            const back = adjustments.filter((a) => a.kind === "refund" && a.invoice_id === i.id).reduce((s, a) => s + a.amount_cents, 0);
+            const fleet = i.kind === "fleet";
+            const billable = fleet && i.details?.highest_assets !== undefined ? Math.max(i.details.highest_assets - (i.details.free_assets ?? 0), 0) : null;
+            const net = i.status === "void" ? 0 : Math.max(i.amount_cents - back, 0);
+            return {
+              day: i.period_start,
+              assetId: null,
+              status: i.status === "sending" ? "open" : i.status,
+              amount: net,
+              cells: [
+                "Invoice",
+                MONTH_LABEL.format(new Date(i.period_start)),
+                fleet ? "Fleet" : "Provider",
+                i.description,
+                billable,
+                fleet ? (i.details?.free_assets ?? null) : null,
+                fleet ? money(i.details?.per_asset_cents) : null,
+                money(i.amount_cents),
+                money(i.gst_cents),
+                back ? money(back) : null,
+                money(net),
+                (INVOICE_STATUS[i.status] ?? i.status) + (i.status === "failed" && i.last_error ? `: ${i.last_error}` : ""),
+                i.number,
+                dmy(i.paid_at),
+              ] as Cell[],
+            };
+          }),
+        ...adjustments
+          .filter((a) => a.kind === "credit" && a.completed_at)
+          .map((a) => ({
+            day: dayOf(a.completed_at),
+            assetId: null,
+            status: "credit",
+            amount: -a.amount_cents,
+            cells: ["Credit", dmy(a.completed_at), null, "Credit from HVEMS (comes off the next invoice)", null, null, null, money(-a.amount_cents), null, null, money(-a.amount_cents), "Credited", null, null] as Cell[],
+          })),
       ].sort((x, y) => (y.day ?? "").localeCompare(x.day ?? ""));
       break;
     }

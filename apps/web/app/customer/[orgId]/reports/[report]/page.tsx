@@ -35,6 +35,7 @@ export default async function ReportPage({
   const ctx = await loadOrgContext(orgId, ["company"]);
   if (!can(ctx.capabilities, "reports.view")) notFound();
   const seesCosts = can(ctx.capabilities, "assets.costs.view");
+  const seesBilling = can(ctx.capabilities, "org.billing.view");
   const canExport = can(ctx.capabilities, "reports.export");
   const base = `/customer/${orgId}/reports`;
   const header = (
@@ -44,13 +45,16 @@ export default async function ReportPage({
     </>
   );
 
-  if (def.unavailable || (def.costs && !seesCosts)) {
+  if (def.unavailable || (def.costs && !seesCosts) || (def.billing && !seesBilling)) {
     return (
       <>
         {header}
         <Card>
-          <EmptyState icon={<Construction />} title={def.unavailable ? "Not available yet" : "Cost access needed"}>
-            {def.unavailable ?? "This report shows costs. Ask your Company Admin for a role that can see costs."}
+          <EmptyState icon={<Construction />} title={def.unavailable ? "Not available yet" : def.billing && !seesBilling ? "Billing access needed" : "Cost access needed"}>
+            {def.unavailable ??
+              (def.billing && !seesBilling
+                ? "This report shows what you pay HVEMS. The Owner and Finance members can see it."
+                : "This report shows costs. Ask your Company Admin for a role that can see costs.")}
           </EmptyState>
         </Card>
       </>

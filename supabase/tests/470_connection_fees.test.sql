@@ -192,5 +192,21 @@ select tests.authenticate_as(:'cowner');
 select is((select available || '/' || used from public.company_waiver_balance(:'co')), '0/1', 'none left this month');
 reset role;
 
+-- Report 14 rows for billing readers (Finance sees fees without seeing engagements).
+select tests.create_user('fin.cf@example.test', 'Fay Finance') as fin \gset
+select tests.create_user('fm.cf@example.test', 'Fred Fleet') as fm \gset
+select tests.add_member(:'co', :'fin', 'finance');
+select tests.add_member(:'co', :'fm', 'fleet_manager');
+select tests.authenticate_as(:'fin', 'aal2');
+select is((select string_agg(fee_cents || ':' || waiver_used, ',' order by engagement_number) from public.connection_fee_rows(:'co')), '2900:false,0:true',
+  'Finance sees each fee the company paid, and which used a waiver');
+reset role;
+select tests.authenticate_as(:'fm', 'aal2');
+select is(tests.error_code(format($$select * from public.connection_fee_rows(%L)$$, :'co')), 'forbidden', 'a Fleet Manager can''t see billing');
+reset role;
+select tests.authenticate_as(:'p1owner', 'aal2');
+select is((select count(*)::int from public.connection_fee_rows(:'p1') where side = 'provider'), 2, 'the provider sees the fees it paid');
+reset role;
+
 select * from finish();
 rollback;

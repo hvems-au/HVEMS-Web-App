@@ -4,6 +4,7 @@ import { AlertTriangle, BadgeCheck, Briefcase, Building2, CircleDollarSign, Gave
 import { DEFAULT_PRICING, formatAud } from "@hvems/domain";
 import { PageHeader, StatCard } from "@/components/shell/page";
 import { Card, CardHeader, EmptyState, Table, TD, TH, THead, TR } from "@/components/ui/primitives";
+import { RevenueSection } from "@/features/billing/revenue";
 import { getStaffContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -50,6 +51,7 @@ export default async function AdminHome() {
         <StatCard label="Marketplace customers" value={customers} icon={<Store />} href="/admin/organisations?kind=marketplace_customer" />
         <StatCard label="Providers" value={providers} icon={<Wrench />} href="/admin/organisations?kind=provider" />
       </div>
+      {superAdmin ? <RevenueSection /> : null}
       <MarketplaceSection />
       {fleet ? <FleetSection fleet={fleet} /> : null}
     </>

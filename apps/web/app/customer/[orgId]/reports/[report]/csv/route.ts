@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ orgI
   if (!def || def.unavailable) notFound();
   const ctx = await loadOrgContext(orgId, ["company"]);
   const seesCosts = can(ctx.capabilities, "assets.costs.view");
-  if (!can(ctx.capabilities, "reports.export") || (def.costs && !seesCosts)) notFound();
+  if (!can(ctx.capabilities, "reports.export") || (def.costs && !seesCosts) || (def.billing && !can(ctx.capabilities, "org.billing.view"))) notFound();
   const f = parseReportFilters(Object.fromEntries(new URL(request.url).searchParams));
   const db = await createSupabaseServerClient();
   const built = await buildReport(db, def.key, orgId, ctx.timezone, f, { seesCosts });
