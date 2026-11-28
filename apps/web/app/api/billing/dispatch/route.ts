@@ -3,9 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, stripeServerAvailability } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { cleanUpFeeAttempts } from "@/features/billing/connection-fees";
 
 /**
- * Turns monthly invoice drafts into Stripe invoices charged to the default card (CS-34/35/39).
+ * Turns monthly invoice drafts into Stripe invoices charged to the default card (CS-34/35/39),
+ * and releases or refunds connection-fee holds left by acceptances that didn't complete (ADR-006).
  * Called by pg_cron + pg_net with the same shared secret as the email dispatch. The database
  * decides what is owed (prepare_monthly_invoices); this route only collects it. Each draft uses
  * idempotency keys from its own id, so a retry never creates a second invoice or charge.
@@ -101,5 +103,7 @@ export async function POST(req: NextRequest) {
       p_error: r.error ?? null,
     });
   }
-  return NextResponse.json(results);
+  // Connection fees: release holds and refund fees on attempts that didn't complete.
+  const fees = await cleanUpFeeAttempts(db, stripe).catch((e: Error) => ({ error: e.message }));
+  return NextResponse.json({ ...results, fees });
 }

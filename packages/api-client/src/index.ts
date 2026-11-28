@@ -2707,6 +2707,9 @@ export async function getMarketplaceCase(db: HvemsClient, id: string): Promise<{
 
 export type EngagementRpc =
   | "accept_marketplace_proposal"
+  | "begin_fee_acceptance"
+  | "retry_provider_fee"
+  | "cancel_fee_acceptance"
   | "assign_engagement_technician"
   | "update_engagement_attendance"
   | "propose_engagement_variation"

@@ -64,6 +64,16 @@ export async function BillingPage({ ctx }: { ctx: OrgContext }) {
       .limit(24),
   ]);
   const invoices = (invoiceRows ?? []) as unknown as InvoiceRow[];
+  // SoW 5.5: one waiver per 10 assets current for 14+ days, each month (connection fees on the company side).
+  const waivers =
+    kind === "company"
+      ? await (db.rpc as unknown as (f: string, a: object) => Promise<{ data: { available: number; used: number; reserved: number; allowance: number }[] | null }>)(
+          "company_waiver_balance",
+          { p_organisation_id: orgId },
+        )
+          .then((r) => r.data?.[0] ?? null)
+          .catch(() => null)
+      : null;
 
   const setting = (k: string, d: number) => {
     const v = Number(settings?.find((s) => s.key === k)?.value);
@@ -97,6 +107,14 @@ export async function BillingPage({ ctx }: { ctx: OrgContext }) {
           {
             label: "This month at today's count",
             value: formatAud(fleetSubscriptionCents(assetCount, { ...pricing, assetsPerWaiver: 10, waiverQualifyingDays: 14, gstRegistered: false })),
+          },
+          {
+            label: "Connection fee waivers",
+            value: waivers
+              ? waivers.allowance
+                ? `${waivers.available} of ${waivers.allowance} left this month`
+                : "None this month: one for every 10 assets in your register for 14 days or more"
+              : "—",
           },
         ]
       : kind === "provider"

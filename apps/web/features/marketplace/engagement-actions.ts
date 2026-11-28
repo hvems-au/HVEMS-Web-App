@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { engagementRpc, type EngagementRpc } from "@hvems/api-client";
+import { AppError, engagementRpc, type EngagementRpc } from "@hvems/api-client";
 import { z } from "@hvems/validation";
 import { errorState, type ActionState } from "@/lib/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,8 +23,58 @@ const cents = (dollars: string | undefined) => {
   return v ? Math.round(Number(v) * 100) : null;
 };
 
-export const acceptProposalAction = async (proposalId: string, followUpOf?: string) =>
-  run<string>("accept_marketplace_proposal", { p_proposal_id: id(proposalId), p_follow_up_of: followUpOf || null }, "Proposal accepted: the engagement is confirmed");
+/**
+ * Accept a proposal. While connection fees are off (or for a follow-up) the database confirms
+ * the engagement straight away. When they're on it answers fees_required: a connection-fee
+ * attempt starts, both fees are held and captured (ADR-006), then the engagement is confirmed.
+ * If the provider's card fails, the acceptance waits for it ("Acceptance pending fees").
+ */
+export async function acceptProposalAction(proposalId: string, followUpOf?: string): Promise<ActionState<{ engagementId?: string; pending?: boolean }>> {
+  try {
+    const db = await createSupabaseServerClient();
+    try {
+      const engagementId = await engagementRpc<string>(db, "accept_marketplace_proposal", { p_proposal_id: id(proposalId), p_follow_up_of: followUpOf || null });
+      revalidatePath("/", "layout");
+      return { status: "success", message: "Proposal accepted: the engagement is confirmed", data: { engagementId } };
+    } catch (e) {
+      if (!(e instanceof AppError && e.code === "fees_required")) throw e;
+    }
+    const attemptId = await engagementRpc<string>(db, "begin_fee_acceptance", { p_proposal_id: id(proposalId) });
+    const { runFeeAcceptance } = await import("@/features/billing/connection-fees");
+    const r = await runFeeAcceptance(attemptId);
+    revalidatePath("/", "layout");
+    if (r.outcome === "confirmed") {
+      return { status: "success", message: "Both connection fees went through: the engagement is confirmed", data: { engagementId: r.engagementId } };
+    }
+    if (r.outcome === "pending_provider") {
+      return {
+        status: "success",
+        message: "Acceptance pending fees: the provider's card was declined and they've been asked to update it. Nothing is charged unless both fees succeed.",
+        data: { pending: true },
+      };
+    }
+    return { status: "error", code: "fee_failed", message: r.message };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+/** The provider updated its card and pays its connection fee within the window. */
+export async function retryProviderFeeAction(attemptId: string): Promise<ActionState<{ engagementId?: string }>> {
+  try {
+    const db = await createSupabaseServerClient();
+    await engagementRpc<number>(db, "retry_provider_fee", { p_id: id(attemptId) });
+    const { runProviderRetry } = await import("@/features/billing/connection-fees");
+    const r = await runProviderRetry(attemptId);
+    revalidatePath("/", "layout");
+    if (r.outcome === "confirmed") return { status: "success", message: "Paid: the engagement is confirmed", data: { engagementId: r.engagementId } };
+    return { status: "error", code: "fee_failed", message: r.outcome === "failed" ? r.message : "Still waiting on the fee" };
+  } catch (e) {
+    return errorState(e);
+  }
+}
+
+export const cancelFeeAcceptanceAction = async (attemptId: string) => run("cancel_fee_acceptance", { p_id: id(attemptId) }, "Acceptance cancelled: nothing was charged");
 
 export const assignTechnicianAction = async (engagementId: string, userId: string) =>
   run("assign_engagement_technician", { p_engagement_id: id(engagementId), p_user_id: userId || null }, "Technician assigned");

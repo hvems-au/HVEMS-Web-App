@@ -187,7 +187,19 @@ function InviteDialog({ orgId, jobId, category }: { orgId: string; jobId: string
 }
 
 /** Accept a proposal (MKT-10): confirms the engagement and releases the site details to this provider only. */
-export function AcceptProposalButton({ orgId, proposalId, providerName, feeText }: { orgId: string; proposalId: string; providerName: string; feeText: string }) {
+export function AcceptProposalButton({
+  orgId,
+  proposalId,
+  providerName,
+  feeText,
+  feesLive = false,
+}: {
+  orgId: string;
+  proposalId: string;
+  providerName: string;
+  feeText: string;
+  feesLive?: boolean;
+}) {
   const router = useRouter();
   const [busy, setBusy] = React.useState(false);
   return (
@@ -197,8 +209,10 @@ export function AcceptProposalButton({ orgId, proposalId, providerName, feeText 
       onClick={async () => {
         const ok = await confirmDialog({
           title: `Accept ${providerName}'s proposal?`,
-          description: `${feeText} The provider pays its own connection fee too. Fee payments aren't switched on yet, so nothing is charged now. Accepting confirms the engagement, shares the address, site instructions and your contact details with ${providerName}, and tells the other providers they weren't selected.`,
-          confirmLabel: "Accept proposal",
+          description: feesLive
+            ? `${feeText} ${providerName} pays its own connection fee too. Both are charged together: if either payment fails, neither of you is charged. Once both go through, the engagement is confirmed, ${providerName} sees the address, site instructions and your contact details, and the other providers are told they weren't selected.`
+            : `${feeText} The provider pays its own connection fee too. Fee payments aren't switched on yet, so nothing is charged now. Accepting confirms the engagement, shares the address, site instructions and your contact details with ${providerName}, and tells the other providers they weren't selected.`,
+          confirmLabel: feesLive ? "Accept and pay" : "Accept proposal",
         });
         if (!ok) return;
         setBusy(true);
@@ -206,8 +220,13 @@ export function AcceptProposalButton({ orgId, proposalId, providerName, feeText 
         const res = await acceptProposalAction(proposalId);
         setBusy(false);
         if (res.status === "error") return toast.error(res.message);
-        toast.success("Engagement confirmed");
-        const id = res.status === "success" ? (res.data as string | undefined) : undefined;
+        if (res.status !== "success") return;
+        if (res.data?.pending) {
+          toast.warning(res.message ?? "Acceptance pending fees");
+          return router.refresh();
+        }
+        toast.success(res.message ?? "Engagement confirmed");
+        const id = res.data?.engagementId;
         router.push(id ? `/customer/${orgId}/engagements/${id}` : `/customer/${orgId}/engagements`);
       }}
     >

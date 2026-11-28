@@ -22,6 +22,7 @@ import { Badge, Card, CardBody, CardHeader, EmptyState } from "@/components/ui/p
 import { ConvertJobAssetDialog } from "@/features/marketplace/convert-button";
 import { AcceptProposalButton, JobControls } from "@/features/marketplace/job-controls";
 import { JobSummary } from "@/features/marketplace/job-summary";
+import { PosterPendingFees } from "@/features/marketplace/fee-controls";
 import { BADGE_LABELS, ENGAGEMENT_STATUS, PROPOSAL_STATUS, aud, availabilityText, dmy, priceText } from "@/features/marketplace/labels";
 import { MessageThread } from "@/features/marketplace/message-thread";
 import { loadOrgContext } from "@/lib/session";
@@ -38,13 +39,30 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
   const job = await getMarketplaceJob(db, orgId, jobId);
   if (!job) notFound();
   const canAccept = can(ctx.capabilities, "marketplace.accept");
-  const [pub, proposals, messages, files, engagements] = await Promise.all([
+  const isCompany = ctx.context.kind === "company";
+  const [pub, proposals, messages, files, engagements, feeRows, liveSetting, waivers] = await Promise.all([
     previewMarketplaceJob(db, jobId),
     listJobProposals(db, jobId),
     listMarketplaceMessages(db, jobId),
     listMarketplaceJobFiles(db, jobId),
     listEngagements(db, { jobId }),
+    // An acceptance in progress or waiting on the provider's connection fee (ADR-006).
+    db
+      .from("connection_fee_attempts" as never)
+      .select("id, provider_id, state, pending_until")
+      .eq("job_id" as never, jobId as never)
+      .in("state" as never, ["authorising", "pending_provider", "capturing"] as never)
+      .limit(1)
+      .then((r) => (r.data ?? []) as unknown as { id: string; provider_id: string; state: string; pending_until: string | null }[]),
+    db.from("platform_settings").select("value").eq("key", "marketplace.connection_fees_live").maybeSingle(),
+    isCompany && canAccept
+      ? (db.rpc as unknown as (f: string, a: object) => Promise<{ data: { available: number; allowance: number }[] | null }>)("company_waiver_balance", { p_organisation_id: orgId })
+          .then((r) => r.data?.[0] ?? null)
+          .catch(() => null)
+      : Promise.resolve(null),
   ]);
+  const pendingFee = feeRows[0] ?? null;
+  const feesLive = liveSetting.data?.value === true;
   const links = await signMarketplaceFiles(
     db,
     files.map((f) => f.path),
@@ -55,7 +73,7 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
     (await marketplaceRpc<{ id: string; name: string }[]>(db, "marketplace_thread_providers", { p_job_id: jobId }).catch(() => [])).map((x) => [x.id, x.name]),
   );
   const threads = [...new Set(messages.map((m) => m.provider_id))];
-  const open = pub.status === "open";
+  const open = pub.status === "open" && !pendingFee;
   // A company that was a marketplace-only customer can turn described equipment into managed equipment (AST-04).
   const canConvertAsset = ctx.context.kind === "company" && !job.asset_id && can(ctx.capabilities, "assets.manage");
   const classes = canConvertAsset ? (await listAssetClasses(db)).map((c) => ({ value: c.id, label: c.name })) : [];
@@ -82,6 +100,14 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
           ) : null
         }
       />
+      {pendingFee?.state === "pending_provider" && pendingFee.pending_until ? (
+        <PosterPendingFees
+          attemptId={pendingFee.id}
+          providerName={providerName.get(pendingFee.provider_id) ?? "the provider"}
+          pendingUntil={pendingFee.pending_until}
+          canCancel={canAccept}
+        />
+      ) : null}
       {engagements.length ? (
         <Card className="mb-5">
           <CardHeader title="Engagements" />
@@ -143,7 +169,12 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
                               orgId={orgId}
                               proposalId={p.id}
                               providerName={p.provider.name}
-                              feeText={`Your connection fee is ${aud(p.terms.fee_cents)}${ctx.context.kind === "company" ? " (or covered by your monthly waiver)" : ""}.`}
+                              feesLive={feesLive}
+                              feeText={
+                                waivers && waivers.available > 0
+                                  ? `Your ${aud(p.terms.fee_cents)} connection fee is covered by a monthly waiver (${waivers.available} left this month).`
+                                  : `Your connection fee is ${aud(p.terms.fee_cents)}${feesLive ? ", charged to your default card" : isCompany ? " (or covered by a monthly waiver)" : ""}.`
+                              }
                             />
                           ) : null}
                         </div>
@@ -192,7 +223,10 @@ export default async function MarketplaceJobPage({ params }: { params: Promise<{
             )}
             {active.length ? (
               <p className="border-t border-stroke px-5 py-3 text-[12.5px] text-ink-muted">
-                Proposals stay firm until they expire or are withdrawn. Connection fee payments aren&apos;t switched on yet, so accepting charges nothing for now.
+                Proposals stay firm until they expire or are withdrawn.{" "}
+                {feesLive
+                  ? "Accepting charges both connection fees together: if either payment fails, neither party is charged."
+                  : "Connection fee payments aren't switched on yet, so accepting charges nothing for now."}
               </p>
             ) : null}
           </Card>

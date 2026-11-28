@@ -12,6 +12,8 @@ import { PROPOSAL_STATUS, availabilityText, priceText } from "@/features/marketp
 import { MessageThread } from "@/features/marketplace/message-thread";
 import { SaveJobButton, WithdrawProposalButton } from "@/features/marketplace/provider-controls";
 import { ProposalForm } from "@/features/marketplace/proposal-form";
+import { ProviderPendingFee } from "@/features/marketplace/fee-controls";
+import { aud } from "@/features/marketplace/labels";
 import { loadOrgContext } from "@/lib/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -24,7 +26,7 @@ export async function ProviderJobScreen({ orgId, jobId, portal }: { orgId: strin
   const db = await createSupabaseServerClient();
   const job: PublicJob | null = await getJobForProvider(db, orgId, jobId).catch(() => null);
   if (!job) notFound();
-  const [mine, messages, links, validity, engagements] = await Promise.all([
+  const [mine, messages, links, validity, engagements, pendingFee] = await Promise.all([
     getMyProposal(db, orgId, jobId),
     listMarketplaceMessages(db, jobId, orgId),
     signMarketplaceFiles(
@@ -33,6 +35,15 @@ export async function ProviderJobScreen({ orgId, jobId, portal }: { orgId: strin
     ),
     db.from("platform_settings").select("key, value").in("key", ["marketplace.proposal_validity_default_hours", "marketplace.urgent_proposal_validity_default_minutes"]),
     listEngagements(db, { providerId: orgId, jobId }),
+    // An acceptance waiting on this provider's connection fee (ADR-006).
+    db
+      .from("connection_fee_attempts" as never)
+      .select("id, provider_fee_cents, pending_until, last_error")
+      .eq("provider_id" as never, orgId as never)
+      .eq("job_id" as never, jobId as never)
+      .eq("state" as never, "pending_provider" as never)
+      .maybeSingle()
+      .then((r) => r.data as unknown as { id: string; provider_fee_cents: number; pending_until: string; last_error: string | null } | null),
   ]);
   const setting = (k: string, d: number) => Number(validity.data?.find((r) => r.key === k)?.value ?? d) || d;
   const validityDefault = job.urgency === "urgent" ? setting("marketplace.urgent_proposal_validity_default_minutes", 60) : setting("marketplace.proposal_validity_default_hours", 72) * 60;
@@ -50,6 +61,16 @@ export async function ProviderJobScreen({ orgId, jobId, portal }: { orgId: strin
         breadcrumb={{ label: portal === "provider" ? "Browse jobs" : "Find work", href: `${portalBase}/jobs` }}
         actions={open ? <SaveJobButton providerId={orgId} jobId={job.id} saved={!!job.saved} /> : null}
       />
+      {pendingFee ? (
+        <ProviderPendingFee
+          portalBase={portalBase}
+          attemptId={pendingFee.id}
+          feeText={aud(pendingFee.provider_fee_cents)}
+          pendingUntil={pendingFee.pending_until}
+          lastError={pendingFee.last_error}
+          canPay={can(ctx.capabilities, "org.billing.manage") || can(ctx.capabilities, "provider.engagements.manage")}
+        />
+      ) : null}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <div className="flex flex-col gap-5 xl:col-span-2">
           <Card>
