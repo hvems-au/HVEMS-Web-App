@@ -128,7 +128,7 @@ insert into public.billing_customers (organisation_id, stripe_customer_id, livem
 insert into public.payment_methods (organisation_id, stripe_payment_method_id, brand, last4, exp_month, exp_year, is_default)
 values (:'p1', 'pm_Prov1', 'visa', '4242', 1, 2030, true);
 select tests.authenticate_as(:'p2owner');
-select is(tests.error_code(format($select public.retry_provider_fee(%L)$, :'att_c')), 'forbidden', 'another provider can''t pay it');
+select is(tests.error_code(format($$select public.retry_provider_fee(%L)$$, :'att_c')), 'forbidden', 'another provider can''t pay it');
 reset role;
 select tests.authenticate_as(:'p1owner');
 select is(public.retry_provider_fee(:'att_c'), 1, 'the provider tries again');
